@@ -15,10 +15,10 @@ echo "Generating bindings..."
 cargo run --features=uniffi/cli --bin uniffi-bindgen -- generate --library target/release/libqidao_core.dylib --language swift --out-dir out
 
 echo "Copying files to SwiftUI project..."
-mkdir -p "../$SWIFT_DIR"
+mkdir -p "../$SWIFT_DIR/qidao_coreFFI"
 cp target/release/libqidao_core.a "../$SWIFT_DIR/"
 cp out/qidao_core.swift "../$SWIFT_DIR/"
-cp out/qidao_coreFFI.h "../$SWIFT_DIR/"
-cp out/qidao_coreFFI.modulemap "../$SWIFT_DIR/"
+cp out/qidao_coreFFI.h "../$SWIFT_DIR/qidao_coreFFI/"
+cp out/qidao_coreFFI.modulemap "../$SWIFT_DIR/qidao_coreFFI/module.modulemap"
 
 echo "Done! Please ensure Xcode project is configured to link libqidao_core.a and include the modulemap path."

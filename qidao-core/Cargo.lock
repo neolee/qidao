@@ -402,6 +402,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
+ "sgf-parse",
  "thiserror",
  "tokio",
  "uniffi",
@@ -503,6 +504,12 @@ dependencies = [
  "serde_core",
  "zmij",
 ]
+
+[[package]]
+name = "sgf-parse"
+version = "4.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b11229a863fdd9fb55912b1493e4c0e03d449a12e93c80f606ba8d241bce3756"
 
 [[package]]
 name = "signal-hook-registry"

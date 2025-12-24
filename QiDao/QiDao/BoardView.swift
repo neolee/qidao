@@ -29,9 +29,11 @@ struct BoardView: View {
             
             VStack {
                 Text(viewModel.message)
+                    .textSelection(.enabled)
                 Text(viewModel.gameInfo)
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .textSelection(.enabled)
             }
             
             Button("Test Rust Core") {

@@ -251,6 +251,41 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFNODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFNODE
+void*_Nonnull uniffi_qidao_core_fn_clone_sgfnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFNODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFNODE
+void uniffi_qidao_core_fn_free_sgfnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_CHILDREN
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_CHILDREN
+RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_children(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_PROPERTIES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_PROPERTIES
+RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_properties(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFTREE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFTREE
+void*_Nonnull uniffi_qidao_core_fn_clone_sgftree(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFTREE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFTREE
+void uniffi_qidao_core_fn_free_sgftree(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFTREE_ROOT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFTREE_ROOT
+void*_Nonnull uniffi_qidao_core_fn_method_sgftree_root(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_ADD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_ADD
 uint32_t uniffi_qidao_core_fn_func_add(uint32_t a, uint32_t b, RustCallStatus *_Nonnull out_status
@@ -260,6 +295,11 @@ uint32_t uniffi_qidao_core_fn_func_add(uint32_t a, uint32_t b, RustCallStatus *_
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_GET_SAMPLE_GAME
 RustBuffer uniffi_qidao_core_fn_func_get_sample_game(RustCallStatus *_Nonnull out_status
     
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_PARSE_SGF
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_PARSE_SGF
+void*_Nonnull uniffi_qidao_core_fn_func_parse_sgf(RustBuffer sgf_content, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUSTBUFFER_ALLOC
@@ -551,6 +591,30 @@ uint16_t uniffi_qidao_core_checksum_func_add(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_GET_SAMPLE_GAME
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_GET_SAMPLE_GAME
 uint16_t uniffi_qidao_core_checksum_func_get_sample_game(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_PARSE_SGF
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_PARSE_SGF
+uint16_t uniffi_qidao_core_checksum_func_parse_sgf(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
+uint16_t uniffi_qidao_core_checksum_method_sgfnode_get_children(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_PROPERTIES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_PROPERTIES
+uint16_t uniffi_qidao_core_checksum_method_sgfnode_get_properties(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFTREE_ROOT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFTREE_ROOT
+uint16_t uniffi_qidao_core_checksum_method_sgftree_root(void
     
 );
 #endif

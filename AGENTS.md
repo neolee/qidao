@@ -7,13 +7,17 @@ QiDao (Tao of Go) is a modern Go (Weiqi) board editor and AI analysis tool, prim
 
 ## 2. Technical Stack
 - **UI Layer**: SwiftUI (macOS Native)
-- **Core Logic Layer**: Rust (Targeted for `qidao-core`)
-  - *Note*: The exact scope of Rust usage is under evaluation. Potential areas: SGF parsing, GTP/Analysis API orchestration, move validation.
-- **Interoperability**: Swift-Rust bridging (TBD: UniFFI, Swift-Bridge, or C-FFI).
+- **Core Logic Layer**: Rust (`qidao-core`)
+  - **Scope**: SGF parsing & tree management, GTP/Analysis API orchestration, Go rules engine (validation, capture logic).
+- **Interoperability**: **UniFFI** (Swift-Rust bridging).
+  - **Status**: Initialized with proc-macro support and Swift binding generation.
 
 ## 3. Directory Structure
 - `QiDao/`: SwiftUI application source code.
-- `qidao-core/`: Rust-based core logic and cross-platform components.
+- `qidao-core/`: Rust-based core logic.
+  - `src/lib.rs`: Main entry point for UniFFI exports.
+  - `src/bin/uniffi-bindgen.rs`: CLI tool for generating bindings.
+  - `out/`: Generated Swift/C bindings.
 - `screens/`: UI reference images.
 - `init-spec.md`: Detailed functional and non-functional requirements.
 
@@ -38,10 +42,13 @@ QiDao (Tao of Go) is a modern Go (Weiqi) board editor and AI analysis tool, prim
 - [x] Initial requirements defined ([init-spec.md](init-spec.md)).
 - [x] Requirements updated with AI Analysis API, Variation Tree, and GPU acceleration.
 - [x] Project structure initialized with `QiDao/` and `qidao-core/`.
+- [x] **Swift-Rust Bridge**: Confirmed UniFFI as the bridging solution.
+- [x] **Core Setup**: Initialized Rust library in `qidao-core` with UniFFI support.
+- [x] **GUI Prototype**: Created basic `BoardView` and `BoardViewModel` in SwiftUI.
+- [x] **Core Integration (Initial)**: Built Rust static library and generated Swift bindings; placed them in `QiDao/QiDao/Core`.
 
 ## 7. Immediate TODOs
-1. **Analysis**: Determine the boundary between Swift and Rust.
-2. **Setup**: Initialize the Rust library in `qidao-core`.
-3. **SGF**: Implement basic SGF parsing in the core layer.
-4. **UI**: Create a basic 19x19 board view in SwiftUI.
-5. **Bridge**: Establish the communication channel between Swift and Rust.
+1. **Xcode Configuration**: Manually link `libqidao_core.a` and configure modulemap paths in Xcode.
+2. **SGF**: Implement basic SGF parsing in the core layer (Rust).
+3. **Board Interaction**: Implement stone placement and basic Go rules in Rust.
+4. **Engine**: Implement basic GTP communication in Rust.

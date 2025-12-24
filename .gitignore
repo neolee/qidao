@@ -16,6 +16,9 @@ wheels/
 
 .venv
 
+**/target
+**/out
+
 .aider*
 .idea
 

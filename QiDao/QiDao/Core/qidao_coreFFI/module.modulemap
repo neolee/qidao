@@ -1,0 +1,4 @@
+module qidao_coreFFI {
+    header "qidao_coreFFI.h"
+    export *
+}

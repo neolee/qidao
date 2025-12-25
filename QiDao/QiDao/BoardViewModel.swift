@@ -14,6 +14,9 @@ class BoardViewModel: ObservableObject {
     @Published var showCoordinates: Bool = true {
         didSet { UserDefaults.standard.set(showCoordinates, forKey: "showCoordinates") }
     }
+    @Published var playSound: Bool = true {
+        didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
+    }
     @Published var lastMove: (x: Int, y: Int)? = nil
     
     var langManager = LanguageManager.shared
@@ -26,6 +29,7 @@ class BoardViewModel: ObservableObject {
         // Load persisted settings
         self.showMoveNumbers = UserDefaults.standard.object(forKey: "showMoveNumbers") as? Bool ?? true
         self.showCoordinates = UserDefaults.standard.object(forKey: "showCoordinates") as? Bool ?? true
+        self.playSound = UserDefaults.standard.object(forKey: "playSound") as? Bool ?? true
         
         let themeId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "wood"
         self.theme = (themeId == "bw") ? .bwPrint : .defaultWood
@@ -34,7 +38,23 @@ class BoardViewModel: ObservableObject {
     func placeStone(x: Int, y: Int) {
         do {
             let color = nextColor
+            let oldStoneCount = countStones(on: board)
             let newBoard = try board.placeStone(x: UInt32(x), y: UInt32(y), color: color)
+            let newStoneCount = countStones(on: newBoard)
+            
+            // Play sound based on captures
+            // newStoneCount = oldStoneCount + 1 - captures
+            // captures = oldStoneCount + 1 - newStoneCount
+            let captures = oldStoneCount + 1 - newStoneCount
+            
+            if captures == 0 {
+                SoundManager.shared.play(name: "stone")
+            } else if captures == 1 {
+                SoundManager.shared.play(name: "dead-stone")
+            } else {
+                SoundManager.shared.play(name: "dead-stones")
+            }
+
             self.board = newBoard
             self.nextColor = (color == .black) ? .white : .black
             self.lastMove = (x, y)
@@ -47,6 +67,19 @@ class BoardViewModel: ObservableObject {
         } catch {
             self.message = "\("Invalid Move".localized): \(error)"
         }
+    }
+
+    private func countStones(on board: Board) -> Int {
+        var count = 0
+        let size = board.getSize()
+        for y in 0..<size {
+            for x in 0..<size {
+                if board.getStone(x: x, y: y) != nil {
+                    count += 1
+                }
+            }
+        }
+        return count
     }
 
     func resetBoard() {

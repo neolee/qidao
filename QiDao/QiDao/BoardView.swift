@@ -57,6 +57,8 @@ struct BoardView: View {
                         .toggleStyle(.checkbox)
                     Toggle("Coordinates".localized, isOn: $viewModel.showCoordinates)
                         .toggleStyle(.checkbox)
+                    Toggle("Sound".localized, isOn: $viewModel.playSound)
+                        .toggleStyle(.checkbox)
                     
                     Spacer()
                     

@@ -1,114 +1,330 @@
 import SwiftUI
+import qidao_coreFFI
 
 struct BoardView: View {
     @StateObject private var viewModel = BoardViewModel()
-    private let boardSize: CGFloat = 500
-    private let gridSize: Int = 19
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                Text("QiDao")
-                    .font(.system(size: 24, weight: .bold, design: .serif))
-                Spacer()
-                Text("Next: \(viewModel.nextColor == .black ? "Black" : "White")")
-                    .padding(8)
-                    .background(viewModel.nextColor == .black ? Color.black : Color.white)
-                    .foregroundColor(viewModel.nextColor == .black ? Color.white : Color.black)
-                    .cornerRadius(8)
-                    .shadow(radius: 2)
-            }
-            .padding(.horizontal)
-
-            // High-performance Board Rendering
-            ZStack {
-                // 1. Background
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(red: 0.85, green: 0.65, blue: 0.45))
-                    .shadow(radius: 10)
-
-                // 2. Grid Lines
-                BoardGrid(gridSize: gridSize)
-                    .stroke(Color.black.opacity(0.8), lineWidth: 1)
-
-                // 3. Star Points (Hoshi)
-                StarPoints(gridSize: gridSize)
-                    .fill(Color.black)
-
-                // 4. Stones
-                GeometryReader { geometry in
-                    let spacing = geometry.size.width / CGFloat(gridSize + 1)
-
-                    ForEach(0..<gridSize, id: \.self) { y in
-                        ForEach(0..<gridSize, id: \.self) { x in
-                            if let color = viewModel.board.getStone(x: UInt32(x), y: UInt32(y)) {
-                                StoneView(color: color, size: spacing * 0.9)
-                                    .position(
-                                        x: CGFloat(x + 1) * spacing,
-                                        y: CGFloat(y + 1) * spacing
-                                    )
-                            }
-                        }
+        HSplitView {
+            // Left Sidebar: Game Info & AI Logs
+            VStack(alignment: .leading, spacing: 20) {
+                GroupBox(label: Label("Game Info".localized, systemImage: "info.circle")) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(viewModel.gameInfo)
+                            .font(.caption)
+                        Divider()
+                        Text("\("Next".localized): \(viewModel.nextColor == .black ? "Black".localized : "White".localized)")
+                            .fontWeight(.bold)
                     }
+                    .padding(5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                
+                GroupBox(label: Label("Win Rate".localized, systemImage: "chart.line.uptrend.xyaxis")) {
+                    Text("Chart Placeholder")
+                        .frame(height: 150)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.05))
+                }
+                
+                GroupBox(label: Label("AI Logs".localized, systemImage: "terminal")) {
+                    ScrollView {
+                        Text("GTP Log Placeholder...")
+                            .font(.system(.caption, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: .infinity)
                 }
             }
-            .frame(width: boardSize, height: boardSize)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onEnded { value in
-                        let spacing = boardSize / CGFloat(gridSize + 1)
-                        let x = Int(round(value.location.x / spacing)) - 1
-                        let y = Int(round(value.location.y / spacing)) - 1
-
-                        if x >= 0 && x < gridSize && y >= 0 && y < gridSize {
-                            viewModel.placeStone(x: x, y: y)
-                        }
-                    }
-            )
-
-            VStack(spacing: 10) {
-                Text(viewModel.message)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-
+            .padding()
+            .frame(minWidth: 200, maxWidth: 300)
+            
+            // Center: Board & Toolbar
+            VStack(spacing: 0) {
+                // Toolbar
                 HStack {
-                    Button("Reset Board") {
-                        viewModel.resetBoard()
+                    Button(action: viewModel.toggleTheme) {
+                        Label("Theme".localized, systemImage: "paintpalette")
                     }
-                    .buttonStyle(.bordered)
-
-                    Button("Run Core Test") {
-                        viewModel.testCore()
+                    Button(action: viewModel.resetBoard) {
+                        Label("Reset".localized, systemImage: "arrow.counterclockwise")
                     }
-                    .buttonStyle(.borderedProminent)
+                    
+                    Divider().frame(height: 20)
+                    
+                    Toggle("Numbers".localized, isOn: $viewModel.showMoveNumbers)
+                        .toggleStyle(.checkbox)
+                    Toggle("Coordinates".localized, isOn: $viewModel.showCoordinates)
+                        .toggleStyle(.checkbox)
+                    
+                    Spacer()
+                    
+                    Picker("", selection: $langManager.selectedLanguage) {
+                        ForEach(Language.allCases) { lang in
+                            Text(lang.displayName).tag(lang)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 100)
+                    
+                    Text(viewModel.message)
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(VisualEffectView(material: .titlebar, blendingMode: .withinWindow))
+                
+                // Board Container
+                GeometryReader { geometry in
+                    let size = min(geometry.size.width, geometry.size.height) * 0.95
+                    
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            MainBoardView(viewModel: viewModel, size: size)
+                            Spacer()
+                        }
+                        Spacer()
+                    }
                 }
             }
+            .frame(minWidth: 400)
+            
+            // Right Sidebar: Variations & Analysis
+            VStack(alignment: .leading, spacing: 20) {
+                GroupBox(label: Label("Variation Tree".localized, systemImage: "arrow.triangle.branch")) {
+                    Text("Tree Placeholder")
+                        .frame(maxHeight: .infinity)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.05))
+                }
+                
+                GroupBox(label: Label("AI Analysis".localized, systemImage: "list.bullet.rectangle")) {
+                    Text("Analysis Table Placeholder")
+                        .frame(height: 200)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.05))
+                }
+                
+                GroupBox(label: Label("Evaluation".localized, systemImage: "eye")) {
+                    ZStack {
+                        Color.black.opacity(0.05)
+                        Text("Small Board Placeholder")
+                    }
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding()
+            .frame(minWidth: 200, maxWidth: 300)
         }
-        .padding()
-        .frame(minWidth: 600, minHeight: 700)
     }
 }
 
-// MARK: - Subviews
+struct MainBoardView: View {
+    @ObservedObject var viewModel: BoardViewModel
+    let size: CGFloat
+    let gridSize: Int = 19
+    
+    var body: some View {
+        let spacing = size / CGFloat(gridSize + 1)
+        
+        ZStack {
+            // 1. Background
+            RoundedRectangle(cornerRadius: 2)
+                .fill(viewModel.theme.boardColor)
+                .shadow(color: .black.opacity(0.2), radius: 5)
+            
+            // 2. Coordinates (Optional)
+            if viewModel.showCoordinates {
+                BoardCoordinates(gridSize: gridSize, spacing: spacing)
+                    .foregroundColor(viewModel.theme.lineColor)
+            }
+            
+            // 3. Grid Lines
+            BoardGrid(gridSize: gridSize)
+                .stroke(viewModel.theme.lineColor, lineWidth: viewModel.theme.gridLineWidth)
+            
+            // 4. Star Points (Hoshi)
+            StarPoints(gridSize: gridSize)
+                .fill(viewModel.theme.starPointColor)
+            
+            // 5. Stones & Numbers
+            GeometryReader { geometry in
+                ForEach(0..<gridSize, id: \.self) { y in
+                    ForEach(0..<gridSize, id: \.self) { x in
+                        if let color = viewModel.board.getStone(x: UInt32(x), y: UInt32(y)) {
+                            let moveNum = viewModel.moveNumbers["\(x),\(y)"]
+                            
+                            StoneView(
+                                color: color,
+                                theme: viewModel.theme,
+                                size: spacing * 0.95,
+                                moveNumber: viewModel.showMoveNumbers ? moveNum : nil,
+                                isLastMove: viewModel.lastMove?.x == x && viewModel.lastMove?.y == y
+                            )
+                            .position(
+                                x: CGFloat(x + 1) * spacing,
+                                y: CGFloat(y + 1) * spacing
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onEnded { value in
+                    let x = Int(round(value.location.x / spacing)) - 1
+                    let y = Int(round(value.location.y / spacing)) - 1
+                    
+                    if x >= 0 && x < gridSize && y >= 0 && y < gridSize {
+                        viewModel.placeStone(x: x, y: y)
+                    }
+                }
+        )
+    }
+}
+
+// MARK: - Helper Views
+
+struct VisualEffectView: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+    }
+}
+
+struct StoneView: View {
+    let color: StoneColor
+    let theme: BoardTheme
+    let size: CGFloat
+    let moveNumber: Int?
+    let isLastMove: Bool
+
+    var body: some View {
+        let style = (color == .black) ? theme.blackStoneStyle : theme.whiteStoneStyle
+
+        ZStack {
+            // 1. Last move marker (outer edge)
+            if isLastMove {
+                Circle()
+                    .stroke(theme.lastMoveMarkerColor, lineWidth: 1)
+                    .frame(width: size + 4, height: size + 4)
+            }
+
+            // 2. Stone Shadow (3D effect)
+            Circle()
+                .fill(style.shadowColor)
+                .offset(x: 1.5, y: 2.0)
+                .frame(width: size, height: size)
+                .blur(radius: 5)
+
+            // 3. Stone Body
+            Circle()
+                .fill(style.fill)
+                .frame(width: size, height: size)
+
+            // 4. Subtle 3D Highlight
+            if style.hasHighlight {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                .white.opacity(color == .black ? 0.3 : 0.6),
+                                .clear
+                            ],
+                            center: .init(x: 0.3, y: 0),
+                            startRadius: 0,
+                            endRadius: size * 0.5
+                        )
+                    )
+                    .frame(width: size, height: size)
+            }
+
+            // 5. Stroke (if any)
+            if style.strokeWidth > 0 {
+                Circle()
+                    .stroke(style.strokeColor, lineWidth: style.strokeWidth)
+                    .frame(width: size, height: size)
+            }
+            
+            // 6. Move Number
+            if let num = moveNumber {
+                Text("\(num)")
+                    .font(.system(size: size * 0.4, weight: .bold))
+                    .foregroundColor(style.textColor)
+            }
+        }
+    }
+}
+
+struct BoardCoordinates: View {
+    let gridSize: Int
+    let spacing: CGFloat
+    
+    private let letters = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"]
+    
+    var body: some View {
+        ZStack {
+            // Top & Bottom (Letters)
+            ForEach(0..<gridSize, id: \.self) { i in
+                Text(letters[i])
+                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .position(x: CGFloat(i + 1) * spacing, y: spacing * 0.4)
+                
+                Text(letters[i])
+                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .position(x: CGFloat(i + 1) * spacing, y: CGFloat(gridSize + 1) * spacing - spacing * 0.4)
+            }
+            
+            // Left & Right (Numbers)
+            ForEach(0..<gridSize, id: \.self) { i in
+                let label = "\(gridSize - i)"
+                Text(label)
+                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .position(x: spacing * 0.4, y: CGFloat(i + 1) * spacing)
+                
+                Text(label)
+                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .position(x: CGFloat(gridSize + 1) * spacing - spacing * 0.4, y: CGFloat(i + 1) * spacing)
+            }
+        }
+    }
+}
 
 struct BoardGrid: Shape {
     let gridSize: Int
-
+    
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let spacing = rect.width / CGFloat(gridSize + 1)
-
+        
         for i in 1...gridSize {
             // Vertical lines
             path.move(to: CGPoint(x: CGFloat(i) * spacing, y: spacing))
             path.addLine(to: CGPoint(x: CGFloat(i) * spacing, y: rect.height - spacing))
-
+            
             // Horizontal lines
             path.move(to: CGPoint(x: spacing, y: CGFloat(i) * spacing))
             path.addLine(to: CGPoint(x: rect.width - spacing, y: CGFloat(i) * spacing))
         }
-
+        
         return path
     }
 }
@@ -121,30 +337,25 @@ struct StarPoints: Shape {
         let spacing = rect.width / CGFloat(gridSize + 1)
         let radius: CGFloat = 3
 
-        let points: [Int] = gridSize == 19 ? [3, 9, 15] : [3, gridSize/2, gridSize-4]
+        let points: [Int]
+        if gridSize == 19 {
+            points = [4, 10, 16]
+        } else if gridSize == 13 {
+            points = [4, 7, 10]
+        } else if gridSize == 9 {
+            points = [3, 5, 7]
+        } else {
+            points = []
+        }
 
         for row in points {
             for col in points {
-                let center = CGPoint(x: CGFloat(col + 1) * spacing, y: CGFloat(row + 1) * spacing)
+                let center = CGPoint(x: CGFloat(col) * spacing, y: CGFloat(row) * spacing)
                 path.addEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
             }
         }
+
         return path
-    }
-}
-
-struct StoneView: View {
-    let color: StoneColor
-    let size: CGFloat
-
-    var body: some View {
-        Circle()
-            .fill(color == .black ?
-                  AnyShapeStyle(RadialGradient(colors: [.gray, .black], center: .topLeading, startRadius: 2, endRadius: size)) :
-                  AnyShapeStyle(RadialGradient(colors: [.white, .gray.opacity(0.3)], center: .topLeading, startRadius: 2, endRadius: size))
-            )
-            .frame(width: size, height: size)
-            .shadow(color: .black.opacity(0.3), radius: 2, x: 1, y: 1)
     }
 }
 

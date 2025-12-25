@@ -1,27 +1,52 @@
 import Foundation
 import Combine
+import qidao_coreFFI
 
 class BoardViewModel: ObservableObject {
-    @Published var message: String = "Ready"
+    @Published var message: String = "Ready".localized
     @Published var gameInfo: String = ""
     @Published var board: Board = Board(size: 19)
     @Published var nextColor: StoneColor = .black
+    @Published var theme: BoardTheme = .defaultWood
+    @Published var showMoveNumbers: Bool = true
+    @Published var showCoordinates: Bool = true
+    @Published var lastMove: (x: Int, y: Int)? = nil
+    
+    var langManager = LanguageManager.shared
+
+    // Track move history for numbering
+    @Published var moveNumbers: [String: Int] = [:]
+    private var moveCount: Int = 0
 
     func placeStone(x: Int, y: Int) {
         do {
-            let newBoard = try board.placeStone(x: UInt32(x), y: UInt32(y), color: nextColor)
+            let color = nextColor
+            let newBoard = try board.placeStone(x: UInt32(x), y: UInt32(y), color: color)
             self.board = newBoard
-            self.nextColor = (nextColor == .black) ? .white : .black
-            self.message = "Placed \(nextColor == .white ? "Black" : "White") at (\(x), \(y))"
+            self.nextColor = (color == .black) ? .white : .black
+            self.lastMove = (x, y)
+
+            moveCount += 1
+            moveNumbers["\(x),\(y)"] = moveCount
+
+            let colorStr = (color == .black ? "Black" : "White").localized
+            self.message = "\("Move".localized) \(moveCount): \(colorStr) at (\(x), \(y))"
         } catch {
-            self.message = "Invalid Move: \(error)"
+            self.message = "\("Invalid Move".localized): \(error)"
         }
     }
 
     func resetBoard() {
         self.board = Board(size: 19)
         self.nextColor = .black
-        self.message = "Board Reset"
+        self.moveNumbers = [:]
+        self.moveCount = 0
+        self.lastMove = nil
+        self.message = "Board Reset".localized
+    }
+
+    func toggleTheme() {
+        theme = (theme.id == "wood") ? .bwPrint : .defaultWood
     }
 
     func testCore() {

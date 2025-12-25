@@ -473,16 +473,16 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 public protocol BoardProtocol : AnyObject {
-
+    
     func getSize()  -> UInt32
-
+    
     func getStone(x: UInt32, y: UInt32)  -> StoneColor?
-
+    
     /**
      * Attempts to place a stone. Returns true if successful.
      */
     func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws  -> Board
-
+    
 }
 
 open class Board:
@@ -540,16 +540,16 @@ public convenience init(size: UInt32) {
         try! rustCall { uniffi_qidao_core_fn_free_board(pointer, $0) }
     }
 
+    
 
-
-
+    
 open func getSize() -> UInt32 {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_board_get_size(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getStone(x: UInt32, y: UInt32) -> StoneColor? {
     return try!  FfiConverterOptionTypeStoneColor.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_board_get_stone(self.uniffiClonePointer(),
@@ -558,7 +558,7 @@ open func getStone(x: UInt32, y: UInt32) -> StoneColor? {
     )
 })
 }
-
+    
     /**
      * Attempts to place a stone. Returns true if successful.
      */
@@ -571,7 +571,7 @@ open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws  -> Board {
     )
 })
 }
-
+    
 
 }
 
@@ -630,11 +630,11 @@ public func FfiConverterTypeBoard_lower(_ value: Board) -> UnsafeMutableRawPoint
 
 
 public protocol SgfNodeProtocol : AnyObject {
-
+    
     func getChildren()  -> [SgfNode]
-
+    
     func getProperties()  -> [SgfProperty]
-
+    
 }
 
 open class SgfNode:
@@ -684,23 +684,23 @@ open class SgfNode:
         try! rustCall { uniffi_qidao_core_fn_free_sgfnode(pointer, $0) }
     }
 
+    
 
-
-
+    
 open func getChildren() -> [SgfNode] {
     return try!  FfiConverterSequenceTypeSgfNode.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_sgfnode_get_children(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getProperties() -> [SgfProperty] {
     return try!  FfiConverterSequenceTypeSgfProperty.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_sgfnode_get_properties(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 
 }
 
@@ -759,9 +759,9 @@ public func FfiConverterTypeSgfNode_lower(_ value: SgfNode) -> UnsafeMutableRawP
 
 
 public protocol SgfTreeProtocol : AnyObject {
-
+    
     func root()  -> SgfNode
-
+    
 }
 
 open class SgfTree:
@@ -811,16 +811,16 @@ open class SgfTree:
         try! rustCall { uniffi_qidao_core_fn_free_sgftree(pointer, $0) }
     }
 
+    
 
-
-
+    
 open func root() -> SgfNode {
     return try!  FfiConverterTypeSgfNode.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_sgftree_root(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 
 }
 
@@ -927,9 +927,9 @@ public struct FfiConverterTypeGameInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GameInfo {
         return
             try GameInfo(
-                blackPlayer: FfiConverterString.read(from: &buf),
-                whitePlayer: FfiConverterString.read(from: &buf),
-                komi: FfiConverterDouble.read(from: &buf),
+                blackPlayer: FfiConverterString.read(from: &buf), 
+                whitePlayer: FfiConverterString.read(from: &buf), 
+                komi: FfiConverterDouble.read(from: &buf), 
                 size: FfiConverterUInt32.read(from: &buf)
         )
     }
@@ -997,7 +997,7 @@ public struct FfiConverterTypeSgfProperty: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SgfProperty {
         return
             try SgfProperty(
-                identifier: FfiConverterString.read(from: &buf),
+                identifier: FfiConverterString.read(from: &buf), 
                 values: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -1026,8 +1026,8 @@ public func FfiConverterTypeSgfProperty_lower(_ value: SgfProperty) -> RustBuffe
 
 public enum SgfError {
 
-
-
+    
+    
     case ParseError(message: String
     )
 }
@@ -1043,9 +1043,9 @@ public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
 
+        
 
-
-
+        
         case 1: return .ParseError(
             message: try FfiConverterString.read(from: &buf)
             )
@@ -1057,14 +1057,14 @@ public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
     public static func write(_ value: SgfError, into buf: inout [UInt8]) {
         switch value {
 
+        
 
-
-
-
+        
+        
         case let .ParseError(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
-
+            
         }
     }
 }
@@ -1082,7 +1082,7 @@ extension SgfError: Foundation.LocalizedError {
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum StoneColor {
-
+    
     case black
     case white
 }
@@ -1097,26 +1097,26 @@ public struct FfiConverterTypeStoneColor: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StoneColor {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .black
-
+        
         case 2: return .white
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: StoneColor, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .black:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .white:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }

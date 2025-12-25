@@ -19,3 +19,9 @@
 "B&W Print" = "B&W Print";
 "Move" = "Move";
 "Invalid Move" = "Invalid Move";
+"Open" = "Open";
+"Save" = "Save";
+"Loaded" = "Loaded";
+"Saved" = "Saved";
+"Load Failed" = "Load Failed";
+"Save Failed" = "Save Failed";

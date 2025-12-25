@@ -18,20 +18,26 @@ class BoardViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
     }
     @Published var lastMove: (x: Int, y: Int)? = nil
-    
+
     private var cancellables = Set<AnyCancellable>()
     var langManager = LanguageManager.shared
+
+    // Core Game Controller
+    private var game: Game
 
     // Track move history for numbering
     @Published var moveNumbers: [String: Int] = [:]
     private var moveCount: Int = 0
 
     init() {
+        // Initialize Game Controller
+        self.game = Game(size: 19)
+
         // Load persisted settings
         self.showMoveNumbers = UserDefaults.standard.object(forKey: "showMoveNumbers") as? Bool ?? true
         self.showCoordinates = UserDefaults.standard.object(forKey: "showCoordinates") as? Bool ?? true
         self.playSound = UserDefaults.standard.object(forKey: "playSound") as? Bool ?? true
-        
+
         let themeId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "wood"
         self.theme = (themeId == "bw") ? .bwPrint : .defaultWood
 
@@ -42,9 +48,9 @@ class BoardViewModel: ObservableObject {
                 self?.refreshMessage()
             }
             .store(in: &cancellables)
-        
-        // Initial refresh to ensure correct language
-        refreshMessage()
+
+        // Initial sync to ensure correct state
+        syncStateWithGame()
     }
 
     private func refreshMessage() {
@@ -64,14 +70,16 @@ class BoardViewModel: ObservableObject {
         do {
             let color = nextColor
             let oldStoneCount = countStones(on: board)
-            let newBoard = try board.placeStone(x: UInt32(x), y: UInt32(y), color: color)
+
+            // Use Game controller to place stone
+            try game.placeStone(x: UInt32(x), y: UInt32(y), color: color)
+
+            let newBoard = game.getBoard()
             let newStoneCount = countStones(on: newBoard)
-            
+
             // Play sound based on captures
-            // newStoneCount = oldStoneCount + 1 - captures
-            // captures = oldStoneCount + 1 - newStoneCount
             let captures = oldStoneCount + 1 - newStoneCount
-            
+
             if captures == 0 {
                 SoundManager.shared.play(name: "stone")
             } else if captures == 1 {
@@ -80,17 +88,76 @@ class BoardViewModel: ObservableObject {
                 SoundManager.shared.play(name: "dead-stones")
             }
 
-            self.board = newBoard
-            self.nextColor = (color == .black) ? .white : .black
-            self.lastMove = (x, y)
-
-            moveCount += 1
-            moveNumbers["\(x),\(y)"] = moveCount
-
-            let colorStr = (color == .black ? "Black" : "White").localized
-            self.message = "\("Move".localized) \(moveCount): \(colorStr) at (\(x), \(y))"
+            syncStateWithGame()
         } catch {
             self.message = "\("Invalid Move".localized): \(error)"
+        }
+    }
+
+    func goBack() {
+        let oldStoneCount = countStones(on: board)
+        if game.goBack() {
+            let newBoard = game.getBoard()
+            let newStoneCount = countStones(on: newBoard)
+
+            // When going back, if stone count increases, it means we "undid" a capture.
+            // But usually we just play a simple stone sound or nothing.
+            // For consistency with most Go apps, we play a stone sound.
+            SoundManager.shared.play(name: "stone")
+
+            syncStateWithGame()
+        }
+    }
+
+    func goForward() {
+        let oldStoneCount = countStones(on: board)
+        if game.goForward(index: 0) { // Default to first branch
+            let newBoard = game.getBoard()
+            let newStoneCount = countStones(on: newBoard)
+
+            // Calculate captures: (old + 1) - new
+            let captures = oldStoneCount + 1 - newStoneCount
+
+            if captures == 0 {
+                SoundManager.shared.play(name: "stone")
+            } else if captures == 1 {
+                SoundManager.shared.play(name: "dead-stone")
+            } else {
+                SoundManager.shared.play(name: "dead-stones")
+            }
+
+            syncStateWithGame()
+        }
+    }
+
+    private func syncStateWithGame() {
+        // Ensure updates happen on main thread and outside immediate view update cycle
+        DispatchQueue.main.async {
+            self.board = self.game.getBoard()
+            self.nextColor = self.game.getNextColor()
+            self.moveCount = Int(self.game.getMoveCount())
+
+            // Update lastMove
+            if let last = self.game.getLastMove(), let coords = last.values.first, coords.count == 2 {
+                let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+                let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+                self.lastMove = (x, y)
+            } else {
+                self.lastMove = nil
+            }
+
+            // Rebuild moveNumbers map
+            self.moveNumbers = [:]
+            let pathMoves = self.game.getCurrentPathMoves()
+            for (index, moveProp) in pathMoves.enumerated() {
+                if let coords = moveProp.values.first, coords.count == 2 {
+                    let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+                    let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+                    self.moveNumbers["\(x),\(y)"] = index + 1
+                }
+            }
+
+            self.refreshMessage()
         }
     }
 
@@ -108,11 +175,8 @@ class BoardViewModel: ObservableObject {
     }
 
     func resetBoard() {
-        self.board = Board(size: 19)
-        self.nextColor = .black
-        self.moveNumbers = [:]
-        self.moveCount = 0
-        self.lastMove = nil
+        self.game = Game(size: 19)
+        syncStateWithGame()
         self.message = "Board Reset".localized
     }
 
@@ -121,42 +185,24 @@ class BoardViewModel: ObservableObject {
         UserDefaults.standard.set(theme.id, forKey: "selectedThemeId")
     }
 
-    func testCore() {
-        // Call the 'add' function from Rust
-        let result = add(a: 10, b: 32)
-        message = "Core Test: 10 + 32 = \(result)"
-
-        // Call 'getSampleGame' from Rust
-        let info = getSampleGame()
-        gameInfo = "Game: \(info.blackPlayer) vs \(info.whitePlayer) (Komi: \(info.komi))"
-
-        // Test SGF Parsing
-        let sgf = "(;GM[1]FF[4]CA[UTF-8]AP[QiDao]KM[7.5]PB[Black]PW[White];B[pd];W[dp])"
+    func loadSgf(url: URL) {
         do {
-            let tree = try parseSgf(sgfContent: sgf)
-            let root = tree.root()
-            let children = root.getChildren()
-            message += "\nSGF Parsed: \(children.count) moves in main branch."
+            let content = try String(contentsOf: url, encoding: .utf8)
+            self.game = try Game.fromSgf(sgfContent: content)
+            syncStateWithGame()
+            self.message = "\("Loaded".localized): \(url.lastPathComponent)"
         } catch {
-            message += "\nSGF Parse Error: \(error)"
+            self.message = "\("Load Failed".localized): \(error.localizedDescription)"
         }
+    }
 
-        // Test Board Logic
-        let newBoard = Board(size: 19)
+    func saveSgf(url: URL) {
         do {
-            // Place a black stone at (3, 3) - 4-4 point
-            let boardAfterBlack = try newBoard.placeStone(x: 3, y: 3, color: .black)
-            // Place a white stone at (15, 15)
-            let boardAfterWhite = try boardAfterBlack.placeStone(x: 15, y: 15, color: .white)
-
-            self.board = boardAfterWhite
-            message += "\nBoard Test: Stones placed at (3,3) and (15,15)."
-
-            if let stone = boardAfterWhite.getStone(x: 3, y: 3) {
-                message += "\nStone at (3,3) is \(stone == .black ? "Black" : "White")"
-            }
+            let content = game.toSgf()
+            try content.write(to: url, atomically: true, encoding: .utf8)
+            self.message = "\("Saved".localized): \(url.lastPathComponent)"
         } catch {
-            message += "\nBoard Error: \(error)"
+            self.message = "\("Save Failed".localized): \(error.localizedDescription)"
         }
     }
 }

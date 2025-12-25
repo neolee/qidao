@@ -32,7 +32,7 @@ pub enum SgfError {
 #[derive(uniffi::Object)]
 pub struct SgfNode {
     pub properties: Vec<SgfProperty>,
-    pub children: Vec<Arc<SgfNode>>,
+    pub children: Mutex<Vec<Arc<SgfNode>>>,
 }
 
 #[uniffi::export]
@@ -42,7 +42,7 @@ impl SgfNode {
     }
 
     pub fn get_children(&self) -> Vec<Arc<SgfNode>> {
-        self.children.clone()
+        self.children.lock().unwrap().clone()
     }
 }
 
@@ -213,12 +213,12 @@ fn convert_node(node: &ParserNode<Prop>) -> Arc<SgfNode> {
     let properties = node.properties().map(|prop: &Prop| {
         let s = prop.to_string();
         let id = prop.identifier();
-        
+
         let mut values = Vec::new();
         let mut current_value = String::new();
         let mut in_brackets = false;
         let mut escaped = false;
-        
+
         // s is "ID[val1][val2]"
         for c in s.chars().skip(id.len()) {
             if escaped {
@@ -254,7 +254,34 @@ fn convert_node(node: &ParserNode<Prop>) -> Arc<SgfNode> {
 
     let children = node.children().map(|c| convert_node(c)).collect();
 
-    Arc::new(SgfNode { properties, children })
+    Arc::new(SgfNode {
+        properties,
+        children: Mutex::new(children)
+    })
+}
+
+fn serialize_node(node: &Arc<SgfNode>, out: &mut String) {
+    out.push(';');
+    for prop in &node.properties {
+        out.push_str(&prop.identifier);
+        for val in &prop.values {
+            out.push('[');
+            // Basic escaping
+            out.push_str(&val.replace('\\', "\\\\").replace(']', "\\]"));
+            out.push(']');
+        }
+    }
+
+    let children = node.children.lock().unwrap();
+    if children.len() == 1 {
+        serialize_node(&children[0], out);
+    } else {
+        for child in children.iter() {
+            out.push('(');
+            serialize_node(child, out);
+            out.push(')');
+        }
+    }
 }
 
 #[uniffi::export]
@@ -279,5 +306,259 @@ pub fn get_sample_game() -> GameInfo {
         white_player: "Player 2".to_string(),
         komi: 7.5,
         size: 19,
+    }
+}
+
+// --- Game Controller ---
+
+use std::sync::Mutex;
+
+#[derive(uniffi::Object)]
+pub struct Game {
+    state: Mutex<GameState>,
+}
+
+struct GameState {
+    root: Arc<SgfNode>,
+    current_node: Arc<SgfNode>,
+    history: Vec<Arc<SgfNode>>,
+    board_cache: std::collections::HashMap<usize, Arc<Board>>,
+    size: u32,
+}
+
+#[uniffi::export]
+impl Game {
+    #[uniffi::constructor]
+    pub fn new(size: u32) -> Arc<Self> {
+        let root = Arc::new(SgfNode {
+            properties: vec![SgfProperty {
+                identifier: "SZ".to_string(),
+                values: vec![size.to_string()],
+            }],
+            children: Mutex::new(vec![]),
+        });
+
+        let mut board_cache = std::collections::HashMap::new();
+        board_cache.insert(Arc::as_ptr(&root) as usize, Board::new(size));
+
+        Arc::new(Self {
+            state: Mutex::new(GameState {
+                root: root.clone(),
+                current_node: root,
+                history: vec![],
+                board_cache,
+                size,
+            }),
+        })
+    }
+
+    #[uniffi::constructor]
+    pub fn from_sgf(sgf_content: String) -> Result<Arc<Self>, SgfError> {
+        let tree = parse_sgf(sgf_content)?;
+        let root = tree.root();
+
+        // Try to find size
+        let size = root.properties.iter()
+            .find(|p| p.identifier == "SZ")
+            .and_then(|p| p.values.first())
+            .and_then(|v| v.parse::<u32>().ok())
+            .unwrap_or(19);
+
+        let mut board_cache = std::collections::HashMap::new();
+        board_cache.insert(Arc::as_ptr(&root) as usize, Board::new(size));
+
+        Ok(Arc::new(Self {
+            state: Mutex::new(GameState {
+                root: root.clone(),
+                current_node: root,
+                history: vec![],
+                board_cache,
+                size,
+            }),
+        }))
+    }
+
+    pub fn to_sgf(&self) -> String {
+        let state = self.state.lock().unwrap();
+        let mut out = String::from("(");
+        serialize_node(&state.root, &mut out);
+        out.push(')');
+        out
+    }
+
+    pub fn get_board(&self) -> Arc<Board> {
+        let mut state = self.state.lock().unwrap();
+        let current_ptr = Arc::as_ptr(&state.current_node) as usize;
+
+        if let Some(board) = state.board_cache.get(&current_ptr) {
+            return board.clone();
+        }
+
+        // If not in cache, we must compute it from the path.
+        // This can happen after loading an SGF or jumping to a node.
+        let mut path = state.history.clone();
+        path.push(state.current_node.clone());
+
+        let mut current_board = Board::new(state.size);
+        for node in path {
+            let node_ptr = Arc::as_ptr(&node) as usize;
+            if let Some(cached) = state.board_cache.get(&node_ptr) {
+                current_board = cached.clone();
+                continue;
+            }
+
+            // Apply moves in this node
+            for prop in &node.properties {
+                let color = if prop.identifier == "B" { Some(StoneColor::Black) }
+                           else if prop.identifier == "W" { Some(StoneColor::White) }
+                           else { None };
+
+                if let Some(c) = color {
+                    if let Some(coords) = prop.values.first() {
+                        if coords.len() == 2 {
+                            let x = coords.as_bytes()[0] as i32 - 'a' as i32;
+                            let y = coords.as_bytes()[1] as i32 - 'a' as i32;
+                            if let Ok(next_board) = current_board.place_stone(x as u32, y as u32, c) {
+                                current_board = next_board;
+                            }
+                        }
+                    }
+                }
+            }
+            state.board_cache.insert(node_ptr, current_board.clone());
+        }
+
+        current_board
+    }
+
+    pub fn get_move_count(&self) -> u32 {
+        self.state.lock().unwrap().history.len() as u32
+    }
+
+    pub fn get_next_color(&self) -> StoneColor {
+        let state = self.state.lock().unwrap();
+        // Simple heuristic: if last move was Black, next is White.
+        // In a real SGF, we'd check the properties of the current node.
+        for prop in &state.current_node.properties {
+            if prop.identifier == "B" { return StoneColor::White; }
+            if prop.identifier == "W" { return StoneColor::Black; }
+        }
+        // Default to Black for root or if no move property found
+        StoneColor::Black
+    }
+
+    pub fn get_last_move(&self) -> Option<SgfProperty> {
+        let state = self.state.lock().unwrap();
+        state.current_node.properties.iter()
+            .find(|p| p.identifier == "B" || p.identifier == "W")
+            .cloned()
+    }
+
+    pub fn get_current_path_moves(&self) -> Vec<SgfProperty> {
+        let state = self.state.lock().unwrap();
+        let mut moves = Vec::new();
+
+        // Add moves from history
+        for node in &state.history {
+            if let Some(prop) = node.properties.iter().find(|p| p.identifier == "B" || p.identifier == "W") {
+                moves.push(prop.clone());
+            }
+        }
+
+        // Add move from current node
+        if let Some(prop) = state.current_node.properties.iter().find(|p| p.identifier == "B" || p.identifier == "W") {
+            moves.push(prop.clone());
+        }
+
+        moves
+    }
+
+    pub fn can_go_back(&self) -> bool {
+        !self.state.lock().unwrap().history.is_empty()
+    }
+
+    pub fn can_go_forward(&self) -> bool {
+        !self.state.lock().unwrap().current_node.children.lock().unwrap().is_empty()
+    }
+
+    pub fn go_back(&self) -> bool {
+        let mut state = self.state.lock().unwrap();
+        if let Some(prev) = state.history.pop() {
+            state.current_node = prev;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn go_forward(&self, index: u32) -> bool {
+        let mut state = self.state.lock().unwrap();
+        let children = state.current_node.children.lock().unwrap();
+        let child = children.get(index as usize).cloned();
+        drop(children); // Release lock before mutating state
+
+        if let Some(child) = child {
+            let current = state.current_node.clone();
+            state.history.push(current);
+            state.current_node = child;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn place_stone(&self, x: u32, y: u32, color: StoneColor) -> Result<(), SgfError> {
+        let mut state = self.state.lock().unwrap();
+
+        // 1. Check if this move already exists as a child
+        let coords = format!("{}{}",
+            (b'a' + x as u8) as char,
+            (b'a' + y as u8) as char
+        );
+        let prop_id = match color {
+            StoneColor::Black => "B",
+            StoneColor::White => "W",
+        };
+
+        let existing_child = {
+            let children = state.current_node.children.lock().unwrap();
+            children.iter().find(|c| {
+                c.properties.iter().any(|p| p.identifier == prop_id && p.values.contains(&coords))
+            }).cloned()
+        };
+
+        if let Some(child) = existing_child {
+            // Move to existing child
+            let current = state.current_node.clone();
+            state.history.push(current);
+            state.current_node = child;
+            return Ok(());
+        }
+
+        // 2. Create new move
+        let current_board = state.board_cache.get(&(Arc::as_ptr(&state.current_node) as usize))
+            .cloned()
+            .unwrap_or_else(|| Board::new(state.size));
+
+        let new_board = current_board.place_stone(x, y, color)?;
+
+        let new_node = Arc::new(SgfNode {
+            properties: vec![SgfProperty {
+                identifier: prop_id.to_string(),
+                values: vec![coords],
+            }],
+            children: Mutex::new(vec![]),
+        });
+
+        // Attach to tree
+        state.current_node.children.lock().unwrap().push(new_node.clone());
+
+        // Update state
+        let current = state.current_node.clone();
+        state.history.push(current);
+        state.current_node = new_node.clone();
+        state.board_cache.insert(Arc::as_ptr(&new_node) as usize, new_board);
+
+        Ok(())
     }
 }

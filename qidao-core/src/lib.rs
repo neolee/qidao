@@ -1,14 +1,21 @@
 uniffi::setup_scaffolding!();
 
 use sgf_parse::{go::{parse, Prop}, SgfNode as ParserNode, SgfProp};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use thiserror::Error;
 
-#[derive(uniffi::Record)]
-pub struct GameInfo {
-    pub black_player: String,
-    pub white_player: String,
+#[derive(uniffi::Record, Clone, Default)]
+pub struct GameMetadata {
+    pub black_name: String,
+    pub black_rank: String,
+    pub white_name: String,
+    pub white_rank: String,
     pub komi: f64,
+    pub result: String,
+    pub date: String,
+    pub event: String,
+    pub game_name: String,
+    pub place: String,
     pub size: u32,
 }
 
@@ -31,14 +38,14 @@ pub enum SgfError {
 
 #[derive(uniffi::Object)]
 pub struct SgfNode {
-    pub properties: Vec<SgfProperty>,
+    pub properties: Mutex<Vec<SgfProperty>>,
     pub children: Mutex<Vec<Arc<SgfNode>>>,
 }
 
 #[uniffi::export]
 impl SgfNode {
     pub fn get_properties(&self) -> Vec<SgfProperty> {
-        self.properties.clone()
+        self.properties.lock().unwrap().clone()
     }
 
     pub fn get_children(&self) -> Vec<Arc<SgfNode>> {
@@ -255,19 +262,21 @@ fn convert_node(node: &ParserNode<Prop>) -> Arc<SgfNode> {
     let children = node.children().map(|c| convert_node(c)).collect();
 
     Arc::new(SgfNode {
-        properties,
+        properties: Mutex::new(properties),
         children: Mutex::new(children)
     })
 }
 
 fn serialize_node(node: &Arc<SgfNode>, out: &mut String) {
     out.push(';');
-    for prop in &node.properties {
+    let props = node.properties.lock().unwrap();
+    for prop in props.iter() {
         out.push_str(&prop.identifier);
         for val in &prop.values {
             out.push('[');
             // Basic escaping
-            out.push_str(&val.replace('\\', "\\\\").replace(']', "\\]"));
+            let escaped = val.replace('\\', "\\\\").replace(']', "\\]");
+            out.push_str(&escaped);
             out.push(']');
         }
     }
@@ -286,36 +295,52 @@ fn serialize_node(node: &Arc<SgfNode>, out: &mut String) {
 
 #[uniffi::export]
 pub fn parse_sgf(sgf_content: String) -> Result<Arc<SgfTree>, SgfError> {
-    let trees = parse(&sgf_content).map_err(|e| SgfError::ParseError {
-        message: e.to_string(),
-    })?;
-
-    if let Some(first_tree) = trees.iter().next() {
-        Ok(Arc::new(SgfTree {
-            root: convert_node(first_tree),
-        }))
-    } else {
-        Err(SgfError::ParseError { message: "No tree found in SGF".to_string() })
+    let trimmed = sgf_content.trim().trim_matches('\0').trim().to_string();
+    if trimmed.is_empty() {
+        return Err(SgfError::ParseError { message: "Empty SGF content".to_string() });
     }
-}
 
-#[uniffi::export]
-pub fn get_sample_game() -> GameInfo {
-    GameInfo {
-        black_player: "Player 1".to_string(),
-        white_player: "Player 2".to_string(),
-        komi: 7.5,
-        size: 19,
+    // Try parsing normally first
+    match parse(&trimmed) {
+        Ok(trees) => {
+            if let Some(first_tree) = trees.iter().next() {
+                Ok(Arc::new(SgfTree {
+                    root: convert_node(first_tree),
+                }))
+            } else {
+                Err(SgfError::ParseError { message: "No tree found in SGF".to_string() })
+            }
+        }
+        Err(e) => {
+            // If it fails, try to "fix" it if it looks truncated
+            // This is a common issue with some SGF sources
+
+            // Try different combinations of closing brackets and parentheses
+            for brackets in 0..3 {
+                let mut base = trimmed.clone();
+                for _ in 0..brackets {
+                    base.push(']');
+                }
+
+                for parens in 1..10 {
+                    let mut attempt = base.clone();
+                    for _ in 0..parens {
+                        attempt.push(')');
+                    }
+
+                    if let Ok(trees) = parse(&attempt) {
+                        if let Some(first_tree) = trees.iter().next() {
+                            return Ok(Arc::new(SgfTree {
+                                root: convert_node(first_tree),
+                            }));
+                        }
+                    }
+                }
+            }
+
+            Err(SgfError::ParseError { message: e.to_string() })
+        }
     }
-}
-
-// --- Game Controller ---
-
-use std::sync::Mutex;
-
-#[derive(uniffi::Object)]
-pub struct Game {
-    state: Mutex<GameState>,
 }
 
 struct GameState {
@@ -326,15 +351,20 @@ struct GameState {
     size: u32,
 }
 
+#[derive(uniffi::Object)]
+pub struct Game {
+    state: Mutex<GameState>,
+}
+
 #[uniffi::export]
 impl Game {
     #[uniffi::constructor]
     pub fn new(size: u32) -> Arc<Self> {
         let root = Arc::new(SgfNode {
-            properties: vec![SgfProperty {
+            properties: Mutex::new(vec![SgfProperty {
                 identifier: "SZ".to_string(),
                 values: vec![size.to_string()],
-            }],
+            }]),
             children: Mutex::new(vec![]),
         });
 
@@ -358,11 +388,14 @@ impl Game {
         let root = tree.root();
 
         // Try to find size
-        let size = root.properties.iter()
-            .find(|p| p.identifier == "SZ")
-            .and_then(|p| p.values.first())
-            .and_then(|v| v.parse::<u32>().ok())
-            .unwrap_or(19);
+        let size = {
+            let props = root.properties.lock().unwrap();
+            props.iter()
+                .find(|p| p.identifier == "SZ")
+                .and_then(|p| p.values.first())
+                .and_then(|v| v.parse::<u32>().ok())
+                .unwrap_or(19)
+        };
 
         let mut board_cache = std::collections::HashMap::new();
         board_cache.insert(Arc::as_ptr(&root) as usize, Board::new(size));
@@ -376,6 +409,61 @@ impl Game {
                 size,
             }),
         }))
+    }
+
+    pub fn get_metadata(&self) -> GameMetadata {
+        let state = self.state.lock().unwrap();
+        let props = state.root.properties.lock().unwrap();
+
+        let mut meta = GameMetadata::default();
+        meta.size = state.size;
+
+        for p in props.iter() {
+            match p.identifier.as_str() {
+                "PB" => meta.black_name = p.values.first().cloned().unwrap_or_default(),
+                "BR" => meta.black_rank = p.values.first().cloned().unwrap_or_default(),
+                "PW" => meta.white_name = p.values.first().cloned().unwrap_or_default(),
+                "WR" => meta.white_rank = p.values.first().cloned().unwrap_or_default(),
+                "KM" => meta.komi = p.values.first().and_then(|v| v.parse().ok()).unwrap_or(0.0),
+                "RE" => meta.result = p.values.first().cloned().unwrap_or_default(),
+                "DT" => meta.date = p.values.first().cloned().unwrap_or_default(),
+                "EV" => meta.event = p.values.first().cloned().unwrap_or_default(),
+                "GN" => meta.game_name = p.values.first().cloned().unwrap_or_default(),
+                "PC" => meta.place = p.values.first().cloned().unwrap_or_default(),
+                _ => {}
+            }
+        }
+        meta
+    }
+
+    pub fn set_metadata(&self, metadata: GameMetadata) {
+        let state = self.state.lock().unwrap();
+        let mut props = state.root.properties.lock().unwrap();
+
+        let updates = [
+            ("PB", metadata.black_name),
+            ("BR", metadata.black_rank),
+            ("PW", metadata.white_name),
+            ("WR", metadata.white_rank),
+            ("KM", metadata.komi.to_string()),
+            ("RE", metadata.result),
+            ("DT", metadata.date),
+            ("EV", metadata.event),
+            ("GN", metadata.game_name),
+            ("PC", metadata.place),
+            ("SZ", metadata.size.to_string()),
+        ];
+
+        for (id, val) in updates {
+            if let Some(p) = props.iter_mut().find(|p| p.identifier == id) {
+                p.values = vec![val];
+            } else {
+                props.push(SgfProperty {
+                    identifier: id.to_string(),
+                    values: vec![val],
+                });
+            }
+        }
     }
 
     pub fn to_sgf(&self) -> String {
@@ -408,7 +496,8 @@ impl Game {
             }
 
             // Apply moves in this node
-            for prop in &node.properties {
+            let props = node.properties.lock().unwrap();
+            for prop in props.iter() {
                 let color = if prop.identifier == "B" { Some(StoneColor::Black) }
                            else if prop.identifier == "W" { Some(StoneColor::White) }
                            else { None };
@@ -439,7 +528,8 @@ impl Game {
         let state = self.state.lock().unwrap();
         // Simple heuristic: if last move was Black, next is White.
         // In a real SGF, we'd check the properties of the current node.
-        for prop in &state.current_node.properties {
+        let props = state.current_node.properties.lock().unwrap();
+        for prop in props.iter() {
             if prop.identifier == "B" { return StoneColor::White; }
             if prop.identifier == "W" { return StoneColor::Black; }
         }
@@ -449,7 +539,8 @@ impl Game {
 
     pub fn get_last_move(&self) -> Option<SgfProperty> {
         let state = self.state.lock().unwrap();
-        state.current_node.properties.iter()
+        let props = state.current_node.properties.lock().unwrap();
+        props.iter()
             .find(|p| p.identifier == "B" || p.identifier == "W")
             .cloned()
     }
@@ -460,13 +551,15 @@ impl Game {
 
         // Add moves from history
         for node in &state.history {
-            if let Some(prop) = node.properties.iter().find(|p| p.identifier == "B" || p.identifier == "W") {
+            let props = node.properties.lock().unwrap();
+            if let Some(prop) = props.iter().find(|p| p.identifier == "B" || p.identifier == "W") {
                 moves.push(prop.clone());
             }
         }
 
         // Add move from current node
-        if let Some(prop) = state.current_node.properties.iter().find(|p| p.identifier == "B" || p.identifier == "W") {
+        let props = state.current_node.properties.lock().unwrap();
+        if let Some(prop) = props.iter().find(|p| p.identifier == "B" || p.identifier == "W") {
             moves.push(prop.clone());
         }
 
@@ -523,7 +616,8 @@ impl Game {
         let existing_child = {
             let children = state.current_node.children.lock().unwrap();
             children.iter().find(|c| {
-                c.properties.iter().any(|p| p.identifier == prop_id && p.values.contains(&coords))
+                let props = c.properties.lock().unwrap();
+                props.iter().any(|p| p.identifier == prop_id && p.values.contains(&coords))
             }).cloned()
         };
 
@@ -543,10 +637,10 @@ impl Game {
         let new_board = current_board.place_stone(x, y, color)?;
 
         let new_node = Arc::new(SgfNode {
-            properties: vec![SgfProperty {
+            properties: Mutex::new(vec![SgfProperty {
                 identifier: prop_id.to_string(),
                 values: vec![coords],
-            }],
+            }]),
             children: Mutex::new(vec![]),
         });
 

@@ -326,6 +326,11 @@ RustBuffer uniffi_qidao_core_fn_method_game_get_current_path_moves(void*_Nonnull
 RustBuffer uniffi_qidao_core_fn_method_game_get_last_move(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_METADATA
+RustBuffer uniffi_qidao_core_fn_method_game_get_metadata(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MOVE_COUNT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MOVE_COUNT
 uint32_t uniffi_qidao_core_fn_method_game_get_move_count(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -349,6 +354,11 @@ int8_t uniffi_qidao_core_fn_method_game_go_forward(void*_Nonnull ptr, uint32_t i
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
 void uniffi_qidao_core_fn_method_game_place_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_METADATA
+void uniffi_qidao_core_fn_method_game_set_metadata(void*_Nonnull ptr, RustBuffer metadata, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_TO_SGF
@@ -394,12 +404,6 @@ void*_Nonnull uniffi_qidao_core_fn_method_sgftree_root(void*_Nonnull ptr, RustCa
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_ADD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_ADD
 uint32_t uniffi_qidao_core_fn_func_add(uint32_t a, uint32_t b, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_GET_SAMPLE_GAME
-#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_GET_SAMPLE_GAME
-RustBuffer uniffi_qidao_core_fn_func_get_sample_game(RustCallStatus *_Nonnull out_status
-    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_PARSE_SGF
@@ -693,12 +697,6 @@ uint16_t uniffi_qidao_core_checksum_func_add(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_GET_SAMPLE_GAME
-#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_GET_SAMPLE_GAME
-uint16_t uniffi_qidao_core_checksum_func_get_sample_game(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_PARSE_SGF
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_FUNC_PARSE_SGF
 uint16_t uniffi_qidao_core_checksum_func_parse_sgf(void
@@ -753,6 +751,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_last_move(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_METADATA
+uint16_t uniffi_qidao_core_checksum_method_game_get_metadata(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_MOVE_COUNT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_MOVE_COUNT
 uint16_t uniffi_qidao_core_checksum_method_game_get_move_count(void
@@ -780,6 +784,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_go_forward(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PLACE_STONE
 uint16_t uniffi_qidao_core_checksum_method_game_place_stone(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_METADATA
+uint16_t uniffi_qidao_core_checksum_method_game_set_metadata(void
     
 );
 #endif

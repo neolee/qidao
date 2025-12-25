@@ -497,16 +497,16 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 public protocol BoardProtocol : AnyObject {
-
+    
     func getSize()  -> UInt32
-
+    
     func getStone(x: UInt32, y: UInt32)  -> StoneColor?
-
+    
     /**
      * Attempts to place a stone. Returns true if successful.
      */
     func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws  -> Board
-
+    
 }
 
 open class Board:
@@ -564,16 +564,16 @@ public convenience init(size: UInt32) {
         try! rustCall { uniffi_qidao_core_fn_free_board(pointer, $0) }
     }
 
+    
 
-
-
+    
 open func getSize() -> UInt32 {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_board_get_size(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getStone(x: UInt32, y: UInt32) -> StoneColor? {
     return try!  FfiConverterOptionTypeStoneColor.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_board_get_stone(self.uniffiClonePointer(),
@@ -582,7 +582,7 @@ open func getStone(x: UInt32, y: UInt32) -> StoneColor? {
     )
 })
 }
-
+    
     /**
      * Attempts to place a stone. Returns true if successful.
      */
@@ -595,7 +595,7 @@ open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws  -> Board {
     )
 })
 }
-
+    
 
 }
 
@@ -654,29 +654,33 @@ public func FfiConverterTypeBoard_lower(_ value: Board) -> UnsafeMutableRawPoint
 
 
 public protocol GameProtocol : AnyObject {
-
+    
     func canGoBack()  -> Bool
-
+    
     func canGoForward()  -> Bool
-
+    
     func getBoard()  -> Board
-
+    
     func getCurrentPathMoves()  -> [SgfProperty]
-
+    
     func getLastMove()  -> SgfProperty?
-
+    
+    func getMetadata()  -> GameMetadata
+    
     func getMoveCount()  -> UInt32
-
+    
     func getNextColor()  -> StoneColor
-
+    
     func goBack()  -> Bool
-
+    
     func goForward(index: UInt32)  -> Bool
-
-    func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws
-
+    
+    func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws 
+    
+    func setMetadata(metadata: GameMetadata) 
+    
     func toSgf()  -> String
-
+    
 }
 
 open class Game:
@@ -734,7 +738,7 @@ public convenience init(size: UInt32) {
         try! rustCall { uniffi_qidao_core_fn_free_game(pointer, $0) }
     }
 
-
+    
 public static func fromSgf(sgfContent: String)throws  -> Game {
     return try  FfiConverterTypeGame.lift(try rustCallWithError(FfiConverterTypeSgfError.lift) {
     uniffi_qidao_core_fn_constructor_game_from_sgf(
@@ -742,65 +746,72 @@ public static func fromSgf(sgfContent: String)throws  -> Game {
     )
 })
 }
+    
 
-
-
+    
 open func canGoBack() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_can_go_back(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func canGoForward() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_can_go_forward(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getBoard() -> Board {
     return try!  FfiConverterTypeBoard.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_board(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getCurrentPathMoves() -> [SgfProperty] {
     return try!  FfiConverterSequenceTypeSgfProperty.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_current_path_moves(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getLastMove() -> SgfProperty? {
     return try!  FfiConverterOptionTypeSgfProperty.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_last_move(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
+open func getMetadata() -> GameMetadata {
+    return try!  FfiConverterTypeGameMetadata.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_metadata(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func getMoveCount() -> UInt32 {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_move_count(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getNextColor() -> StoneColor {
     return try!  FfiConverterTypeStoneColor.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_next_color(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func goBack() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_go_back(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func goForward(index: UInt32) -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_go_forward(self.uniffiClonePointer(),
@@ -808,7 +819,7 @@ open func goForward(index: UInt32) -> Bool {
     )
 })
 }
-
+    
 open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws  {try rustCallWithError(FfiConverterTypeSgfError.lift) {
     uniffi_qidao_core_fn_method_game_place_stone(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(x),
@@ -817,14 +828,21 @@ open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws  {try rustCa
     )
 }
 }
-
+    
+open func setMetadata(metadata: GameMetadata) {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_set_metadata(self.uniffiClonePointer(),
+        FfiConverterTypeGameMetadata.lower(metadata),$0
+    )
+}
+}
+    
 open func toSgf() -> String {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_to_sgf(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 
 }
 
@@ -883,11 +901,11 @@ public func FfiConverterTypeGame_lower(_ value: Game) -> UnsafeMutableRawPointer
 
 
 public protocol SgfNodeProtocol : AnyObject {
-
+    
     func getChildren()  -> [SgfNode]
-
+    
     func getProperties()  -> [SgfProperty]
-
+    
 }
 
 open class SgfNode:
@@ -937,23 +955,23 @@ open class SgfNode:
         try! rustCall { uniffi_qidao_core_fn_free_sgfnode(pointer, $0) }
     }
 
+    
 
-
-
+    
 open func getChildren() -> [SgfNode] {
     return try!  FfiConverterSequenceTypeSgfNode.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_sgfnode_get_children(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 open func getProperties() -> [SgfProperty] {
     return try!  FfiConverterSequenceTypeSgfProperty.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_sgfnode_get_properties(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 
 }
 
@@ -1012,9 +1030,9 @@ public func FfiConverterTypeSgfNode_lower(_ value: SgfNode) -> UnsafeMutableRawP
 
 
 public protocol SgfTreeProtocol : AnyObject {
-
+    
     func root()  -> SgfNode
-
+    
 }
 
 open class SgfTree:
@@ -1064,16 +1082,16 @@ open class SgfTree:
         try! rustCall { uniffi_qidao_core_fn_free_sgftree(pointer, $0) }
     }
 
+    
 
-
-
+    
 open func root() -> SgfNode {
     return try!  FfiConverterTypeSgfNode.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_sgftree_root(self.uniffiClonePointer(),$0
     )
 })
 }
-
+    
 
 }
 
@@ -1129,33 +1147,68 @@ public func FfiConverterTypeSgfTree_lower(_ value: SgfTree) -> UnsafeMutableRawP
 }
 
 
-public struct GameInfo {
-    public var blackPlayer: String
-    public var whitePlayer: String
+public struct GameMetadata {
+    public var blackName: String
+    public var blackRank: String
+    public var whiteName: String
+    public var whiteRank: String
     public var komi: Double
+    public var result: String
+    public var date: String
+    public var event: String
+    public var gameName: String
+    public var place: String
     public var size: UInt32
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(blackPlayer: String, whitePlayer: String, komi: Double, size: UInt32) {
-        self.blackPlayer = blackPlayer
-        self.whitePlayer = whitePlayer
+    public init(blackName: String, blackRank: String, whiteName: String, whiteRank: String, komi: Double, result: String, date: String, event: String, gameName: String, place: String, size: UInt32) {
+        self.blackName = blackName
+        self.blackRank = blackRank
+        self.whiteName = whiteName
+        self.whiteRank = whiteRank
         self.komi = komi
+        self.result = result
+        self.date = date
+        self.event = event
+        self.gameName = gameName
+        self.place = place
         self.size = size
     }
 }
 
 
 
-extension GameInfo: Equatable, Hashable {
-    public static func ==(lhs: GameInfo, rhs: GameInfo) -> Bool {
-        if lhs.blackPlayer != rhs.blackPlayer {
+extension GameMetadata: Equatable, Hashable {
+    public static func ==(lhs: GameMetadata, rhs: GameMetadata) -> Bool {
+        if lhs.blackName != rhs.blackName {
             return false
         }
-        if lhs.whitePlayer != rhs.whitePlayer {
+        if lhs.blackRank != rhs.blackRank {
+            return false
+        }
+        if lhs.whiteName != rhs.whiteName {
+            return false
+        }
+        if lhs.whiteRank != rhs.whiteRank {
             return false
         }
         if lhs.komi != rhs.komi {
+            return false
+        }
+        if lhs.result != rhs.result {
+            return false
+        }
+        if lhs.date != rhs.date {
+            return false
+        }
+        if lhs.event != rhs.event {
+            return false
+        }
+        if lhs.gameName != rhs.gameName {
+            return false
+        }
+        if lhs.place != rhs.place {
             return false
         }
         if lhs.size != rhs.size {
@@ -1165,9 +1218,16 @@ extension GameInfo: Equatable, Hashable {
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(blackPlayer)
-        hasher.combine(whitePlayer)
+        hasher.combine(blackName)
+        hasher.combine(blackRank)
+        hasher.combine(whiteName)
+        hasher.combine(whiteRank)
         hasher.combine(komi)
+        hasher.combine(result)
+        hasher.combine(date)
+        hasher.combine(event)
+        hasher.combine(gameName)
+        hasher.combine(place)
         hasher.combine(size)
     }
 }
@@ -1176,21 +1236,35 @@ extension GameInfo: Equatable, Hashable {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-public struct FfiConverterTypeGameInfo: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GameInfo {
+public struct FfiConverterTypeGameMetadata: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GameMetadata {
         return
-            try GameInfo(
-                blackPlayer: FfiConverterString.read(from: &buf),
-                whitePlayer: FfiConverterString.read(from: &buf),
-                komi: FfiConverterDouble.read(from: &buf),
+            try GameMetadata(
+                blackName: FfiConverterString.read(from: &buf), 
+                blackRank: FfiConverterString.read(from: &buf), 
+                whiteName: FfiConverterString.read(from: &buf), 
+                whiteRank: FfiConverterString.read(from: &buf), 
+                komi: FfiConverterDouble.read(from: &buf), 
+                result: FfiConverterString.read(from: &buf), 
+                date: FfiConverterString.read(from: &buf), 
+                event: FfiConverterString.read(from: &buf), 
+                gameName: FfiConverterString.read(from: &buf), 
+                place: FfiConverterString.read(from: &buf), 
                 size: FfiConverterUInt32.read(from: &buf)
         )
     }
 
-    public static func write(_ value: GameInfo, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.blackPlayer, into: &buf)
-        FfiConverterString.write(value.whitePlayer, into: &buf)
+    public static func write(_ value: GameMetadata, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.blackName, into: &buf)
+        FfiConverterString.write(value.blackRank, into: &buf)
+        FfiConverterString.write(value.whiteName, into: &buf)
+        FfiConverterString.write(value.whiteRank, into: &buf)
         FfiConverterDouble.write(value.komi, into: &buf)
+        FfiConverterString.write(value.result, into: &buf)
+        FfiConverterString.write(value.date, into: &buf)
+        FfiConverterString.write(value.event, into: &buf)
+        FfiConverterString.write(value.gameName, into: &buf)
+        FfiConverterString.write(value.place, into: &buf)
         FfiConverterUInt32.write(value.size, into: &buf)
     }
 }
@@ -1199,15 +1273,15 @@ public struct FfiConverterTypeGameInfo: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-public func FfiConverterTypeGameInfo_lift(_ buf: RustBuffer) throws -> GameInfo {
-    return try FfiConverterTypeGameInfo.lift(buf)
+public func FfiConverterTypeGameMetadata_lift(_ buf: RustBuffer) throws -> GameMetadata {
+    return try FfiConverterTypeGameMetadata.lift(buf)
 }
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-public func FfiConverterTypeGameInfo_lower(_ value: GameInfo) -> RustBuffer {
-    return FfiConverterTypeGameInfo.lower(value)
+public func FfiConverterTypeGameMetadata_lower(_ value: GameMetadata) -> RustBuffer {
+    return FfiConverterTypeGameMetadata.lower(value)
 }
 
 
@@ -1250,7 +1324,7 @@ public struct FfiConverterTypeSgfProperty: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SgfProperty {
         return
             try SgfProperty(
-                identifier: FfiConverterString.read(from: &buf),
+                identifier: FfiConverterString.read(from: &buf), 
                 values: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -1279,8 +1353,8 @@ public func FfiConverterTypeSgfProperty_lower(_ value: SgfProperty) -> RustBuffe
 
 public enum SgfError {
 
-
-
+    
+    
     case ParseError(message: String
     )
 }
@@ -1296,9 +1370,9 @@ public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
 
+        
 
-
-
+        
         case 1: return .ParseError(
             message: try FfiConverterString.read(from: &buf)
             )
@@ -1310,14 +1384,14 @@ public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
     public static func write(_ value: SgfError, into buf: inout [UInt8]) {
         switch value {
 
+        
 
-
-
-
+        
+        
         case let .ParseError(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
-
+            
         }
     }
 }
@@ -1335,7 +1409,7 @@ extension SgfError: Foundation.LocalizedError {
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum StoneColor {
-
+    
     case black
     case white
 }
@@ -1350,26 +1424,26 @@ public struct FfiConverterTypeStoneColor: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StoneColor {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .black
-
+        
         case 2: return .white
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: StoneColor, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .black:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .white:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -1525,12 +1599,6 @@ public func add(a: UInt32, b: UInt32) -> UInt32 {
     )
 })
 }
-public func getSampleGame() -> GameInfo {
-    return try!  FfiConverterTypeGameInfo.lift(try! rustCall() {
-    uniffi_qidao_core_fn_func_get_sample_game($0
-    )
-})
-}
 public func parseSgf(sgfContent: String)throws  -> SgfTree {
     return try  FfiConverterTypeSgfTree.lift(try rustCallWithError(FfiConverterTypeSgfError.lift) {
     uniffi_qidao_core_fn_func_parse_sgf(
@@ -1555,9 +1623,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.contractVersionMismatch
     }
     if (uniffi_qidao_core_checksum_func_add() != 3207) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_qidao_core_checksum_func_get_sample_game() != 8216) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_func_parse_sgf() != 27662) {
@@ -1587,6 +1652,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_game_get_last_move() != 39187) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_get_metadata() != 39160) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_get_move_count() != 34766) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1600,6 +1668,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_place_stone() != 19675) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_set_metadata() != 11810) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_to_sgf() != 50649) {

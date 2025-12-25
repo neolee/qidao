@@ -18,6 +18,45 @@ class BoardViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
     }
     @Published var lastMove: (x: Int, y: Int)? = nil
+    @Published var metadata: GameMetadata = GameMetadata(
+        blackName: "", blackRank: "",
+        whiteName: "", whiteRank: "",
+        komi: 7.5, result: "",
+        date: "", event: "",
+        gameName: "", place: "",
+        size: 19
+    )
+
+    var formattedResult: String {
+        let res = metadata.result.trimmingCharacters(in: .whitespacesAndNewlines)
+        if res.isEmpty { return "" }
+
+        let upperRes = res.uppercased()
+        if upperRes.hasPrefix("B+") {
+            let score = res.dropFirst(2)
+            if score.uppercased() == "R" || score.uppercased() == "RESIGN" {
+                return "Black wins by resignation".localized
+            }
+            if score.uppercased() == "T" || score.uppercased() == "TIME" {
+                return "Black wins by time".localized
+            }
+            return "\("Black wins by".localized) \(score) \("points".localized)"
+        } else if upperRes.hasPrefix("W+") {
+            let score = res.dropFirst(2)
+            if score.uppercased() == "R" || score.uppercased() == "RESIGN" {
+                return "White wins by resignation".localized
+            }
+            if score.uppercased() == "T" || score.uppercased() == "TIME" {
+                return "White wins by time".localized
+            }
+            return "\("White wins by".localized) \(score) \("points".localized)"
+        } else if upperRes == "DRAW" {
+            return "Draw".localized
+        } else if upperRes == "VOID" {
+            return "Void".localized
+        }
+        return res
+    }
 
     private var cancellables = Set<AnyCancellable>()
     var langManager = LanguageManager.shared
@@ -95,14 +134,8 @@ class BoardViewModel: ObservableObject {
     }
 
     func goBack() {
-        let oldStoneCount = countStones(on: board)
         if game.goBack() {
-            let newBoard = game.getBoard()
-            let newStoneCount = countStones(on: newBoard)
-
-            // When going back, if stone count increases, it means we "undid" a capture.
-            // But usually we just play a simple stone sound or nothing.
-            // For consistency with most Go apps, we play a stone sound.
+            // When going back, for consistency with most Go apps, we play a stone sound.
             SoundManager.shared.play(name: "stone")
 
             syncStateWithGame()
@@ -136,6 +169,7 @@ class BoardViewModel: ObservableObject {
             self.board = self.game.getBoard()
             self.nextColor = self.game.getNextColor()
             self.moveCount = Int(self.game.getMoveCount())
+            self.metadata = self.game.getMetadata()
 
             // Update lastMove
             if let last = self.game.getLastMove(), let coords = last.values.first, coords.count == 2 {
@@ -185,10 +219,36 @@ class BoardViewModel: ObservableObject {
         UserDefaults.standard.set(theme.id, forKey: "selectedThemeId")
     }
 
+    func updateMetadata(_ newMetadata: GameMetadata) {
+        game.setMetadata(metadata: newMetadata)
+        syncStateWithGame()
+    }
+
     func loadSgf(url: URL) {
         do {
-            let content = try String(contentsOf: url, encoding: .utf8)
-            self.game = try Game.fromSgf(sgfContent: content)
+            let data = try Data(contentsOf: url)
+            var content: String?
+
+            // Try UTF-8 first
+            content = String(data: data, encoding: .utf8)
+
+            // If failed, try GB18030 (common for Chinese SGFs)
+            if content == nil {
+                let gbkEncoding = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue))
+                content = String(data: data, encoding: String.Encoding(rawValue: gbkEncoding))
+            }
+
+            // Fallback to ASCII if all else fails
+            if content == nil {
+                content = String(data: data, encoding: .ascii)
+            }
+
+            guard let sgfContent = content else {
+                self.message = "\("Load Failed".localized): \("Failed to decode SGF file".localized)"
+                return
+            }
+
+            self.game = try Game.fromSgf(sgfContent: sgfContent)
             syncStateWithGame()
             self.message = "\("Loaded".localized): \(url.lastPathComponent)"
         } catch {

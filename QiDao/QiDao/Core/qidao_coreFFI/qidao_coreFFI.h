@@ -251,6 +251,36 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_BOARD
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_BOARD
+void*_Nonnull uniffi_qidao_core_fn_clone_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_BOARD
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_BOARD
+void uniffi_qidao_core_fn_free_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_BOARD_NEW
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_BOARD_NEW
+void*_Nonnull uniffi_qidao_core_fn_constructor_board_new(uint32_t size, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_SIZE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_SIZE
+uint32_t uniffi_qidao_core_fn_method_board_get_size(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_STONE
+RustBuffer uniffi_qidao_core_fn_method_board_get_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_PLACE_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_PLACE_STONE
+void*_Nonnull uniffi_qidao_core_fn_method_board_place_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFNODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFNODE
 void*_Nonnull uniffi_qidao_core_fn_clone_sgfnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -600,6 +630,24 @@ uint16_t uniffi_qidao_core_checksum_func_parse_sgf(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_GET_SIZE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_GET_SIZE
+uint16_t uniffi_qidao_core_checksum_method_board_get_size(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_GET_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_GET_STONE
+uint16_t uniffi_qidao_core_checksum_method_board_get_stone(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_PLACE_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_PLACE_STONE
+uint16_t uniffi_qidao_core_checksum_method_board_place_stone(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
 uint16_t uniffi_qidao_core_checksum_method_sgfnode_get_children(void
@@ -615,6 +663,12 @@ uint16_t uniffi_qidao_core_checksum_method_sgfnode_get_properties(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFTREE_ROOT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFTREE_ROOT
 uint16_t uniffi_qidao_core_checksum_method_sgftree_root(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_BOARD_NEW
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_BOARD_NEW
+uint16_t uniffi_qidao_core_checksum_constructor_board_new(void
     
 );
 #endif

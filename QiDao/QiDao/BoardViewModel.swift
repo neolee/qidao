@@ -2,16 +2,34 @@ import Foundation
 import Combine
 
 class BoardViewModel: ObservableObject {
-    @Published var message: String = "Waiting for Core..."
+    @Published var message: String = "Ready"
     @Published var gameInfo: String = ""
+    @Published var board: Board = Board(size: 19)
+    @Published var nextColor: StoneColor = .black
+
+    func placeStone(x: Int, y: Int) {
+        do {
+            let newBoard = try board.placeStone(x: UInt32(x), y: UInt32(y), color: nextColor)
+            self.board = newBoard
+            self.nextColor = (nextColor == .black) ? .white : .black
+            self.message = "Placed \(nextColor == .white ? "Black" : "White") at (\(x), \(y))"
+        } catch {
+            self.message = "Invalid Move: \(error)"
+        }
+    }
+
+    func resetBoard() {
+        self.board = Board(size: 19)
+        self.nextColor = .black
+        self.message = "Board Reset"
+    }
 
     func testCore() {
         // Call the 'add' function from Rust
-        // Note: UniFFI uses UInt32 for u32
         let result = add(a: 10, b: 32)
         message = "Core Test: 10 + 32 = \(result)"
 
-        // Call 'getSampleGame' from Rust (UniFFI converts snake_case to camelCase)
+        // Call 'getSampleGame' from Rust
         let info = getSampleGame()
         gameInfo = "Game: \(info.blackPlayer) vs \(info.whitePlayer) (Komi: \(info.komi))"
 
@@ -24,6 +42,24 @@ class BoardViewModel: ObservableObject {
             message += "\nSGF Parsed: \(children.count) moves in main branch."
         } catch {
             message += "\nSGF Parse Error: \(error)"
+        }
+
+        // Test Board Logic
+        let newBoard = Board(size: 19)
+        do {
+            // Place a black stone at (3, 3) - 4-4 point
+            let boardAfterBlack = try newBoard.placeStone(x: 3, y: 3, color: .black)
+            // Place a white stone at (15, 15)
+            let boardAfterWhite = try boardAfterBlack.placeStone(x: 15, y: 15, color: .white)
+
+            self.board = boardAfterWhite
+            message += "\nBoard Test: Stones placed at (3,3) and (15,15)."
+
+            if let stone = boardAfterWhite.getStone(x: 3, y: 3) {
+                message += "\nStone at (3,3) is \(stone == .black ? "Black" : "White")"
+            }
+        } catch {
+            message += "\nBoard Error: \(error)"
         }
     }
 }

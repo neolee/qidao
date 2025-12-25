@@ -472,6 +472,163 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
+public protocol BoardProtocol : AnyObject {
+
+    func getSize()  -> UInt32
+
+    func getStone(x: UInt32, y: UInt32)  -> StoneColor?
+
+    /**
+     * Attempts to place a stone. Returns true if successful.
+     */
+    func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws  -> Board
+
+}
+
+open class Board:
+    BoardProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_qidao_core_fn_clone_board(self.pointer, $0) }
+    }
+public convenience init(size: UInt32) {
+    let pointer =
+        try! rustCall() {
+    uniffi_qidao_core_fn_constructor_board_new(
+        FfiConverterUInt32.lower(size),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_qidao_core_fn_free_board(pointer, $0) }
+    }
+
+
+
+
+open func getSize() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_board_get_size(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func getStone(x: UInt32, y: UInt32) -> StoneColor? {
+    return try!  FfiConverterOptionTypeStoneColor.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_board_get_stone(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),$0
+    )
+})
+}
+
+    /**
+     * Attempts to place a stone. Returns true if successful.
+     */
+open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws  -> Board {
+    return try  FfiConverterTypeBoard.lift(try rustCallWithError(FfiConverterTypeSgfError.lift) {
+    uniffi_qidao_core_fn_method_board_place_stone(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),
+        FfiConverterTypeStoneColor.lower(color),$0
+    )
+})
+}
+
+
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBoard: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Board
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Board {
+        return Board(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Board) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Board {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Board, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBoard_lift(_ pointer: UnsafeMutableRawPointer) throws -> Board {
+    return try FfiConverterTypeBoard.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBoard_lower(_ value: Board) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeBoard.lower(value)
+}
+
+
+
+
 public protocol SgfNodeProtocol : AnyObject {
 
     func getChildren()  -> [SgfNode]
@@ -921,6 +1078,94 @@ extension SgfError: Foundation.LocalizedError {
     }
 }
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum StoneColor {
+
+    case black
+    case white
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeStoneColor: FfiConverterRustBuffer {
+    typealias SwiftType = StoneColor
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StoneColor {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        case 1: return .black
+
+        case 2: return .white
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: StoneColor, into buf: inout [UInt8]) {
+        switch value {
+
+
+        case .black:
+            writeInt(&buf, Int32(1))
+
+
+        case .white:
+            writeInt(&buf, Int32(2))
+
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStoneColor_lift(_ buf: RustBuffer) throws -> StoneColor {
+    return try FfiConverterTypeStoneColor.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeStoneColor_lower(_ value: StoneColor) -> RustBuffer {
+    return FfiConverterTypeStoneColor.lower(value)
+}
+
+
+
+extension StoneColor: Equatable, Hashable {}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeStoneColor: FfiConverterRustBuffer {
+    typealias SwiftType = StoneColor?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeStoneColor.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeStoneColor.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1041,6 +1286,15 @@ private var initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_func_parse_sgf() != 27662) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_board_get_size() != 42284) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_board_get_stone() != 54210) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_board_place_stone() != 53205) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_sgfnode_get_children() != 34594) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1048,6 +1302,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_sgftree_root() != 50046) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_constructor_board_new() != 44876) {
         return InitializationResult.apiChecksumMismatch
     }
 

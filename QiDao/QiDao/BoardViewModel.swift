@@ -2,6 +2,34 @@ import Foundation
 import Combine
 import qidao_coreFFI
 
+struct Variation: Identifiable {
+    let id: Int
+    let moveText: String
+    let x: Int?
+    let y: Int?
+
+    var label: String {
+        if id < 26 {
+            return String(UnicodeScalar(UInt8(ascii: "A") + UInt8(id)))
+        } else {
+            return "\(id + 1)"
+        }
+    }
+}
+
+struct TreeVisualNode: Identifiable {
+    let id: String
+    let x: CGFloat
+    let y: CGFloat
+    let color: StoneColor?
+}
+
+struct TreeVisualEdge: Identifiable {
+    let id: String
+    let from: CGPoint
+    let to: CGPoint
+}
+
 class BoardViewModel: ObservableObject {
     @Published var message: String = "Ready".localized
     @Published var gameInfo: String = ""
@@ -18,6 +46,21 @@ class BoardViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
     }
     @Published var lastMove: (x: Int, y: Int)? = nil
+    @Published var variations: [Variation] = []
+    @Published var treeNodes: [TreeVisualNode] = []
+    @Published var treeEdges: [TreeVisualEdge] = []
+    @Published var currentNodeId: String = ""
+
+    var treeWidth: CGFloat {
+        let maxX = treeNodes.map { $0.x }.max() ?? 0
+        return maxX
+    }
+
+    var treeHeight: CGFloat {
+        let maxY = treeNodes.map { $0.y }.max() ?? 0
+        return maxY
+    }
+
     @Published var metadata: GameMetadata = GameMetadata(
         blackName: "", blackRank: "",
         whiteName: "", whiteRank: "",
@@ -26,6 +69,8 @@ class BoardViewModel: ObservableObject {
         gameName: "", place: "",
         size: 19
     )
+
+    private var nodeMap: [String: SgfNode] = [:]
 
     var formattedResult: String {
         let res = metadata.result.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -89,7 +134,7 @@ class BoardViewModel: ObservableObject {
             .store(in: &cancellables)
 
         // Initial sync to ensure correct state
-        syncStateWithGame()
+        syncStateWithGame(rebuildTree: true)
     }
 
     private func refreshMessage() {
@@ -108,7 +153,8 @@ class BoardViewModel: ObservableObject {
     func placeStone(x: Int, y: Int) {
         do {
             let color = nextColor
-            let oldStoneCount = countStones(on: board)
+            let currentBoard = game.getBoard()
+            let oldStoneCount = countStones(on: currentBoard)
 
             // Use Game controller to place stone
             try game.placeStone(x: UInt32(x), y: UInt32(y), color: color)
@@ -127,24 +173,27 @@ class BoardViewModel: ObservableObject {
                 SoundManager.shared.play(name: "dead-stones")
             }
 
-            syncStateWithGame()
+            syncStateWithGame(rebuildTree: true)
         } catch {
             self.message = "\("Invalid Move".localized): \(error)"
         }
     }
 
-    func goBack() {
+    func goBack(playSound: Bool = true) {
         if game.goBack() {
-            // When going back, for consistency with most Go apps, we play a stone sound.
-            SoundManager.shared.play(name: "stone")
+            if playSound {
+                // When going back, for consistency with most Go apps, we play a stone sound.
+                SoundManager.shared.play(name: "stone")
+            }
 
             syncStateWithGame()
         }
     }
 
-    func goForward() {
-        let oldStoneCount = countStones(on: board)
-        if game.goForward(index: 0) { // Default to first branch
+    func goForward(index: Int = 0) {
+        let currentBoard = game.getBoard()
+        let oldStoneCount = countStones(on: currentBoard)
+        if game.goForward(index: UInt32(index)) {
             let newBoard = game.getBoard()
             let newStoneCount = countStones(on: newBoard)
 
@@ -163,13 +212,95 @@ class BoardViewModel: ObservableObject {
         }
     }
 
-    private func syncStateWithGame() {
+    func nextVariation() {
+        let count = Int(game.getVariationCount())
+        if count > 1 {
+            let currentIndex = Int(game.getCurrentVariationIndex())
+            let nextIndex = (currentIndex + 1) % count
+            // Go back silently and then forward to the next variation
+            if game.goBack() {
+                goForward(index: nextIndex)
+            }
+        }
+    }
+
+    func previousVariation() {
+        let count = Int(game.getVariationCount())
+        if count > 1 {
+            let currentIndex = Int(game.getCurrentVariationIndex())
+            let prevIndex = (currentIndex - 1 + count) % count
+            // Go back silently and then forward to the previous variation
+            if game.goBack() {
+                goForward(index: prevIndex)
+            }
+        }
+    }
+
+    func selectVariation(_ index: Int) {
+        goForward(index: index)
+    }
+
+    func jumpToNode(id: String) {
+        if let node = nodeMap[id] {
+            game.jumpToNode(target: node)
+            syncStateWithGame()
+        }
+    }
+
+    private func rebuildTree() {
+        nodeMap = [:]
+        var nodes: [TreeVisualNode] = []
+        var edges: [TreeVisualEdge] = []
+
+        let root = game.getRootNode()
+
+        var nextXAtDepth: [Int: Int] = [:]
+
+        func traverse(node: SgfNode, depth: Int, xOffset: Int, parentPos: CGPoint?) {
+            let id = node.getId()
+            nodeMap[id] = node
+
+            let x = CGFloat(xOffset)
+            let y = CGFloat(depth)
+            let currentPos = CGPoint(x: x, y: y)
+
+            let props = node.getProperties()
+            var color: StoneColor? = nil
+            if props.contains(where: { $0.identifier == "B" }) {
+                color = .black
+            } else if props.contains(where: { $0.identifier == "W" }) {
+                color = .white
+            }
+
+            nodes.append(TreeVisualNode(id: id, x: x, y: y, color: color))
+
+            if let parent = parentPos {
+                edges.append(TreeVisualEdge(id: "\(id)-edge", from: parent, to: currentPos))
+            }
+
+            let children = node.getChildren()
+            let currentX = xOffset
+            for (index, child) in children.enumerated() {
+                let childX = (index == 0) ? currentX : (nextXAtDepth[depth + 1] ?? currentX + 1)
+                nextXAtDepth[depth + 1] = max(nextXAtDepth[depth + 1] ?? 0, childX + 1)
+                traverse(node: child, depth: depth + 1, xOffset: childX, parentPos: currentPos)
+            }
+        }
+
+        traverse(node: root, depth: 0, xOffset: 0, parentPos: nil)
+
+        self.treeNodes = nodes
+        self.treeEdges = edges
+    }
+
+    private func syncStateWithGame(rebuildTree: Bool = false) {
         // Ensure updates happen on main thread and outside immediate view update cycle
         DispatchQueue.main.async {
             self.board = self.game.getBoard()
             self.nextColor = self.game.getNextColor()
             self.moveCount = Int(self.game.getMoveCount())
             self.metadata = self.game.getMetadata()
+            self.currentNodeId = self.game.getCurrentNode().getId()
 
             // Update lastMove
             if let last = self.game.getLastMove(), let coords = last.values.first, coords.count == 2 {
@@ -191,6 +322,27 @@ class BoardViewModel: ObservableObject {
                 }
             }
 
+            // Update variations
+            let children = self.game.getCurrentNode().getChildren()
+            self.variations = children.enumerated().map { (index, node) in
+                let props = node.getProperties()
+                let moveProp = props.first { $0.identifier == "B" || $0.identifier == "W" }
+                var vx: Int? = nil
+                var vy: Int? = nil
+                let moveText: String
+                if let prop = moveProp, let coords = prop.values.first, coords.count == 2 {
+                    vx = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+                    vy = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+                    moveText = "\(prop.identifier) (\(vx!), \(vy!))"
+                } else {
+                    moveText = "Node \(index)"
+                }
+                return Variation(id: index, moveText: moveText, x: vx, y: vy)
+            }
+
+            if rebuildTree {
+                self.rebuildTree()
+            }
             self.refreshMessage()
         }
     }
@@ -210,7 +362,7 @@ class BoardViewModel: ObservableObject {
 
     func resetBoard() {
         self.game = Game(size: 19)
-        syncStateWithGame()
+        syncStateWithGame(rebuildTree: true)
         self.message = "Board Reset".localized
     }
 
@@ -221,7 +373,7 @@ class BoardViewModel: ObservableObject {
 
     func updateMetadata(_ newMetadata: GameMetadata) {
         game.setMetadata(metadata: newMetadata)
-        syncStateWithGame()
+        syncStateWithGame(rebuildTree: true)
     }
 
     func loadSgf(url: URL) {
@@ -249,7 +401,7 @@ class BoardViewModel: ObservableObject {
             }
 
             self.game = try Game.fromSgf(sgfContent: sgfContent)
-            syncStateWithGame()
+            syncStateWithGame(rebuildTree: true)
             self.message = "\("Loaded".localized): \(url.lastPathComponent)"
         } catch {
             self.message = "\("Load Failed".localized): \(error.localizedDescription)"

@@ -661,7 +661,11 @@ public protocol GameProtocol : AnyObject {
     
     func getBoard()  -> Board
     
+    func getCurrentNode()  -> SgfNode
+    
     func getCurrentPathMoves()  -> [SgfProperty]
+    
+    func getCurrentVariationIndex()  -> UInt32
     
     func getLastMove()  -> SgfProperty?
     
@@ -671,9 +675,15 @@ public protocol GameProtocol : AnyObject {
     
     func getNextColor()  -> StoneColor
     
+    func getRootNode()  -> SgfNode
+    
+    func getVariationCount()  -> UInt32
+    
     func goBack()  -> Bool
     
     func goForward(index: UInt32)  -> Bool
+    
+    func jumpToNode(target: SgfNode) 
     
     func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws 
     
@@ -770,9 +780,23 @@ open func getBoard() -> Board {
 })
 }
     
+open func getCurrentNode() -> SgfNode {
+    return try!  FfiConverterTypeSgfNode.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_current_node(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func getCurrentPathMoves() -> [SgfProperty] {
     return try!  FfiConverterSequenceTypeSgfProperty.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_current_path_moves(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func getCurrentVariationIndex() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_current_variation_index(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -805,6 +829,20 @@ open func getNextColor() -> StoneColor {
 })
 }
     
+open func getRootNode() -> SgfNode {
+    return try!  FfiConverterTypeSgfNode.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_root_node(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func getVariationCount() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_variation_count(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func goBack() -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_go_back(self.uniffiClonePointer(),$0
@@ -818,6 +856,13 @@ open func goForward(index: UInt32) -> Bool {
         FfiConverterUInt32.lower(index),$0
     )
 })
+}
+    
+open func jumpToNode(target: SgfNode) {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_jump_to_node(self.uniffiClonePointer(),
+        FfiConverterTypeSgfNode.lower(target),$0
+    )
+}
 }
     
 open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws  {try rustCallWithError(FfiConverterTypeSgfError.lift) {
@@ -904,6 +949,8 @@ public protocol SgfNodeProtocol : AnyObject {
     
     func getChildren()  -> [SgfNode]
     
+    func getId()  -> String
+    
     func getProperties()  -> [SgfProperty]
     
 }
@@ -961,6 +1008,13 @@ open class SgfNode:
 open func getChildren() -> [SgfNode] {
     return try!  FfiConverterSequenceTypeSgfNode.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_sgfnode_get_children(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func getId() -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_sgfnode_get_id(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -1646,7 +1700,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_game_get_board() != 38261) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_get_current_node() != 11635) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_get_current_path_moves() != 52188) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_get_current_variation_index() != 3639) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_get_last_move() != 39187) {
@@ -1661,10 +1721,19 @@ private var initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_game_get_next_color() != 59788) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_get_root_node() != 23784) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_get_variation_count() != 32672) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_go_back() != 63939) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_go_forward() != 27437) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_jump_to_node() != 53846) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_place_stone() != 19675) {
@@ -1677,6 +1746,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_sgfnode_get_children() != 34594) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_sgfnode_get_id() != 55131) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_sgfnode_get_properties() != 16786) {

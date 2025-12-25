@@ -44,6 +44,10 @@ pub struct SgfNode {
 
 #[uniffi::export]
 impl SgfNode {
+    pub fn get_id(&self) -> String {
+        format!("{:p}", self)
+    }
+
     pub fn get_properties(&self) -> Vec<SgfProperty> {
         self.properties.lock().unwrap().clone()
     }
@@ -436,6 +440,35 @@ impl Game {
         meta
     }
 
+    pub fn get_current_node(&self) -> Arc<SgfNode> {
+        self.state.lock().unwrap().current_node.clone()
+    }
+
+    pub fn get_root_node(&self) -> Arc<SgfNode> {
+        self.state.lock().unwrap().root.clone()
+    }
+
+    pub fn get_current_variation_index(&self) -> u32 {
+        let state = self.state.lock().unwrap();
+        if let Some(parent) = state.history.last() {
+            let children = parent.children.lock().unwrap();
+            for (i, child) in children.iter().enumerate() {
+                if Arc::ptr_eq(child, &state.current_node) {
+                    return i as u32;
+                }
+            }
+        }
+        0
+    }
+
+    pub fn get_variation_count(&self) -> u32 {
+        let state = self.state.lock().unwrap();
+        if let Some(parent) = state.history.last() {
+            return parent.children.lock().unwrap().len() as u32;
+        }
+        1
+    }
+
     pub fn set_metadata(&self, metadata: GameMetadata) {
         let state = self.state.lock().unwrap();
         let mut props = state.root.properties.lock().unwrap();
@@ -472,6 +505,14 @@ impl Game {
         serialize_node(&state.root, &mut out);
         out.push(')');
         out
+    }
+
+    pub fn jump_to_node(&self, target: Arc<SgfNode>) {
+        let mut state = self.state.lock().unwrap();
+        if let Some(path) = find_path(&state.root, &target) {
+            state.history = path;
+            state.current_node = target;
+        }
     }
 
     pub fn get_board(&self) -> Arc<Board> {
@@ -655,4 +696,20 @@ impl Game {
 
         Ok(())
     }
+}
+
+fn find_path(current: &Arc<SgfNode>, target: &Arc<SgfNode>) -> Option<Vec<Arc<SgfNode>>> {
+    if Arc::ptr_eq(current, target) {
+        return Some(vec![]);
+    }
+
+    let children = current.children.lock().unwrap();
+    for child in children.iter() {
+        if let Some(mut path) = find_path(child, target) {
+            let mut full_path = vec![current.clone()];
+            full_path.append(&mut path);
+            return Some(full_path);
+        }
+    }
+    None
 }

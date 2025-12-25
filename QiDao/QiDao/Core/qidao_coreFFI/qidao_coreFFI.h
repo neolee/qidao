@@ -316,9 +316,19 @@ int8_t uniffi_qidao_core_fn_method_game_can_go_forward(void*_Nonnull ptr, RustCa
 void*_Nonnull uniffi_qidao_core_fn_method_game_get_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_NODE
+void*_Nonnull uniffi_qidao_core_fn_method_game_get_current_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_PATH_MOVES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_PATH_MOVES
 RustBuffer uniffi_qidao_core_fn_method_game_get_current_path_moves(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
+uint32_t uniffi_qidao_core_fn_method_game_get_current_variation_index(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_LAST_MOVE
@@ -341,6 +351,16 @@ uint32_t uniffi_qidao_core_fn_method_game_get_move_count(void*_Nonnull ptr, Rust
 RustBuffer uniffi_qidao_core_fn_method_game_get_next_color(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ROOT_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ROOT_NODE
+void*_Nonnull uniffi_qidao_core_fn_method_game_get_root_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_VARIATION_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_VARIATION_COUNT
+uint32_t uniffi_qidao_core_fn_method_game_get_variation_count(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_BACK
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_BACK
 int8_t uniffi_qidao_core_fn_method_game_go_back(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -349,6 +369,11 @@ int8_t uniffi_qidao_core_fn_method_game_go_back(void*_Nonnull ptr, RustCallStatu
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_FORWARD
 int8_t uniffi_qidao_core_fn_method_game_go_forward(void*_Nonnull ptr, uint32_t index, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_NODE
+void uniffi_qidao_core_fn_method_game_jump_to_node(void*_Nonnull ptr, void*_Nonnull target, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
@@ -379,6 +404,11 @@ void uniffi_qidao_core_fn_free_sgfnode(void*_Nonnull ptr, RustCallStatus *_Nonnu
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_CHILDREN
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_CHILDREN
 RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_children(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_ID
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_ID
+RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_PROPERTIES
@@ -739,9 +769,21 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_board(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_NODE
+uint16_t uniffi_qidao_core_checksum_method_game_get_current_node(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_PATH_MOVES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_PATH_MOVES
 uint16_t uniffi_qidao_core_checksum_method_game_get_current_path_moves(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
+uint16_t uniffi_qidao_core_checksum_method_game_get_current_variation_index(void
     
 );
 #endif
@@ -769,6 +811,18 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_next_color(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_ROOT_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_ROOT_NODE
+uint16_t uniffi_qidao_core_checksum_method_game_get_root_node(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_VARIATION_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_VARIATION_COUNT
+uint16_t uniffi_qidao_core_checksum_method_game_get_variation_count(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GO_BACK
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GO_BACK
 uint16_t uniffi_qidao_core_checksum_method_game_go_back(void
@@ -778,6 +832,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_go_back(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GO_FORWARD
 uint16_t uniffi_qidao_core_checksum_method_game_go_forward(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_JUMP_TO_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_JUMP_TO_NODE
+uint16_t uniffi_qidao_core_checksum_method_game_jump_to_node(void
     
 );
 #endif
@@ -802,6 +862,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_to_sgf(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
 uint16_t uniffi_qidao_core_checksum_method_sgfnode_get_children(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_ID
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_ID
+uint16_t uniffi_qidao_core_checksum_method_sgfnode_get_id(void
     
 );
 #endif

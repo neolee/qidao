@@ -187,7 +187,7 @@ struct BoardView: View {
 
                 // Navigation Toolbar
                 HStack(spacing: 20) {
-                    Button(action: viewModel.goBack) {
+                    Button(action: { viewModel.goBack() }) {
                         Image(systemName: "chevron.left.circle")
                             .font(.title2)
                     }
@@ -199,7 +199,7 @@ struct BoardView: View {
                         .font(.headline)
                         .frame(width: 100)
 
-                    Button(action: viewModel.goForward) {
+                    Button(action: { viewModel.goForward() }) {
                         Image(systemName: "chevron.right.circle")
                             .font(.title2)
                     }
@@ -216,10 +216,8 @@ struct BoardView: View {
             // Right Sidebar: Variations & Analysis
             VStack(alignment: .leading, spacing: 20) {
                 GroupBox(label: Label("Variation Tree".localized, systemImage: "arrow.triangle.branch")) {
-                    Text("Tree Placeholder")
+                    VariationTreeView(viewModel: viewModel)
                         .frame(maxHeight: .infinity)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.black.opacity(0.05))
                 }
 
                 GroupBox(label: Label("AI Analysis".localized, systemImage: "list.bullet.rectangle")) {
@@ -250,11 +248,11 @@ struct BoardView: View {
             return .handled
         }
         .onKeyPress(.leftArrow) {
-            // TODO: Previous branch
+            viewModel.previousVariation()
             return .handled
         }
         .onKeyPress(.rightArrow) {
-            // TODO: Next branch
+            viewModel.nextVariation()
             return .handled
         }
         .sheet(isPresented: $showInfoEditor) {
@@ -420,6 +418,24 @@ struct MainBoardView: View {
                                 x: CGFloat(x + 1) * spacing,
                                 y: CGFloat(y + 1) * spacing
                             )
+                        }
+                    }
+                }
+
+                // 6. Variation Markers
+                ForEach(viewModel.variations, id: \.id) { variation in
+                    if let vx = variation.x, let vy = variation.y {
+                        VariationMarker(
+                            label: variation.label,
+                            theme: viewModel.theme,
+                            size: spacing * 0.8
+                        )
+                        .position(
+                            x: CGFloat(vx + 1) * spacing,
+                            y: CGFloat(vy + 1) * spacing
+                        )
+                        .onTapGesture {
+                            viewModel.selectVariation(variation.id)
                         }
                     }
                 }

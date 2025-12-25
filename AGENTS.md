@@ -58,11 +58,11 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - **Swift Language Version**: `5`
 
 ## 8. Immediate TODOs
-1. **UI**: Implement Variation Tree visualization (graphical view of branches).
-2. **Engine**: Implement basic GTP communication in Rust for AI analysis.
-3. **UI**: Add AI analysis overlay on the board (win rates, suggested moves).
+1. **Engine**: Implement basic GTP communication in Rust for AI analysis.
+2. **UI**: Add AI analysis overlay on the board (win rates, suggested moves).
 
 ## 9. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
 - [x] **Phase 2: UI/UX Foundation**: Refined 3D stone visuals, sound effects system, and multi-language support. Fixed sandbox-related permission issues.
+- [x] **Phase 3: Variation Tree & Navigation**: Implemented graphical variation tree, keyboard-based branch switching, and optimized sound feedback for branch navigation.
 

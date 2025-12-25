@@ -21,7 +21,9 @@ class LanguageManager: ObservableObject {
     
     @Published var selectedLanguage: Language {
         didSet {
-            UserDefaults.standard.set(selectedLanguage.rawValue, forKey: "selectedLanguage")
+            if oldValue != selectedLanguage {
+                UserDefaults.standard.set(selectedLanguage.rawValue, forKey: "selectedLanguage")
+            }
         }
     }
     

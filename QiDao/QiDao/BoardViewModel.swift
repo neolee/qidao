@@ -19,6 +19,7 @@ class BoardViewModel: ObservableObject {
     }
     @Published var lastMove: (x: Int, y: Int)? = nil
     
+    private var cancellables = Set<AnyCancellable>()
     var langManager = LanguageManager.shared
 
     // Track move history for numbering
@@ -33,6 +34,30 @@ class BoardViewModel: ObservableObject {
         
         let themeId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "wood"
         self.theme = (themeId == "bw") ? .bwPrint : .defaultWood
+
+        // Observe language changes to refresh message
+        LanguageManager.shared.$selectedLanguage
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshMessage()
+            }
+            .store(in: &cancellables)
+        
+        // Initial refresh to ensure correct language
+        refreshMessage()
+    }
+
+    private func refreshMessage() {
+        if moveCount == 0 {
+            message = "Ready".localized
+        } else if let last = lastMove {
+            // The last move was made by the color opposite to nextColor
+            let lastColor = (nextColor == .black) ? "White" : "Black"
+            let colorStr = lastColor.localized
+            message = "\("Move".localized) \(moveCount): \(colorStr) at (\(last.x), \(last.y))"
+        } else {
+            message = "Board Reset".localized
+        }
     }
 
     func placeStone(x: Int, y: Int) {

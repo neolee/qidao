@@ -62,20 +62,26 @@ struct BoardView: View {
                     
                     Spacer()
                     
-                    Picker("", selection: $langManager.selectedLanguage) {
+                    Menu {
                         ForEach(Language.allCases) { lang in
-                            Text(lang.displayName).tag(lang)
+                            Button(lang.displayName) {
+                                DispatchQueue.main.async {
+                                    langManager.selectedLanguage = lang
+                                }
+                            }
                         }
+                    } label: {
+                        Label(langManager.selectedLanguage.displayName, systemImage: "globe")
                     }
-                    .pickerStyle(.menu)
-                    .frame(width: 100)
+                    .menuStyle(.button)
+                    .frame(width: 120)
                     
                     Text(viewModel.message)
                         .font(.callout)
                         .foregroundColor(.secondary)
                 }
                 .padding()
-                .background(VisualEffectView(material: .titlebar, blendingMode: .withinWindow))
+                .background(.ultraThinMaterial)
                 
                 // Board Container
                 GeometryReader { geometry in
@@ -193,24 +199,6 @@ struct MainBoardView: View {
 }
 
 // MARK: - Helper Views
-
-struct VisualEffectView: NSViewRepresentable {
-    let material: NSVisualEffectView.Material
-    let blendingMode: NSVisualEffectView.BlendingMode
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
-    }
-}
 
 struct StoneView: View {
     let color: StoneColor

@@ -8,8 +8,12 @@ class BoardViewModel: ObservableObject {
     @Published var board: Board = Board(size: 19)
     @Published var nextColor: StoneColor = .black
     @Published var theme: BoardTheme = .defaultWood
-    @Published var showMoveNumbers: Bool = true
-    @Published var showCoordinates: Bool = true
+    @Published var showMoveNumbers: Bool = true {
+        didSet { UserDefaults.standard.set(showMoveNumbers, forKey: "showMoveNumbers") }
+    }
+    @Published var showCoordinates: Bool = true {
+        didSet { UserDefaults.standard.set(showCoordinates, forKey: "showCoordinates") }
+    }
     @Published var lastMove: (x: Int, y: Int)? = nil
     
     var langManager = LanguageManager.shared
@@ -17,6 +21,15 @@ class BoardViewModel: ObservableObject {
     // Track move history for numbering
     @Published var moveNumbers: [String: Int] = [:]
     private var moveCount: Int = 0
+
+    init() {
+        // Load persisted settings
+        self.showMoveNumbers = UserDefaults.standard.object(forKey: "showMoveNumbers") as? Bool ?? true
+        self.showCoordinates = UserDefaults.standard.object(forKey: "showCoordinates") as? Bool ?? true
+        
+        let themeId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "wood"
+        self.theme = (themeId == "bw") ? .bwPrint : .defaultWood
+    }
 
     func placeStone(x: Int, y: Int) {
         do {
@@ -47,6 +60,7 @@ class BoardViewModel: ObservableObject {
 
     func toggleTheme() {
         theme = (theme.id == "wood") ? .bwPrint : .defaultWood
+        UserDefaults.standard.set(theme.id, forKey: "selectedThemeId")
     }
 
     func testCore() {

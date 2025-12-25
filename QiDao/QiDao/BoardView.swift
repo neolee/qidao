@@ -285,11 +285,11 @@ struct BoardCoordinates: View {
             // Top & Bottom (Letters)
             ForEach(0..<gridSize, id: \.self) { i in
                 Text(letters[i])
-                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .font(.system(size: spacing * 0.3, weight: .medium))
                     .position(x: CGFloat(i + 1) * spacing, y: spacing * 0.4)
                 
                 Text(letters[i])
-                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .font(.system(size: spacing * 0.3, weight: .medium))
                     .position(x: CGFloat(i + 1) * spacing, y: CGFloat(gridSize + 1) * spacing - spacing * 0.4)
             }
             
@@ -297,11 +297,11 @@ struct BoardCoordinates: View {
             ForEach(0..<gridSize, id: \.self) { i in
                 let label = "\(gridSize - i)"
                 Text(label)
-                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .font(.system(size: spacing * 0.3, weight: .medium))
                     .position(x: spacing * 0.4, y: CGFloat(i + 1) * spacing)
                 
                 Text(label)
-                    .font(.system(size: spacing * 0.4, weight: .medium))
+                    .font(.system(size: spacing * 0.3, weight: .medium))
                     .position(x: CGFloat(gridSize + 1) * spacing - spacing * 0.4, y: CGFloat(i + 1) * spacing)
             }
         }

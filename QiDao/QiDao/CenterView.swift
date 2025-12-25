@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import qidao_coreFFI
 
-struct BoardView: View {
+struct CenterView: View {
     @ObservedObject var viewModel: BoardViewModel
     @ObservedObject private var langManager = LanguageManager.shared
     @FocusState.Binding var isBoardFocused: Bool
@@ -79,7 +79,7 @@ struct BoardView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        MainBoardView(viewModel: viewModel, size: size)
+                        GameBoardView(viewModel: viewModel, size: size)
                         Spacer()
                     }
                     Spacer()
@@ -231,5 +231,5 @@ struct BoardView: View {
 
 #Preview {
     @Previewable @FocusState var isBoardFocused: Bool
-    BoardView(viewModel: BoardViewModel(), isBoardFocused: $isBoardFocused)
+    CenterView(viewModel: BoardViewModel(), isBoardFocused: $isBoardFocused)
 }

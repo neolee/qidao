@@ -3,14 +3,14 @@
 "Black" = "黑棋";
 "White" = "白棋";
 "Win Rate" = "胜率图";
-"AI Logs" = "AI 日志";
+"Engine Logs" = "引擎日志";
 "Theme" = "主题";
 "Reset" = "重置";
 "Numbers" = "手数";
 "Coordinates" = "坐标";
 "Sound" = "音效";
 "Variation Tree" = "变化树";
-"AI Analysis" = "AI 分析";
+"Move Evaluation" = "着法评估";
 "Evaluation" = "形势评估";
 "Ready" = "就绪";
 "Board Reset" = "棋盘已重置";

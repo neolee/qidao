@@ -16,7 +16,7 @@ struct ContentView: View {
         HSplitView {
             LeftSidebarView(viewModel: viewModel, showInfoEditor: $showInfoEditor)
             
-            BoardView(viewModel: viewModel, isBoardFocused: $isBoardFocused)
+            CenterView(viewModel: viewModel, isBoardFocused: $isBoardFocused)
                 .frame(minWidth: 400)
             
             RightSidebarView(viewModel: viewModel)

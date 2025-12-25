@@ -10,7 +10,7 @@ struct RightSidebarView: View {
                     .frame(maxHeight: .infinity)
             }
 
-            GroupBox(label: Label("AI Analysis".localized, systemImage: "list.bullet.rectangle")) {
+            GroupBox(label: Label("Move Evaluation".localized, systemImage: "list.bullet.rectangle")) {
                 Text("Analysis Table Placeholder")
                     .frame(height: 200)
                     .frame(maxWidth: .infinity)

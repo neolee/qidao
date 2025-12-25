@@ -44,10 +44,10 @@ QiDao (Tao of Go) is a modern Go (Weiqi) board editor and AI analysis tool, prim
 - [x] Project structure initialized with `QiDao/` and `qidao-core/`.
 - [x] **Swift-Rust Bridge**: Confirmed UniFFI as the bridging solution.
 - [x] **Core Setup**: Initialized Rust library in `qidao-core` with UniFFI support.
-- [x] **GUI Prototype**: Created basic `BoardView` and `BoardViewModel` in SwiftUI.
+- [x] **GUI Prototype**: Created basic `CenterView` and `BoardViewModel` in SwiftUI.
 - [x] **Core Integration**: Built Rust static library and generated Swift bindings; integrated into Xcode with a modular `qidao_coreFFI` structure.
 - [x] **SGF Parsing**: Implemented basic SGF parsing in Rust using `sgf-parse` 4.2 and exported via UniFFI.
-- [x] **GUI Framework**: Built interactive `BoardView` and `BoardViewModel` in SwiftUI, supporting stone placement, real-time board updates, and a three-column layout with theme support.
+- [x] **GUI Framework**: Built interactive `CenterView` and `BoardViewModel` in SwiftUI, supporting stone placement, real-time board updates, and a three-column layout with theme support.
 - [x] **SGF Navigation & Persistence**: Implemented `Game` controller in Rust for tree navigation and branch management. Added SGF loading and saving functionality with macOS file picker integration.
 
 ## 7. Technical Notes & Best Practices

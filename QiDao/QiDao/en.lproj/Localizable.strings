@@ -3,14 +3,14 @@
 "Black" = "Black";
 "White" = "White";
 "Win Rate" = "Win Rate";
-"AI Logs" = "AI Logs";
+"Engine Logs" = "Engine Logs";
 "Theme" = "Theme";
 "Reset" = "Reset";
 "Numbers" = "Numbers";
 "Coordinates" = "Coordinates";
 "Sound" = "Sound";
 "Variation Tree" = "Variation Tree";
-"AI Analysis" = "AI Analysis";
+"Move Evaluation" = "Move Evaluation";
 "Evaluation" = "Evaluation";
 "Ready" = "Ready";
 "Board Reset" = "Board Reset";

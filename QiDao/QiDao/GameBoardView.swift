@@ -1,7 +1,7 @@
 import SwiftUI
 import qidao_coreFFI
 
-struct MainBoardView: View {
+struct GameBoardView: View {
     @ObservedObject var viewModel: BoardViewModel
     let size: CGFloat
     let gridSize: Int = 19

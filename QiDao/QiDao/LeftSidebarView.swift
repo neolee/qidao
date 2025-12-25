@@ -79,7 +79,7 @@ struct LeftSidebarView: View {
                     .background(Color.black.opacity(0.05))
             }
 
-            GroupBox(label: Label("AI Logs".localized, systemImage: "terminal")) {
+            GroupBox(label: Label("Engine Logs".localized, systemImage: "terminal")) {
                 ScrollView {
                     Text("GTP Log Placeholder...")
                         .font(.system(.caption, design: .monospaced))

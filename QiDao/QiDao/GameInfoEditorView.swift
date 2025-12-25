@@ -56,7 +56,7 @@ struct GameInfoEditorView: View {
                     HStack {
                         Text("Komi".localized)
                         Spacer()
-                        TextField("Komi".localized, value: $metadata.komi, format: .number)
+                        TextField("", value: $metadata.komi, format: .number)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 80)
                     }

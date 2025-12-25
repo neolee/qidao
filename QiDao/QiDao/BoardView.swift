@@ -42,7 +42,7 @@ struct BoardView: View {
                                 }
                             }
                             Spacer()
-                            Text("vs").font(.caption).foregroundColor(.secondary)
+                            Text("vs".localized).font(.caption).foregroundColor(.secondary)
                             Spacer()
                             VStack(alignment: .trailing) {
                                 Text("White".localized).font(.caption).foregroundColor(.secondary)

@@ -51,8 +51,7 @@
 "Go to Start" = "跳到开始";
 "Go to End" = "跳到最后";
 "Jump to Move" = "跳到指定手数";
-"Move Number" = "手数";
-"Jump" = "跳转";
-"Enter move number (0-999)" = "请输入手数 (0-999)";
 "Previous Move (↑)" = "上一步 (↑)";
 "Next Move (↓)" = "下一步 (↓)";
+"vs" = "对阵";
+"Failed to decode SGF file" = "无法解码 SGF 文件";

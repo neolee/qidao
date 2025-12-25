@@ -57,12 +57,22 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - **Strict Concurrency Checking**: `Minimal` (or `Targeted`)
 - **Swift Language Version**: `5`
 
+### Variation Tree Implementation
+- **Rendering**: Uses SwiftUI `Canvas` (GraphicsContext) for high-performance drawing. This avoids the overhead of thousands of individual `View` objects in large SGF trees.
+- **Auto-Positioning**: Implemented `centerCurrentNode` logic. It calculates the coordinate of the active node and updates the `offset` of the tree container. Triggered via `onChange(of: viewModel.currentNodeId)`.
+- **Navigation**: Supports global "Jump to Move". The Rust core performs a DFS search across all branches to find the first occurrence of a specific move number, allowing navigation outside the current branch.
+
+### Focus & Keyboard Shortcuts
+- **Global Shortcuts**: Keyboard listeners (`.onKeyPress`) are attached to the root `HSplitView` to ensure they capture events regardless of which sub-view is active.
+- **Focus Restoration**: SwiftUI focus can be lost when a focused element (like an inline `TextField`) is removed from the hierarchy. We use `@FocusState` combined with `DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)` to explicitly restore focus to the main container after operations like "Jump to Move" or closing dialogs.
+
 ## 8. Immediate TODOs
 1. **Engine**: Implement basic GTP communication in Rust for AI analysis.
 2. **UI**: Add AI analysis overlay on the board (win rates, suggested moves).
+3. **Config**: Add engine path and weights configuration in UI.
 
 ## 9. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
 - [x] **Phase 2: UI/UX Foundation**: Refined 3D stone visuals, sound effects system, and multi-language support. Fixed sandbox-related permission issues.
-- [x] **Phase 3: Variation Tree & Navigation**: Implemented graphical variation tree, keyboard-based branch switching, and optimized sound feedback for branch navigation.
+- [x] **Phase 3: Variation Tree & Navigation**: Implemented graphical variation tree using `Canvas`, keyboard-based branch switching, and optimized sound feedback. Added global "Jump to Move" with inline UI and focus management.
 

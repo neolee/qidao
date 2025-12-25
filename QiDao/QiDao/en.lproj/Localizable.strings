@@ -48,3 +48,11 @@
 "points" = "points";
 "Draw" = "Draw";
 "Void" = "Void";
+"Go to Start" = "Go to Start";
+"Go to End" = "Go to End";
+"Jump to Move" = "Jump to Move";
+"Move Number" = "Move Number";
+"Jump" = "Jump";
+"Enter move number (0-999)" = "Enter move number (0-999)";
+"Previous Move (↑)" = "Previous Move (↑)";
+"Next Move (↓)" = "Next Move (↓)";

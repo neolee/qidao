@@ -515,6 +515,14 @@ impl Game {
         }
     }
 
+    pub fn jump_to_move_number(&self, target: u32) {
+        let mut state = self.state.lock().unwrap();
+        if let Some((node, path)) = find_node_at_depth(&state.root, target, vec![]) {
+            state.current_node = node;
+            state.history = path;
+        }
+    }
+
     pub fn get_board(&self) -> Arc<Board> {
         let mut state = self.state.lock().unwrap();
         let current_ptr = Arc::as_ptr(&state.current_node) as usize;
@@ -563,6 +571,11 @@ impl Game {
 
     pub fn get_move_count(&self) -> u32 {
         self.state.lock().unwrap().history.len() as u32
+    }
+
+    pub fn get_max_move_count(&self) -> u32 {
+        let state = self.state.lock().unwrap();
+        get_max_depth(&state.root)
     }
 
     pub fn get_next_color(&self) -> StoneColor {
@@ -709,6 +722,31 @@ fn find_path(current: &Arc<SgfNode>, target: &Arc<SgfNode>) -> Option<Vec<Arc<Sg
             let mut full_path = vec![current.clone()];
             full_path.append(&mut path);
             return Some(full_path);
+        }
+    }
+    None
+}
+
+fn get_max_depth(node: &Arc<SgfNode>) -> u32 {
+    let children = node.children.lock().unwrap();
+    if children.is_empty() {
+        0
+    } else {
+        1 + children.iter().map(|c| get_max_depth(c)).max().unwrap_or(0)
+    }
+}
+
+fn find_node_at_depth(current: &Arc<SgfNode>, target: u32, path: Vec<Arc<SgfNode>>) -> Option<(Arc<SgfNode>, Vec<Arc<SgfNode>>)> {
+    if path.len() as u32 == target {
+        return Some((current.clone(), path));
+    }
+
+    let children = current.children.lock().unwrap();
+    for child in children.iter() {
+        let mut next_path = path.clone();
+        next_path.push(current.clone());
+        if let Some(result) = find_node_at_depth(child, target, next_path) {
+            return Some(result);
         }
     }
     None

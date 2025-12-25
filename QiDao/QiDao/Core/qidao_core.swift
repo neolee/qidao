@@ -669,6 +669,8 @@ public protocol GameProtocol : AnyObject {
     
     func getLastMove()  -> SgfProperty?
     
+    func getMaxMoveCount()  -> UInt32
+    
     func getMetadata()  -> GameMetadata
     
     func getMoveCount()  -> UInt32
@@ -682,6 +684,8 @@ public protocol GameProtocol : AnyObject {
     func goBack()  -> Bool
     
     func goForward(index: UInt32)  -> Bool
+    
+    func jumpToMoveNumber(target: UInt32) 
     
     func jumpToNode(target: SgfNode) 
     
@@ -808,6 +812,13 @@ open func getLastMove() -> SgfProperty? {
 })
 }
     
+open func getMaxMoveCount() -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_max_move_count(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func getMetadata() -> GameMetadata {
     return try!  FfiConverterTypeGameMetadata.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_metadata(self.uniffiClonePointer(),$0
@@ -856,6 +867,13 @@ open func goForward(index: UInt32) -> Bool {
         FfiConverterUInt32.lower(index),$0
     )
 })
+}
+    
+open func jumpToMoveNumber(target: UInt32) {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_jump_to_move_number(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(target),$0
+    )
+}
 }
     
 open func jumpToNode(target: SgfNode) {try! rustCall() {
@@ -1712,6 +1730,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_game_get_last_move() != 39187) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_get_max_move_count() != 20201) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_get_metadata() != 39160) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1731,6 +1752,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_go_forward() != 27437) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_jump_to_move_number() != 51090) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_jump_to_node() != 53846) {

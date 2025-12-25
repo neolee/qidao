@@ -111,7 +111,8 @@ class BoardViewModel: ObservableObject {
 
     // Track move history for numbering
     @Published var moveNumbers: [String: Int] = [:]
-    private var moveCount: Int = 0
+    @Published var moveCount: Int = 0
+    @Published var maxMoveCount: Int = 0
 
     init() {
         // Initialize Game Controller
@@ -240,6 +241,25 @@ class BoardViewModel: ObservableObject {
         goForward(index: index)
     }
 
+    func goToStart() {
+        while game.canGoBack() {
+            _ = game.goBack()
+        }
+        syncStateWithGame()
+    }
+
+    func goToEnd() {
+        while game.canGoForward() {
+            _ = game.goForward(index: 0)
+        }
+        syncStateWithGame()
+    }
+
+    func jumpToMove(_ target: Int) {
+        game.jumpToMoveNumber(target: UInt32(target))
+        syncStateWithGame()
+    }
+
     func jumpToNode(id: String) {
         if let node = nodeMap[id] {
             game.jumpToNode(target: node)
@@ -299,6 +319,7 @@ class BoardViewModel: ObservableObject {
             self.board = self.game.getBoard()
             self.nextColor = self.game.getNextColor()
             self.moveCount = Int(self.game.getMoveCount())
+            self.maxMoveCount = Int(self.game.getMaxMoveCount())
             self.metadata = self.game.getMetadata()
             self.currentNodeId = self.game.getCurrentNode().getId()
 

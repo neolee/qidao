@@ -336,6 +336,11 @@ uint32_t uniffi_qidao_core_fn_method_game_get_current_variation_index(void*_Nonn
 RustBuffer uniffi_qidao_core_fn_method_game_get_last_move(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAX_MOVE_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAX_MOVE_COUNT
+uint32_t uniffi_qidao_core_fn_method_game_get_max_move_count(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_METADATA
 RustBuffer uniffi_qidao_core_fn_method_game_get_metadata(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -369,6 +374,11 @@ int8_t uniffi_qidao_core_fn_method_game_go_back(void*_Nonnull ptr, RustCallStatu
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_FORWARD
 int8_t uniffi_qidao_core_fn_method_game_go_forward(void*_Nonnull ptr, uint32_t index, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_MOVE_NUMBER
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_MOVE_NUMBER
+void uniffi_qidao_core_fn_method_game_jump_to_move_number(void*_Nonnull ptr, uint32_t target, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_NODE
@@ -793,6 +803,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_last_move(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_MAX_MOVE_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_MAX_MOVE_COUNT
+uint16_t uniffi_qidao_core_checksum_method_game_get_max_move_count(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_METADATA
 uint16_t uniffi_qidao_core_checksum_method_game_get_metadata(void
@@ -832,6 +848,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_go_back(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GO_FORWARD
 uint16_t uniffi_qidao_core_checksum_method_game_go_forward(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_JUMP_TO_MOVE_NUMBER
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_JUMP_TO_MOVE_NUMBER
+uint16_t uniffi_qidao_core_checksum_method_game_jump_to_move_number(void
     
 );
 #endif

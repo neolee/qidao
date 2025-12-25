@@ -3,43 +3,52 @@ import qidao_coreFFI
 
 struct VariationTreeView: View {
     @ObservedObject var viewModel: BoardViewModel
+
+    // Viewport offset management
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+
     let nodeSize: CGFloat = 8
     let spacingX: CGFloat = 16
     let spacingY: CGFloat = 20
     let padding: CGFloat = 30
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView([.horizontal, .vertical]) {
-                ZStack(alignment: .topLeading) {
-                    // High-performance drawing layer using Canvas
-                    Canvas { context, size in
-                        drawTree(in: context)
-                    }
-                    .frame(width: treeContentWidth, height: treeContentHeight)
-                    .gesture(SpatialTapGesture().onEnded { value in
-                        handleTap(at: value.location)
-                    })
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                // Background to catch drag gestures for panning
+                Color.black.opacity(0.001)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                self.offset = CGSize(
+                                    width: lastOffset.width + value.translation.width,
+                                    height: lastOffset.height + value.translation.height
+                                )
+                            }
+                            .onEnded { value in
+                                self.lastOffset = self.offset
+                            }
+                    )
 
-                    // Invisible anchor for auto-scrolling
-                    if let currentNode = viewModel.treeNodes.first(where: { $0.id == viewModel.currentNodeId }) {
-                        Color.clear
-                            .frame(width: 1, height: 1)
-                            .position(
-                                x: currentNode.x * spacingX + padding,
-                                y: currentNode.y * spacingY + padding
-                            )
-                            .id("scroll_anchor")
-                    }
+                // High-performance drawing layer using Canvas
+                Canvas { context, size in
+                    drawTree(in: context)
                 }
+                .frame(width: treeContentWidth, height: treeContentHeight)
+                .offset(offset)
+                .gesture(SpatialTapGesture().onEnded { value in
+                    handleTap(at: value.location)
+                })
             }
             .onChange(of: viewModel.currentNodeId) { oldId, newId in
-                scrollToCurrent(proxy: proxy)
+                centerCurrentNode(in: geometry.size)
             }
             .onAppear {
-                scrollToCurrent(proxy: proxy)
+                centerCurrentNode(in: geometry.size)
             }
         }
+        .clipped()
         .background(Color.black.opacity(0.02))
         .cornerRadius(8)
     }
@@ -87,7 +96,7 @@ struct VariationTreeView: View {
                 path.addLine(to: CGPoint(x: centerX, y: centerY + s))
                 path.addLine(to: CGPoint(x: centerX - s, y: centerY))
                 path.closeSubpath()
-                
+
                 context.fill(path, with: .color(.blue))
                 context.stroke(path, with: .color(.white), lineWidth: 1.5)
             } else {
@@ -119,13 +128,22 @@ struct VariationTreeView: View {
         }
     }
 
-    private func scrollToCurrent(proxy: ScrollViewProxy) {
-        // Use async to ensure the anchor position is updated before scrolling
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                // Using .center anchor ensures the node is centered both horizontally and vertically
-                proxy.scrollTo("scroll_anchor", anchor: .center)
-            }
+    private func centerCurrentNode(in viewportSize: CGSize) {
+        guard let currentNode = viewModel.treeNodes.first(where: { $0.id == viewModel.currentNodeId }) else {
+            return
+        }
+
+        let targetX = currentNode.x * spacingX + padding
+        let targetY = currentNode.y * spacingY + padding
+
+        let newOffset = CGSize(
+            width: viewportSize.width / 2 - targetX,
+            height: viewportSize.height / 2 - targetY
+        )
+
+        withAnimation(.easeInOut(duration: 0.3)) {
+            self.offset = newOffset
+            self.lastOffset = newOffset
         }
     }
 }

@@ -6,7 +6,10 @@ struct BoardView: View {
     @StateObject private var viewModel = BoardViewModel()
     @ObservedObject private var langManager = LanguageManager.shared
     @FocusState private var isBoardFocused: Bool
+    @FocusState private var isJumpFieldFocused: Bool
     @State private var showInfoEditor = false
+    @State private var isEditingMoveNumber = false
+    @State private var jumpToMoveInput = ""
 
     var body: some View {
         HSplitView {
@@ -25,9 +28,9 @@ struct BoardView: View {
                         if !viewModel.metadata.date.isEmpty {
                             InfoRow(label: "Date".localized, value: viewModel.metadata.date)
                         }
-                        
+
                         Divider()
-                        
+
                         HStack {
                             VStack(alignment: .leading) {
                                 Text("Black".localized).font(.caption).foregroundColor(.secondary)
@@ -51,19 +54,19 @@ struct BoardView: View {
                                 }
                             }
                         }
-                        
+
                         Divider()
-                        
+
                         InfoRow(label: "Komi".localized, value: String(format: "%.1f", viewModel.metadata.komi))
                         if !viewModel.metadata.result.isEmpty {
                             InfoRow(label: "Result".localized, value: viewModel.formattedResult)
                         }
-                        
+
                         Text("\("Next".localized): \(viewModel.nextColor == .black ? "Black".localized : "White".localized)")
                             .font(.subheadline)
                             .fontWeight(.bold)
                             .padding(.top, 4)
-                        
+
                         Button(action: { showInfoEditor = true }) {
                             Label("Edit".localized, systemImage: "pencil")
                                 .frame(maxWidth: .infinity)
@@ -173,31 +176,74 @@ struct BoardView: View {
                     }
                 }
                 .contentShape(Rectangle())
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        isBoardFocused = true
-                    }
-                )
-                .focusable()
-                .focused($isBoardFocused)
-                .focusEffectDisabled()
                 .onAppear {
                     isBoardFocused = true
                 }
 
                 // Navigation Toolbar
-                HStack(spacing: 20) {
+                HStack(spacing: 15) {
+                    Button(action: { viewModel.goToStart() }) {
+                        Image(systemName: "backward.end.circle")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                    .help("Go to Start".localized)
+
                     Button(action: { viewModel.goBack() }) {
                         Image(systemName: "chevron.left.circle")
                             .font(.title2)
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .help("Previous Move (↑)")
+                    .help("Previous Move (↑)".localized)
 
-                    Text("Move".localized + " \(viewModel.moveNumbers.count)")
-                        .font(.headline)
-                        .frame(width: 100)
+                    ZStack {
+                        if isEditingMoveNumber {
+                            TextField("0-\(viewModel.maxMoveCount)", text: $jumpToMoveInput)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                                .multilineTextAlignment(.center)
+                                .focused($isJumpFieldFocused)
+                                .onSubmit {
+                                    let targetMove = Int(jumpToMoveInput)
+                                    // Carefully handle focus to avoid global shortcuts dis-functioning
+                                    isJumpFieldFocused = false
+                                    if let move = targetMove {
+                                        viewModel.jumpToMove(move)
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                        isBoardFocused = true
+                                    }
+                                }
+                                .onExitCommand {
+                                    isJumpFieldFocused = false
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                        isBoardFocused = true
+                                    }
+                                }
+                                .onChange(of: isJumpFieldFocused) { old, new in
+                                    if !new {
+                                        isEditingMoveNumber = false
+                                    }
+                                }
+                        } else {
+                            Button(action: {
+                                jumpToMoveInput = ""
+                                isEditingMoveNumber = true
+                                DispatchQueue.main.async {
+                                    isJumpFieldFocused = true
+                                }
+                            }) {
+                                Text("Move".localized + " \(viewModel.moveCount)")
+                                    .font(.headline)
+                                    .frame(width: 100)
+                            }
+                            .buttonStyle(.plain)
+                            .focusable(false)
+                            .help("Jump to Move".localized)
+                        }
+                    }
 
                     Button(action: { viewModel.goForward() }) {
                         Image(systemName: "chevron.right.circle")
@@ -205,7 +251,15 @@ struct BoardView: View {
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .help("Next Move (↓)")
+                    .help("Next Move (↓)".localized)
+
+                    Button(action: { viewModel.goToEnd() }) {
+                        Image(systemName: "forward.end.circle")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                    .help("Go to End".localized)
                 }
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity)
@@ -239,6 +293,14 @@ struct BoardView: View {
             .padding()
             .frame(minWidth: 200, maxWidth: 300)
         }
+        .focusable()
+        .focused($isBoardFocused)
+        .focusEffectDisabled()
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                isBoardFocused = true
+            }
+        )
         .onKeyPress(.upArrow) {
             viewModel.goBack()
             return .handled
@@ -296,7 +358,7 @@ struct BoardView: View {
 struct InfoRow: View {
     let label: String
     let value: String
-    
+
     var body: some View {
         HStack {
             Text(label)
@@ -335,7 +397,7 @@ struct GameInfoEditorView: View {
                             .frame(width: 60)
                     }
                 }
-                
+
                 Section("Game Info".localized) {
                     TextField("Game Name".localized, text: $metadata.gameName)
                     TextField("Event".localized, text: $metadata.event)
@@ -343,7 +405,7 @@ struct GameInfoEditorView: View {
                     TextField("Place".localized, text: $metadata.place)
                     TextField("Result".localized, text: $metadata.result)
                 }
-                
+
                 Section("Rules".localized) {
                     HStack {
                         Text("Komi".localized)

@@ -35,7 +35,7 @@ QiDao (Tao of Go) is a modern Go (Weiqi) board editor and AI analysis tool, prim
 
 ## 5. Architecture Design
 1. **Core Logic (Rust)**: SGF Tree, Rules Engine, Engine Communication.
-2. **Application State (Swift)**: ViewModel layer, managing engine lifecycle and UI state.
+2. **Application State (Swift)**: ViewModel layer, managing engine life-cycle and UI state.
 3. **UI (SwiftUI)**: View layer, high-performance board rendering.
 
 ## 6. Project Progress

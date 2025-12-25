@@ -6,46 +6,38 @@ struct VariationTreeView: View {
     let nodeSize: CGFloat = 8
     let spacingX: CGFloat = 16
     let spacingY: CGFloat = 20
+    let padding: CGFloat = 30
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView([.horizontal, .vertical]) {
                 ZStack(alignment: .topLeading) {
-                    // Draw edges
-                    ForEach(viewModel.treeEdges) { edge in
-                        TreeEdgeView(edge: edge, spacingX: spacingX, spacingY: spacingY, nodeSize: nodeSize)
+                    // High-performance drawing layer using Canvas
+                    Canvas { context, size in
+                        drawTree(in: context)
                     }
+                    .frame(width: treeContentWidth, height: treeContentHeight)
+                    .gesture(SpatialTapGesture().onEnded { value in
+                        handleTap(at: value.location)
+                    })
 
-                    // Draw nodes
-                    ForEach(viewModel.treeNodes) { node in
-                        TreeNodeView(
-                            node: node,
-                            isCurrent: node.id == viewModel.currentNodeId,
-                            spacingX: spacingX,
-                            spacingY: spacingY,
-                            nodeSize: nodeSize
-                        ) {
-                            viewModel.jumpToNode(id: node.id)
-                        }
-                        .id(node.id)
+                    // Invisible anchor for auto-scrolling
+                    if let currentNode = viewModel.treeNodes.first(where: { $0.id == viewModel.currentNodeId }) {
+                        Color.clear
+                            .frame(width: 1, height: 1)
+                            .position(
+                                x: currentNode.x * spacingX + padding,
+                                y: currentNode.y * spacingY + padding
+                            )
+                            .id("scroll_anchor")
                     }
                 }
-                .padding(20)
-                .frame(width: treeContentWidth, height: treeContentHeight)
-                .frame(minWidth: 200, minHeight: 200)
             }
             .onChange(of: viewModel.currentNodeId) { oldId, newId in
-                if !newId.isEmpty {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        proxy.scrollTo(newId, anchor: .center)
-                    }
-                }
+                scrollToCurrent(proxy: proxy)
             }
             .onAppear {
-                // Initial scroll to current node
-                if !viewModel.currentNodeId.isEmpty {
-                    proxy.scrollTo(viewModel.currentNodeId, anchor: .center)
-                }
+                scrollToCurrent(proxy: proxy)
             }
         }
         .background(Color.black.opacity(0.02))
@@ -53,76 +45,94 @@ struct VariationTreeView: View {
     }
 
     private var treeContentWidth: CGFloat {
-        (viewModel.treeWidth * spacingX) + 60
+        max(200, (viewModel.treeWidth * spacingX) + padding * 2)
     }
 
     private var treeContentHeight: CGFloat {
-        (viewModel.treeHeight * spacingY) + 60
+        max(200, (viewModel.treeHeight * spacingY) + padding * 2)
     }
-}
 
-struct TreeEdgeView: View {
-    let edge: TreeVisualEdge
-    let spacingX: CGFloat
-    let spacingY: CGFloat
-    let nodeSize: CGFloat
-
-    var body: some View {
-        Path { path in
-            let startX = edge.from.x * spacingX + nodeSize/2
-            let startY = edge.from.y * spacingY + nodeSize/2
-            let endX = edge.to.x * spacingX + nodeSize/2
-            let endY = edge.to.y * spacingY + nodeSize/2
-            path.move(to: CGPoint(x: startX, y: startY))
-            path.addLine(to: CGPoint(x: endX, y: endY))
+    private func drawTree(in context: GraphicsContext) {
+        // 1. Draw edges
+        for edge in viewModel.treeEdges {
+            var path = Path()
+            path.move(to: CGPoint(
+                x: edge.from.x * spacingX + padding,
+                y: edge.from.y * spacingY + padding
+            ))
+            path.addLine(to: CGPoint(
+                x: edge.to.x * spacingX + padding,
+                y: edge.to.y * spacingY + padding
+            ))
+            context.stroke(path, with: .color(.gray.opacity(0.5)), lineWidth: 1)
         }
-        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-    }
-}
 
-struct TreeNodeView: View {
-    let node: TreeVisualNode
-    let isCurrent: Bool
-    let spacingX: CGFloat
-    let spacingY: CGFloat
-    let nodeSize: CGFloat
-    let action: () -> Void
+        // 2. Draw nodes
+        for node in viewModel.treeNodes {
+            let centerX = node.x * spacingX + padding
+            let centerY = node.y * spacingY + padding
+            let rect = CGRect(
+                x: centerX - nodeSize/2,
+                y: centerY - nodeSize/2,
+                width: nodeSize,
+                height: nodeSize
+            )
 
-    var body: some View {
-        let posX = node.x * spacingX + nodeSize/2
-        let posY = node.y * spacingY + nodeSize/2
-
-        Group {
-            if isCurrent {
-                currentMarker
+            if node.id == viewModel.currentNodeId {
+                // Current node: Blue Diamond (Drawn using Path for maximum compatibility)
+                let s = nodeSize * 0.75
+                var path = Path()
+                path.move(to: CGPoint(x: centerX, y: centerY - s))
+                path.addLine(to: CGPoint(x: centerX + s, y: centerY))
+                path.addLine(to: CGPoint(x: centerX, y: centerY + s))
+                path.addLine(to: CGPoint(x: centerX - s, y: centerY))
+                path.closeSubpath()
+                
+                context.fill(path, with: .color(.blue))
+                context.stroke(path, with: .color(.white), lineWidth: 1.5)
             } else {
-                stoneMarker
+                // Normal node: Circle
+                let path = Path(ellipseIn: rect)
+                let color = node.color == .black ? Color.black : (node.color == .white ? Color.white : Color.gray.opacity(0.4))
+                context.fill(path, with: .color(color))
+                context.stroke(path, with: .color(.black.opacity(0.2)), lineWidth: 0.5)
             }
         }
-        .position(x: posX, y: posY)
-        .onTapGesture(perform: action)
     }
 
-    private var currentMarker: some View {
-        Rectangle()
-            .fill(Color.blue)
-            .frame(width: nodeSize, height: nodeSize)
-            .rotationEffect(.degrees(45))
-            .overlay(
-                Rectangle()
-                    .stroke(Color.white, lineWidth: 1.5)
-                    .rotationEffect(.degrees(45))
-            )
-            .shadow(color: .blue.opacity(0.3), radius: 2)
+    private func handleTap(at location: CGPoint) {
+        let threshold: CGFloat = 15
+        var closestNode: TreeVisualNode?
+        var minDistance: CGFloat = .infinity
+
+        for node in viewModel.treeNodes {
+            let nodePos = CGPoint(x: node.x * spacingX + padding, y: node.y * spacingY + padding)
+            let dist = location.distance(to: nodePos)
+            if dist < minDistance {
+                minDistance = dist
+                closestNode = node
+            }
+        }
+
+        if let closest = closestNode, minDistance < threshold {
+            viewModel.jumpToNode(id: closest.id)
+        }
     }
 
-    private var stoneMarker: some View {
-        Circle()
-            .fill(node.color == .black ? Color.black : (node.color == .white ? Color.white : Color.gray.opacity(0.4)))
-            .frame(width: nodeSize, height: nodeSize)
-            .overlay(
-                Circle().stroke(Color.black.opacity(0.2), lineWidth: 0.5)
-            )
+    private func scrollToCurrent(proxy: ScrollViewProxy) {
+        // Use async to ensure the anchor position is updated before scrolling
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                // Using .center anchor ensures the node is centered both horizontally and vertically
+                proxy.scrollTo("scroll_anchor", anchor: .center)
+            }
+        }
+    }
+}
+
+extension CGPoint {
+    func distance(to other: CGPoint) -> CGFloat {
+        sqrt(pow(x - other.x, 2) + pow(y - other.y, 2))
     }
 }
 
@@ -133,12 +143,12 @@ struct VariationMarker: View {
 
     var body: some View {
         Circle()
-            .fill(Color.white.opacity(0.5))
-            .frame(width: size * 0.4, height: size * 0.4)
+            .fill(Color.gray.opacity(0.5))
+            .frame(width: size * 0.5, height: size * 0.5)
             .overlay(
                 Circle()
-                    .stroke(Color.black.opacity(0.3), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
             )
-            .shadow(radius: 1)
+            .shadow(color: .black.opacity(0.1), radius: 1)
     }
 }

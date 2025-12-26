@@ -18,12 +18,15 @@ pub struct AnalysisQuery {
     pub analyze_turns: Vec<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_visits: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub report_during_search_every: Option<f64>,
 }
 
 pub struct AnalysisClient {
     child: Child,
     stdin: tokio::process::ChildStdin,
     stdout_reader: BufReader<tokio::process::ChildStdout>,
+    stderr_reader: BufReader<tokio::process::ChildStderr>,
 }
 
 impl AnalysisClient {
@@ -33,18 +36,21 @@ impl AnalysisClient {
             .current_dir(std::env::temp_dir())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
+            .stderr(Stdio::piped())
             .kill_on_drop(true)
             .spawn()?;
 
         let stdin = child.stdin.take().ok_or_else(|| anyhow!("Failed to open stdin"))?;
         let stdout = child.stdout.take().ok_or_else(|| anyhow!("Failed to open stdout"))?;
+        let stderr = child.stderr.take().ok_or_else(|| anyhow!("Failed to open stderr"))?;
         let stdout_reader = BufReader::new(stdout);
+        let stderr_reader = BufReader::new(stderr);
 
         Ok(Self {
             child,
             stdin,
             stdout_reader,
+            stderr_reader,
         })
     }
 
@@ -64,6 +70,17 @@ impl AnalysisClient {
         }
         let val: Value = serde_json::from_str(&line)?;
         Ok(val)
+    }
+
+    pub async fn read_stderr_line(&mut self) -> Result<Option<String>> {
+        let mut line = String::new();
+        // Use a timeout or non-blocking read if possible, but for now let's try a simple read_line
+        // Actually, we want to read whatever is available.
+        // For simplicity in this async context, we'll just read one line.
+        match tokio::time::timeout(std::time::Duration::from_millis(10), self.stderr_reader.read_line(&mut line)).await {
+            Ok(Ok(n)) if n > 0 => Ok(Some(line.trim().to_string())),
+            _ => Ok(None),
+        }
     }
 
     pub async fn stop(mut self) -> Result<()> {

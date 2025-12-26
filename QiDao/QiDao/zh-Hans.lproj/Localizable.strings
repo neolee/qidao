@@ -77,3 +77,14 @@
 "Last 1" = "最近1手";
 "None" = "不显示";
 "Ownership Map" = "形势分布图";
+"AI Engine Configuration" = "AI 引擎配置";
+"Engine Executable" = "引擎可执行文件";
+"Path to KataGo" = "KataGo 路径";
+"Browse..." = "浏览...";
+"Model File" = "权重文件 (Model)";
+"Path to .bin.gz" = ".bin.gz 文件路径";
+"Arguments" = "启动参数";
+"Additional arguments" = "额外启动参数";
+"Analysis Settings" = "分析设置";
+"Max Visits" = "最大计算量 (Visits)";
+"Reset to Default" = "恢复默认";

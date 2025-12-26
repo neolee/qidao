@@ -90,6 +90,7 @@ class BoardViewModel: ObservableObject {
 
     private var analysisEngine: AnalysisEngine? = nil
     private var analysisTask: Task<Void, Never>? = nil
+    private var logTask: Task<Void, Never>? = nil
 
     var treeWidth: CGFloat {
         let maxX = treeNodes.map { $0.x }.max() ?? 0
@@ -339,10 +340,32 @@ class BoardViewModel: ObservableObject {
                 try await engine.start(executable: enginePath, args: args)
                 self.analysisEngine = engine
                 self.message = "Ready".localized
+                self.startLogPolling()
                 updateAnalysis()
             } catch {
                 self.isAnalyzing = false
                 self.message = "AI Error: \(error)".localized
+            }
+        }
+    }
+
+    private func startLogPolling() {
+        logTask?.cancel()
+        logTask = Task {
+            while !Task.isCancelled {
+                if let engine = analysisEngine {
+                    let logs = await engine.getLogs()
+                    if !logs.isEmpty {
+                        let newLogs = logs.joined(separator: "\n")
+                        self.engineLogs += newLogs + "\n"
+                        
+                        // Keep logs within a reasonable size
+                        if self.engineLogs.count > 10000 {
+                            self.engineLogs = String(self.engineLogs.suffix(5000))
+                        }
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
             }
         }
     }
@@ -352,6 +375,8 @@ class BoardViewModel: ObservableObject {
         analysisResult = nil
         analysisTask?.cancel()
         analysisTask = nil
+        logTask?.cancel()
+        logTask = nil
         if let engine = analysisEngine {
             Task {
                 try? await engine.stop()
@@ -377,6 +402,7 @@ class BoardViewModel: ObservableObject {
                 // Debounce: wait for 1 second before starting analysis
                 try await Task.sleep(nanoseconds: 1_000_000_000)
 
+                let maxVisits = UserDefaults.standard.integer(forKey: "maxVisits")
                 let query: [String: Any] = [
                     "id": "qidao",
                     "moves": moves,
@@ -386,16 +412,28 @@ class BoardViewModel: ObservableObject {
                     "boardXSize": metadata.size,
                     "boardYSize": metadata.size,
                     "analyzeTurns": [moves.count],
-                    "maxVisits": 100
+                    "maxVisits": maxVisits > 0 ? maxVisits : 100,
+                    "reportDuringSearchEvery": 0.5
                 ]
                 let jsonData = try JSONSerialization.data(withJSONObject: query)
                 let jsonString = String(data: jsonData, encoding: .utf8)!
 
                 try await engine.analyze(queryJson: jsonString)
-                let result = try await engine.getNextResult()
-
-                if !Task.isCancelled {
-                    self.analysisResult = result
+                
+                // Continuous update loop
+                while !Task.isCancelled {
+                    if let result = try? await engine.getNextResult() {
+                        if !Task.isCancelled {
+                            self.analysisResult = result
+                            // If we reached max visits, we can stop polling for this turn
+                            if result.rootInfo.visits >= (maxVisits > 0 ? UInt32(maxVisits) : 100) {
+                                break
+                            }
+                        }
+                    } else {
+                        // If no result yet, wait a bit
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                    }
                 }
             } catch {
                 if !Task.isCancelled {

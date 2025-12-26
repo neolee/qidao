@@ -272,6 +272,11 @@ void*_Nonnull uniffi_qidao_core_fn_constructor_analysisengine_new(RustCallStatus
 uint64_t uniffi_qidao_core_fn_method_analysisengine_analyze(void*_Nonnull ptr, RustBuffer query_json
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_LOGS
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_LOGS
+uint64_t uniffi_qidao_core_fn_method_analysisengine_get_logs(void*_Nonnull ptr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
 uint64_t uniffi_qidao_core_fn_method_analysisengine_get_next_result(void*_Nonnull ptr
@@ -818,6 +823,12 @@ uint16_t uniffi_qidao_core_checksum_func_parse_sgf(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_ANALYZE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_ANALYZE
 uint16_t uniffi_qidao_core_checksum_method_analysisengine_analyze(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_GET_LOGS
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_GET_LOGS
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_get_logs(void
     
 );
 #endif

@@ -26,14 +26,7 @@ struct ContentView: View {
             GameInfoEditorView(viewModel: viewModel)
         }
         .sheet(isPresented: $showEngineConfig) {
-            // Placeholder for Engine Config View
-            VStack(spacing: 20) {
-                Text("AI Engine Configuration").font(.headline)
-                Text("Settings will be implemented in Phase 2").foregroundColor(.secondary)
-                Button("Close") { showEngineConfig = false }
-            }
-            .padding()
-            .frame(width: 400, height: 300)
+            EngineConfigView(viewModel: viewModel)
         }
         .onAppear {
             isBoardFocused = true

@@ -500,6 +500,8 @@ public protocol AnalysisEngineProtocol : AnyObject {
     
     func analyze(queryJson: String) async throws 
     
+    func getLogs() async  -> [String]
+    
     func getNextResult() async throws  -> AnalysisResult
     
     func start(executable: String, args: [String]) async throws 
@@ -579,6 +581,24 @@ open func analyze(queryJson: String)async throws  {
             freeFunc: ffi_qidao_core_rust_future_free_void,
             liftFunc: { $0 },
             errorHandler: FfiConverterTypeSgfError.lift
+        )
+}
+    
+open func getLogs()async  -> [String] {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_get_logs(
+                    self.uniffiClonePointer()
+                    
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_rust_buffer,
+            completeFunc: ffi_qidao_core_rust_future_complete_rust_buffer,
+            freeFunc: ffi_qidao_core_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceString.lift,
+            errorHandler: nil
+            
         )
 }
     
@@ -2487,6 +2507,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_analysisengine_analyze() != 52960) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_analysisengine_get_logs() != 39263) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_analysisengine_get_next_result() != 38822) {

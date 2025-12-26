@@ -134,25 +134,30 @@ struct LeftSidebarView: View {
 
                     ScrollViewReader { proxy in
                         ScrollView {
-                            Text(viewModel.engineLogs.isEmpty ? "No logs...".localized : viewModel.engineLogs)
-                                .font(.system(size: 10, design: .monospaced))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .id("logEnd")
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(viewModel.engineLogs.isEmpty ? "No logs...".localized : viewModel.engineLogs)
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id("logEnd")
+                            }
                         }
                         .frame(maxHeight: .infinity)
                         .onChange(of: viewModel.engineLogs) {
-                            proxy.scrollTo("logEnd", anchor: .bottom)
+                            withAnimation {
+                                proxy.scrollTo("logEnd", anchor: .bottom)
+                            }
                         }
                     }
                     .background(Color.black.opacity(0.03))
                     .cornerRadius(4)
                 }
                 .padding(5)
-                .frame(maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .textSelection(.enabled)
-
-            Spacer(minLength: 0)
         }
         .padding()
         .frame(minWidth: 250, maxWidth: 350)

@@ -76,3 +76,14 @@
 "Last 1" = "Last 1";
 "None" = "None";
 "Ownership Map" = "Ownership Map";
+"AI Engine Configuration" = "AI Engine Configuration";
+"Engine Executable" = "Engine Executable";
+"Path to KataGo" = "Path to KataGo";
+"Browse..." = "Browse...";
+"Model File" = "Model File";
+"Path to .bin.gz" = "Path to .bin.gz";
+"Arguments" = "Arguments";
+"Additional arguments" = "Additional arguments";
+"Analysis Settings" = "Analysis Settings";
+"Max Visits" = "Max Visits";
+"Reset to Default" = "Reset to Default";

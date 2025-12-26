@@ -82,7 +82,12 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - **Overlay Logic**: Ensure AI overlays are cleared immediately upon move placement to avoid visual lag.
 
 ### Phase 2: AI Configuration & Communication
-- **Config Sheet**: Implement a detailed settings UI for engine paths, arguments, and weights.
+- **Config Sheet**: Implement a detailed settings UI with a three-layer structure:
+  - **Engine Profiles**: Manage multiple engine presets (executable path, model, config, extra args).
+  - **Analysis Settings**:
+    - Prominent controls for frequently adjusted parameters (Max Visits, Max Time).
+    - A collapsible "Advanced Settings" table for key-value pairs (e.g., `reportDuringSearchEvery`, `includePolicy`).
+  - **Display Settings**: Global UI preferences (Max Candidates, Show Ownership, Theme).
 - **Engine Logs**: Capture and display raw GTP/Analysis API logs in the UI with auto-scroll.
 
 ### Phase 3: Visual Markers & AI Enhancements

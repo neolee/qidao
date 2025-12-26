@@ -322,6 +322,11 @@ RustBuffer uniffi_qidao_core_fn_method_board_get_stone(void*_Nonnull ptr, uint32
 void*_Nonnull uniffi_qidao_core_fn_method_board_place_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_WITH_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_WITH_STONE
+void*_Nonnull uniffi_qidao_core_fn_method_board_with_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GAME
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GAME
 void*_Nonnull uniffi_qidao_core_fn_clone_game(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -362,6 +367,11 @@ RustBuffer uniffi_qidao_core_fn_method_game_get_analysis_moves(void*_Nonnull ptr
 void*_Nonnull uniffi_qidao_core_fn_method_game_get_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_BOARD_STONES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_BOARD_STONES
+RustBuffer uniffi_qidao_core_fn_method_game_get_current_board_stones(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_NODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_NODE
 void*_Nonnull uniffi_qidao_core_fn_method_game_get_current_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -375,6 +385,11 @@ RustBuffer uniffi_qidao_core_fn_method_game_get_current_path_moves(void*_Nonnull
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
 uint32_t uniffi_qidao_core_fn_method_game_get_current_variation_index(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_STONES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_STONES
+RustBuffer uniffi_qidao_core_fn_method_game_get_initial_stones(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_LAST_MOVE
@@ -868,6 +883,12 @@ uint16_t uniffi_qidao_core_checksum_method_board_place_stone(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_WITH_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_WITH_STONE
+uint16_t uniffi_qidao_core_checksum_method_board_with_stone(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_BACK
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_BACK
 uint16_t uniffi_qidao_core_checksum_method_game_can_go_back(void
@@ -892,6 +913,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_board(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_BOARD_STONES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_BOARD_STONES
+uint16_t uniffi_qidao_core_checksum_method_game_get_current_board_stones(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_NODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_NODE
 uint16_t uniffi_qidao_core_checksum_method_game_get_current_node(void
@@ -907,6 +934,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_current_path_moves(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
 uint16_t uniffi_qidao_core_checksum_method_game_get_current_variation_index(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_INITIAL_STONES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_INITIAL_STONES
+uint16_t uniffi_qidao_core_checksum_method_game_get_initial_stones(void
     
 );
 #endif

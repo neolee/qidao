@@ -129,6 +129,24 @@ impl Board {
         self.grid[(y * self.size + x) as usize]
     }
 
+    /// Forcefully places a stone without checking rules (for setup stones).
+    pub fn with_stone(&self, x: u32, y: u32, color: Option<StoneColor>) -> Arc<Board> {
+        if x >= self.size || y >= self.size {
+            return Arc::new(Board {
+                size: self.size,
+                grid: self.grid.clone(),
+                last_captured_pos: self.last_captured_pos,
+            });
+        }
+        let mut new_grid = self.grid.clone();
+        new_grid[(y * self.size + x) as usize] = color;
+        Arc::new(Board {
+            size: self.size,
+            grid: new_grid,
+            last_captured_pos: self.last_captured_pos,
+        })
+    }
+
     /// Attempts to place a stone. Returns true if successful.
     pub fn place_stone(&self, x: u32, y: u32, color: StoneColor) -> Result<Arc<Board>, SgfError> {
         if x >= self.size || y >= self.size {
@@ -242,10 +260,10 @@ fn sgf_to_gtp(sgf_coord: &str, size: u32) -> String {
     if chars.len() < 2 {
         return "pass".to_string();
     }
-    
+
     let x = (chars[0] as u32).saturating_sub('a' as u32);
     let y = (chars[1] as u32).saturating_sub('a' as u32);
-    
+
     if x >= size || y >= size {
         return "pass".to_string();
     }
@@ -255,7 +273,7 @@ fn sgf_to_gtp(sgf_coord: &str, size: u32) -> String {
     } else {
         (b'A' + x as u8 + 1) as char // Skip 'I'
     };
-    
+
     let row = size - y;
     format!("{}{}", col_char, row)
 }
@@ -584,23 +602,35 @@ impl Game {
                 continue;
             }
 
-            // Apply moves in this node
+            // Apply moves and setup stones in this node
             let props = node.properties.lock().unwrap();
             for prop in props.iter() {
-                let color = if prop.identifier == "B" { Some(StoneColor::Black) }
-                           else if prop.identifier == "W" { Some(StoneColor::White) }
-                           else { None };
-
-                if let Some(c) = color {
-                    if let Some(coords) = prop.values.first() {
-                        if coords.len() == 2 {
-                            let x = coords.as_bytes()[0] as i32 - 'a' as i32;
-                            let y = coords.as_bytes()[1] as i32 - 'a' as i32;
-                            if let Ok(next_board) = current_board.place_stone(x as u32, y as u32, c) {
-                                current_board = next_board;
+                match prop.identifier.as_str() {
+                    "B" | "W" => {
+                        let color = if prop.identifier == "B" { StoneColor::Black } else { StoneColor::White };
+                        if let Some(coords) = prop.values.first() {
+                            if coords.len() == 2 {
+                                let x = coords.as_bytes()[0] as i32 - 'a' as i32;
+                                let y = coords.as_bytes()[1] as i32 - 'a' as i32;
+                                if let Ok(next_board) = current_board.place_stone(x as u32, y as u32, color) {
+                                    current_board = next_board;
+                                }
                             }
                         }
                     }
+                    "AB" | "AW" | "AE" => {
+                        let color = if prop.identifier == "AB" { Some(StoneColor::Black) }
+                                   else if prop.identifier == "AW" { Some(StoneColor::White) }
+                                   else { None };
+                        for coords in &prop.values {
+                            if coords.len() == 2 {
+                                let x = coords.as_bytes()[0] as i32 - 'a' as i32;
+                                let y = coords.as_bytes()[1] as i32 - 'a' as i32;
+                                current_board = current_board.with_stone(x as u32, y as u32, color);
+                            }
+                        }
+                    }
+                    _ => {}
                 }
             }
             state.board_cache.insert(node_ptr, current_board.clone());
@@ -660,12 +690,31 @@ impl Game {
         moves
     }
 
+    pub fn get_initial_stones(&self) -> Vec<Vec<String>> {
+        let state = self.state.lock().unwrap();
+        let size = state.size;
+        let mut stones = Vec::new();
+
+        // Collect all AB/AW from the root node as initial stones
+        let props = state.root.properties.lock().unwrap();
+        for prop in props.iter() {
+            if prop.identifier == "AB" || prop.identifier == "AW" {
+                let color = if prop.identifier == "AB" { "B" } else { "W" };
+                for val in &prop.values {
+                    let gtp_move = sgf_to_gtp(val, size);
+                    stones.push(vec![color.to_string(), gtp_move]);
+                }
+            }
+        }
+        stones
+    }
+
     pub fn get_analysis_moves(&self) -> Vec<Vec<String>> {
         let state = self.state.lock().unwrap();
         let size = state.size;
         let mut path = state.history.clone();
         path.push(state.current_node.clone());
-        
+
         let mut moves = Vec::new();
         for node in path {
             let props = node.properties.lock().unwrap();
@@ -679,6 +728,31 @@ impl Game {
             }
         }
         moves
+    }
+
+    pub fn get_current_board_stones(&self) -> Vec<Vec<String>> {
+        let board = self.get_board();
+        let size = board.get_size();
+        let mut stones = Vec::new();
+        for y in 0..size {
+            for x in 0..size {
+                if let Some(color) = board.get_stone(x, y) {
+                    let color_str = match color {
+                        StoneColor::Black => "B",
+                        StoneColor::White => "W",
+                    };
+                    let col = if x >= 8 {
+                        (b'A' + x as u8 + 1) as char
+                    } else {
+                        (b'A' + x as u8) as char
+                    };
+                    let row = size - y;
+                    let gtp_move = format!("{}{}", col, row);
+                    stones.push(vec![color_str.to_string(), gtp_move]);
+                }
+            }
+        }
+        stones
     }
 
     pub fn can_go_back(&self) -> bool {
@@ -849,12 +923,12 @@ impl GtpEngine {
     pub async fn send_command(&self, cmd: String) -> Result<String, SgfError> {
         let mut lock = self.client.lock().await;
         let mut client = lock.take().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
-        
+
         let (client, result) = get_runtime().spawn(async move {
             let res = client.send_command(&cmd).await;
             (client, res)
         }).await.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
-        
+
         *lock = Some(client);
         result.map_err(|e| SgfError::ParseError { message: e.to_string() })
     }
@@ -894,6 +968,7 @@ pub struct AnalysisResult {
     pub turn_number: u32,
     pub root_info: AnalysisRootInfo,
     pub move_infos: Vec<AnalysisMoveInfo>,
+    pub ownership: Option<Vec<f64>>,
 }
 
 #[derive(uniffi::Object)]
@@ -926,14 +1001,15 @@ impl AnalysisEngine {
         let client_mutex = Arc::clone(&self.client);
         get_runtime().spawn(async move {
             let mut lock = client_mutex.lock().await;
-            let mut client = lock.take().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
-            
-            let query: engine::AnalysisQuery = serde_json::from_str(&query_json)
-                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+            if let Some(client) = lock.as_mut() {
+                let query: engine::AnalysisQuery = serde_json::from_str(&query_json)
+                    .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
 
-            let res = client.send_query(&query).await;
-            *lock = Some(client);
-            res.map_err(|e| SgfError::ParseError { message: e.to_string() })
+                client.send_query(&query).await
+                    .map_err(|e| SgfError::ParseError { message: e.to_string() })
+            } else {
+                Err(SgfError::ParseError { message: "Engine not started".into() })
+            }
         }).await
             .map_err(|e| SgfError::ParseError { message: format!("Task join error: {}", e) })?
     }
@@ -942,32 +1018,29 @@ impl AnalysisEngine {
         let client_mutex = Arc::clone(&self.client);
         get_runtime().spawn(async move {
             let mut lock = client_mutex.lock().await;
-            let mut client = lock.take().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
-            
+            let client = lock.as_mut().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
+
             // Use a longer timeout (2s) to wait for analysis results
             let result = match tokio::time::timeout(std::time::Duration::from_secs(2), client.read_response()).await {
                 Ok(res) => res,
                 Err(_) => {
-                    *lock = Some(client);
                     return Err(SgfError::ParseError { message: "Timeout".into() });
                 }
             };
 
-            *lock = Some(client);
-            
             let val = result.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
-            
+
             // Parse the complex KataGo JSON into our simpler Record
             let id = val["id"].as_str().unwrap_or("").to_string();
             let turn_number = val["turnNumber"].as_u64().unwrap_or(0) as u32;
-            
+
             let root_info_val = &val["rootInfo"];
             let root_info = AnalysisRootInfo {
                 winrate: root_info_val["winrate"].as_f64().unwrap_or(0.0),
                 score_lead: root_info_val["scoreLead"].as_f64().unwrap_or(0.0),
                 visits: root_info_val["visits"].as_u64().unwrap_or(0) as u32,
             };
-            
+
             let mut move_infos = Vec::new();
             if let Some(moves) = val["moveInfos"].as_array() {
                 for m in moves {
@@ -988,12 +1061,22 @@ impl AnalysisEngine {
                     });
                 }
             }
-            
+
+            let mut ownership = None;
+            if let Some(own) = val["ownership"].as_array() {
+                let mut own_vec = Vec::new();
+                for o in own {
+                    own_vec.push(o.as_f64().unwrap_or(0.0));
+                }
+                ownership = Some(own_vec);
+            }
+
             Ok(AnalysisResult {
                 id,
                 turn_number,
                 root_info,
                 move_infos,
+                ownership,
             })
         }).await
             .map_err(|e| SgfError::ParseError { message: format!("Task join error: {}", e) })?

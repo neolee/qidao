@@ -75,20 +75,51 @@ struct LeftSidebarView: View {
             .textSelection(.enabled)
 
             GroupBox(label: Label("Win Rate".localized, systemImage: "chart.line.uptrend.xyaxis")) {
-                VStack(spacing: 10) {
-                    // Real-time win rate bar (placeholder)
-                    Text("Win Rate Bar Placeholder")
-                        .font(.caption)
-                        .frame(height: 20)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue.opacity(0.1))
+                VStack(spacing: 12) {
+                    // Real-time win rate bar
+                    let winRate = viewModel.analysisResult?.rootInfo.winrate ?? 0.5
+                    VStack(spacing: 4) {
+                        HStack {
+                            Text(String(format: "B: %.1f%%", winRate * 100))
+                                .font(.caption.bold())
+                            Spacer()
+                            Text(String(format: "W: %.1f%%", (1.0 - winRate) * 100))
+                                .font(.caption.bold())
+                        }
 
-                    // Chart placeholder
-                    Text("Chart Placeholder")
-                        .font(.caption)
-                        .frame(height: 100)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.black.opacity(0.05))
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Rectangle()
+                                    .fill(Color.white)
+                                Rectangle()
+                                    .fill(Color.black)
+                                    .frame(width: geo.size.width * CGFloat(winRate))
+                            }
+                            .cornerRadius(4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        .frame(height: 12)
+                    }
+
+                    // Win Rate Graph
+                    if viewModel.config.display.showWinRateGraph {
+                        if !viewModel.winRateHistory.isEmpty {
+                            WinRateGraph(history: viewModel.winRateHistory, currentTurn: viewModel.moveCount)
+                                .frame(height: 80)
+                                .padding(.top, 5)
+                        } else {
+                            Text("No analysis data".localized)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(height: 80)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.black.opacity(0.05))
+                                .cornerRadius(4)
+                        }
+                    }
                 }
                 .padding(5)
             }
@@ -138,7 +169,7 @@ struct LeftSidebarView: View {
                                 Text(viewModel.engineLogs.isEmpty ? "No logs...".localized : viewModel.engineLogs)
                                     .font(.system(size: 10, design: .monospaced))
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                
+
                                 Color.clear
                                     .frame(height: 1)
                                     .id("logEnd")
@@ -161,6 +192,69 @@ struct LeftSidebarView: View {
         }
         .padding()
         .frame(minWidth: 250, maxWidth: 350)
+    }
+}
+
+struct InfoRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .fontWeight(.medium)
+        }
+        .font(.subheadline)
+    }
+}
+
+struct WinRateGraph: View {
+    let history: [Double]
+    let currentTurn: Int
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                // Background grid
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: geo.size.height / 2))
+                    path.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height / 2))
+                }
+                .stroke(Color.secondary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [2]))
+
+                // Win rate line
+                Path { path in
+                    guard history.count > 1 else { return }
+                    let step = geo.size.width / CGFloat(max(history.count - 1, 1))
+
+                    for (i, rate) in history.enumerated() {
+                        let x = CGFloat(i) * step
+                        let y = geo.size.height * CGFloat(1.0 - rate)
+                        if i == 0 {
+                            path.move(to: CGPoint(x: x, y: y))
+                        } else {
+                            path.addLine(to: CGPoint(x: x, y: y))
+                        }
+                    }
+                }
+                .stroke(Color.blue, lineWidth: 2)
+
+                // Current turn indicator
+                if currentTurn < history.count {
+                    let step = geo.size.width / CGFloat(max(history.count - 1, 1))
+                    let x = CGFloat(currentTurn) * step
+                    Rectangle()
+                        .fill(Color.red)
+                        .frame(width: 1)
+                        .offset(x: x - geo.size.width / 2)
+                }
+            }
+            .background(Color.black.opacity(0.05))
+            .cornerRadius(4)
+        }
     }
 }
 

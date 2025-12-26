@@ -1,0 +1,89 @@
+import Foundation
+import Combine
+
+struct EngineProfile: Identifiable, Codable, Equatable {
+    var id: UUID
+    var name: String
+    var path: String
+    var model: String
+    var config: String
+    var extraArgs: String
+
+    init(id: UUID = UUID(), name: String, path: String, model: String = "", config: String = "", extraArgs: String = "") {
+        self.id = id
+        self.name = name
+        self.path = path
+        self.model = model
+        self.config = config
+        self.extraArgs = extraArgs
+    }
+
+    static var `default`: EngineProfile {
+        EngineProfile(
+            name: "Default KataGo",
+            path: "/opt/homebrew/bin/katago",
+            model: "",
+            config: "",
+            extraArgs: ""
+        )
+    }
+}
+
+struct AnalysisSettings: Codable, Equatable {
+    var maxVisits: Int = 1000
+    var maxTime: Double = 10.0
+    var iterativeDeepening: Bool = true
+    var reportDuringSearchEvery: Double = 0.5
+    var includePolicy: Bool = true
+    var advancedParams: [String: String] = [:]
+}
+
+struct DisplaySettings: Codable, Equatable {
+    var maxCandidates: Int = 5
+    var showOwnership: Bool = true
+    var showWinRateGraph: Bool = true
+}
+
+struct AppConfig: Codable {
+    var currentProfileId: UUID?
+    var profiles: [EngineProfile]
+    var analysis: AnalysisSettings
+    var display: DisplaySettings
+
+    static var `default`: AppConfig {
+        let defaultProfile = EngineProfile.default
+        return AppConfig(
+            currentProfileId: defaultProfile.id,
+            profiles: [defaultProfile],
+            analysis: AnalysisSettings(),
+            display: DisplaySettings()
+        )
+    }
+}
+
+class ConfigManager: ObservableObject {
+    static let shared = ConfigManager()
+
+    @Published var config: AppConfig
+
+    private let configKey = "QiDaoAppConfig"
+
+    private init() {
+        if let data = UserDefaults.standard.data(forKey: configKey),
+           let decoded = try? JSONDecoder().decode(AppConfig.self, from: data) {
+            self.config = decoded
+        } else {
+            self.config = AppConfig.default
+        }
+    }
+
+    func save() {
+        if let encoded = try? JSONEncoder().encode(config) {
+            UserDefaults.standard.set(encoded, forKey: configKey)
+        }
+    }
+
+    var currentProfile: EngineProfile {
+        config.profiles.first { $0.id == config.currentProfileId } ?? EngineProfile.default
+    }
+}

@@ -50,6 +50,12 @@ enum MoveNumberDisplay: Int, CaseIterable, Identifiable {
     }
 }
 
+enum MarkerType {
+    case last1 // -1
+    case last2 // -2
+    case last3 // -3
+}
+
 @MainActor
 class BoardViewModel: ObservableObject {
     @Published var message: String = "Ready".localized
@@ -74,19 +80,49 @@ class BoardViewModel: ObservableObject {
     @Published var treeEdges: [TreeVisualEdge] = []
     @Published var currentNodeId: String = ""
 
+    var nextSgfMove: (x: Int, y: Int)? {
+        let children = game.getCurrentNode().getChildren()
+        if let first = children.first {
+            let props = first.getProperties()
+            if let moveProp = props.first(where: { $0.identifier == "B" || $0.identifier == "W" }),
+               let coords = moveProp.values.first, coords.count == 2 {
+                let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+                let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+                return (x, y)
+            }
+        }
+        return nil
+    }
+
+    func shouldShowMoveNumber(_ moveNum: Int?) -> Bool {
+        guard let moveNum = moveNum else { return false }
+        switch moveNumberDisplay {
+        case .all: return true
+        case .none: return false
+        default:
+            return moveNum > (moveCount - moveNumberDisplay.rawValue)
+        }
+    }
+
+    func getMarkerType(x: Int, y: Int, moveNumber: Int?) -> MarkerType? {
+        guard let moveNum = moveNumber else { return nil }
+        // Only show markers if move numbers are NOT shown for this stone
+        if shouldShowMoveNumber(moveNum) { return nil }
+
+        if moveNum == moveCount { return .last1 }
+        if moveNum == moveCount - 1 { return .last2 }
+        if moveNum == moveCount - 2 { return .last3 }
+        return nil
+    }
+
     // AI Analysis
     @Published var isAnalyzing: Bool = false
     @Published var analysisResult: AnalysisResult? = nil
     @Published var engineLogs: String = ""
-    @Published var enginePath: String = UserDefaults.standard.string(forKey: "enginePath") ?? "/opt/homebrew/bin/katago" {
-        didSet { UserDefaults.standard.set(enginePath, forKey: "enginePath") }
-    }
-    @Published var engineArgs: String = UserDefaults.standard.string(forKey: "engineArgs") ?? "analysis -config /opt/homebrew/share/go-engines/analysis.cfg" {
-        didSet { UserDefaults.standard.set(engineArgs, forKey: "engineArgs") }
-    }
-    @Published var engineModel: String = UserDefaults.standard.string(forKey: "engineModel") ?? "/opt/homebrew/share/go-engines/kata1-b28c512nbt-s9435149568-d4923088660.bin.gz" {
-        didSet { UserDefaults.standard.set(engineModel, forKey: "engineModel") }
-    }
+    @Published var winRateHistory: [Double] = []
+    @Published var scoreLeadHistory: [Double] = []
+    @Published var hoveredVariation: [String]? = nil
+    @Published var config = ConfigManager.shared.config
 
     private var analysisEngine: AnalysisEngine? = nil
     private var analysisTask: Task<Void, Never>? = nil
@@ -329,15 +365,28 @@ class BoardViewModel: ObservableObject {
         isAnalyzing = true
         message = "Starting AI...".localized
 
+        let profile = ConfigManager.shared.currentProfile
+        let executable = profile.path
+        var args = profile.extraArgs.split(separator: " ").map(String.init)
+
+        // If no args provided, default to analysis mode
+        if args.isEmpty {
+            args = ["analysis"]
+        }
+
+        if !profile.config.isEmpty {
+            args.append("-config")
+            args.append(profile.config)
+        }
+        if !profile.model.isEmpty {
+            args.append("-model")
+            args.append(profile.model)
+        }
+
         Task {
             do {
                 let engine = AnalysisEngine()
-                var args = engineArgs.split(separator: " ").map(String.init)
-                if !engineModel.isEmpty {
-                    args.append("-model")
-                    args.append(engineModel)
-                }
-                try await engine.start(executable: enginePath, args: args)
+                try await engine.start(executable: executable, args: args)
                 self.analysisEngine = engine
                 self.message = "Ready".localized
                 self.startLogPolling()
@@ -358,7 +407,7 @@ class BoardViewModel: ObservableObject {
                     if !logs.isEmpty {
                         let newLogs = logs.joined(separator: "\n")
                         self.engineLogs += newLogs + "\n"
-                        
+
                         // Keep logs within a reasonable size
                         if self.engineLogs.count > 10000 {
                             self.engineLogs = String(self.engineLogs.suffix(5000))
@@ -395,50 +444,77 @@ class BoardViewModel: ObservableObject {
         analysisTask?.cancel()
         analysisResult = nil
 
-        let moves = game.getAnalysisMoves()
+        let initialStones = game.getCurrentBoardStones()
+        let nextPlayer = nextColor == .black ? "B" : "W"
+        let currentNodeId = game.getCurrentNode().getId()
 
         analysisTask = Task {
             do {
-                // Debounce: wait for 1 second before starting analysis
-                try await Task.sleep(nanoseconds: 1_000_000_000)
+                // Debounce: wait for 0.5 seconds before starting analysis (reduced from 1s)
+                try await Task.sleep(nanoseconds: 500_000_000)
 
-                let maxVisits = UserDefaults.standard.integer(forKey: "maxVisits")
-                let query: [String: Any] = [
-                    "id": "qidao",
-                    "moves": moves,
-                    "initialStones": [],
+                let analysisSettings = config.analysis
+                var query: [String: Any] = [
+                    "id": "qidao-\(currentNodeId)",
+                    "moves": [] as [Any],
+                    "initialStones": initialStones,
+                    "player": nextPlayer,
                     "rules": "chinese",
                     "komi": metadata.komi,
                     "boardXSize": metadata.size,
                     "boardYSize": metadata.size,
-                    "analyzeTurns": [moves.count],
-                    "maxVisits": maxVisits > 0 ? maxVisits : 100,
-                    "reportDuringSearchEvery": 0.5
+                    "analyzeTurns": [0],
+                    "maxVisits": analysisSettings.maxVisits,
+                    "reportDuringSearchEvery": analysisSettings.reportDuringSearchEvery,
+                    "includeOwnership": config.display.showOwnership,
+                    "includePolicy": analysisSettings.includePolicy
                 ]
+
+                // Add advanced parameters
+                for (key, value) in analysisSettings.advancedParams {
+                    query[key] = value
+                }
+
                 let jsonData = try JSONSerialization.data(withJSONObject: query)
                 let jsonString = String(data: jsonData, encoding: .utf8)!
 
                 try await engine.analyze(queryJson: jsonString)
-                
+
                 // Continuous update loop
                 while !Task.isCancelled {
                     if let result = try? await engine.getNextResult() {
-                        if !Task.isCancelled {
+                        if !Task.isCancelled && result.id == "qidao-\(currentNodeId)" {
                             self.analysisResult = result
+
+                            // Update history for the current turn
+                            let turn = self.moveCount
+                            if self.winRateHistory.count > turn {
+                                self.winRateHistory[turn] = result.rootInfo.winrate
+                                self.scoreLeadHistory[turn] = result.rootInfo.scoreLead
+                            } else {
+                                while self.winRateHistory.count < turn {
+                                    self.winRateHistory.append(0.5)
+                                    self.scoreLeadHistory.append(0.0)
+                                }
+                                self.winRateHistory.append(result.rootInfo.winrate)
+                                self.scoreLeadHistory.append(result.rootInfo.scoreLead)
+                            }
+
                             // If we reached max visits, we can stop polling for this turn
-                            if result.rootInfo.visits >= (maxVisits > 0 ? UInt32(maxVisits) : 100) {
+                            if result.rootInfo.visits >= UInt32(analysisSettings.maxVisits) {
                                 break
                             }
                         }
                     } else {
-                        // If no result yet, wait a bit
+                        // If no result yet or timeout, wait a bit
+                        if Task.isCancelled { break }
                         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
                     }
                 }
+            } catch is CancellationError {
+                // Task was cancelled, ignore
             } catch {
-                if !Task.isCancelled {
-                    print("Analysis error: \(error)")
-                }
+                print("Analysis error: \(error)")
             }
         }
     }

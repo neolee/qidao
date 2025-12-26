@@ -79,22 +79,66 @@ struct RightSidebarView: View {
                             .font(.caption)
                     }
 
-                    // Ownership Map Placeholder (Square)
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.black.opacity(0.05))
+                    // Ownership Map
+                    if viewModel.config.display.showOwnership {
+                        if let result = viewModel.analysisResult, let ownership = result.ownership {
+                            OwnershipMapView(ownership: ownership, size: Int(viewModel.board.getSize()))
+                                .aspectRatio(1.0, contentMode: .fit)
+                                .frame(maxWidth: .infinity)
+                                .cornerRadius(4)
+                        } else {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.black.opacity(0.05))
 
-                        Text("Ownership Map".localized)
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
+                                Text("Ownership Map".localized)
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
+                            }
+                            .aspectRatio(1.0, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                        }
                     }
-                    .aspectRatio(1.0, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
                 }
                 .padding(.vertical, 5)
             }
         }
         .padding()
         .frame(minWidth: 200, maxWidth: 300)
+    }
+}
+
+struct OwnershipMapView: View {
+    let ownership: [Double]
+    let size: Int
+
+    var body: some View {
+        Canvas { context, geoSize in
+            let cellSize = geoSize.width / CGFloat(size)
+
+            for y in 0..<size {
+                for x in 0..<size {
+                    let idx = y * size + x
+                    if idx < ownership.count {
+                        let val = ownership[idx] // -1.0 to 1.0
+                        let color: Color
+                        if val > 0 {
+                            color = Color.black.opacity(val * 0.8)
+                        } else {
+                            color = Color.white.opacity(-val * 0.8)
+                        }
+
+                        let rect = CGRect(
+                            x: CGFloat(x) * cellSize,
+                            y: CGFloat(y) * cellSize,
+                            width: cellSize,
+                            height: cellSize
+                        )
+                        context.fill(Path(rect), with: .color(color))
+                    }
+                }
+            }
+        }
+        .background(Color.gray.opacity(0.2))
     }
 }

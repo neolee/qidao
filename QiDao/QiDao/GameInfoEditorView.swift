@@ -1,23 +1,6 @@
 import SwiftUI
 import qidao_coreFFI
 
-struct InfoRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Spacer()
-            Text(value)
-                .font(.caption)
-                .fontWeight(.medium)
-        }
-    }
-}
-
 struct GameInfoEditorView: View {
     @ObservedObject var viewModel: BoardViewModel
     @Environment(\.dismiss) var dismiss

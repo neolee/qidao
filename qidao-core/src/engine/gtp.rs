@@ -13,6 +13,7 @@ impl GtpClient {
     pub async fn start(executable: &str, args: &[String]) -> Result<Self> {
         let mut child = Command::new(executable)
             .args(args)
+            .current_dir(std::env::temp_dir())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())

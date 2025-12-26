@@ -1,10 +1,22 @@
 uniffi::setup_scaffolding!();
 
 use sgf_parse::{go::{parse, Prop}, SgfNode as ParserNode, SgfProp};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use thiserror::Error;
+use tokio::runtime::Runtime;
 
 pub mod engine;
+
+static RUNTIME: OnceLock<Runtime> = OnceLock::new();
+
+fn get_runtime() -> &'static Runtime {
+    RUNTIME.get_or_init(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to create Tokio runtime")
+    })
+}
 
 #[derive(uniffi::Record, Clone, Default)]
 pub struct GameMetadata {
@@ -220,6 +232,32 @@ impl Board {
         }
         liberties.len() as u32
     }
+}
+
+fn sgf_to_gtp(sgf_coord: &str, size: u32) -> String {
+    if sgf_coord.is_empty() {
+        return "pass".to_string();
+    }
+    let chars: Vec<char> = sgf_coord.chars().collect();
+    if chars.len() < 2 {
+        return "pass".to_string();
+    }
+    
+    let x = (chars[0] as u32).saturating_sub('a' as u32);
+    let y = (chars[1] as u32).saturating_sub('a' as u32);
+    
+    if x >= size || y >= size {
+        return "pass".to_string();
+    }
+
+    let col_char = if x < 8 {
+        (b'A' + x as u8) as char
+    } else {
+        (b'A' + x as u8 + 1) as char // Skip 'I'
+    };
+    
+    let row = size - y;
+    format!("{}{}", col_char, row)
 }
 
 fn convert_node(node: &ParserNode<Prop>) -> Arc<SgfNode> {
@@ -624,6 +662,7 @@ impl Game {
 
     pub fn get_analysis_moves(&self) -> Vec<Vec<String>> {
         let state = self.state.lock().unwrap();
+        let size = state.size;
         let mut path = state.history.clone();
         path.push(state.current_node.clone());
         
@@ -633,7 +672,8 @@ impl Game {
             for prop in props.iter() {
                 if prop.identifier == "B" || prop.identifier == "W" {
                     if let Some(val) = prop.values.first() {
-                        moves.push(vec![prop.identifier.clone(), val.clone()]);
+                        let gtp_move = sgf_to_gtp(val, size);
+                        moves.push(vec![prop.identifier.clone(), gtp_move]);
                     }
                 }
             }
@@ -796,7 +836,10 @@ impl GtpEngine {
     }
 
     pub async fn start(&self, executable: String, args: Vec<String>) -> Result<(), SgfError> {
-        let client = engine::GtpClient::start(&executable, &args).await
+        let client = get_runtime().spawn(async move {
+            engine::GtpClient::start(&executable, &args).await
+        }).await
+            .map_err(|e| SgfError::ParseError { message: format!("Task join error: {}", e) })?
             .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
         let mut lock = self.client.lock().await;
         *lock = Some(client);
@@ -805,18 +848,24 @@ impl GtpEngine {
 
     pub async fn send_command(&self, cmd: String) -> Result<String, SgfError> {
         let mut lock = self.client.lock().await;
-        if let Some(client) = lock.as_mut() {
-            client.send_command(&cmd).await
-                .map_err(|e| SgfError::ParseError { message: e.to_string() })
-        } else {
-            Err(SgfError::ParseError { message: "Engine not started".into() })
-        }
+        let mut client = lock.take().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
+        
+        let (client, result) = get_runtime().spawn(async move {
+            let res = client.send_command(&cmd).await;
+            (client, res)
+        }).await.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        
+        *lock = Some(client);
+        result.map_err(|e| SgfError::ParseError { message: e.to_string() })
     }
 
     pub async fn stop(&self) -> Result<(), SgfError> {
         let mut lock = self.client.lock().await;
         if let Some(client) = lock.take() {
-            client.stop().await
+            get_runtime().spawn(async move {
+                client.stop().await
+            }).await
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })?
                 .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
         }
         Ok(())
@@ -862,7 +911,10 @@ impl AnalysisEngine {
     }
 
     pub async fn start(&self, executable: String, args: Vec<String>) -> Result<(), SgfError> {
-        let client = engine::AnalysisClient::start(&executable, &args).await
+        let client = get_runtime().spawn(async move {
+            engine::AnalysisClient::start(&executable, &args).await
+        }).await
+            .map_err(|e| SgfError::ParseError { message: format!("Task join error: {}", e) })?
             .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
         let mut lock = self.client.lock().await;
         *lock = Some(client);
@@ -871,69 +923,79 @@ impl AnalysisEngine {
 
     pub async fn analyze(&self, query_json: String) -> Result<(), SgfError> {
         let mut lock = self.client.lock().await;
-        if let Some(client) = lock.as_mut() {
-            let query: engine::AnalysisQuery = serde_json::from_str(&query_json)
-                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
-            client.send_query(&query).await
-                .map_err(|e| SgfError::ParseError { message: e.to_string() })
-        } else {
-            Err(SgfError::ParseError { message: "Engine not started".into() })
-        }
+        let mut client = lock.take().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
+        
+        let query: engine::AnalysisQuery = serde_json::from_str(&query_json)
+            .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+
+        let (client, result) = get_runtime().spawn(async move {
+            let res = client.send_query(&query).await;
+            (client, res)
+        }).await.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        
+        *lock = Some(client);
+        result.map_err(|e| SgfError::ParseError { message: e.to_string() })
     }
 
     pub async fn get_next_result(&self) -> Result<AnalysisResult, SgfError> {
         let mut lock = self.client.lock().await;
-        if let Some(client) = lock.as_mut() {
-            let val = client.read_response().await
-                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
-            
-            // Parse the complex KataGo JSON into our simpler Record
-            let id = val["id"].as_str().unwrap_or("").to_string();
-            let turn_number = val["turnNumber"].as_u64().unwrap_or(0) as u32;
-            
-            let root_info_val = &val["rootInfo"];
-            let root_info = AnalysisRootInfo {
-                winrate: root_info_val["winrate"].as_f64().unwrap_or(0.0),
-                score_lead: root_info_val["scoreLead"].as_f64().unwrap_or(0.0),
-                visits: root_info_val["visits"].as_u64().unwrap_or(0) as u32,
-            };
-            
-            let mut move_infos = Vec::new();
-            if let Some(moves) = val["moveInfos"].as_array() {
-                for m in moves {
-                    let mut pv = Vec::new();
-                    if let Some(pv_arr) = m["pv"].as_array() {
-                        for p in pv_arr {
-                            if let Some(s) = p.as_str() {
-                                pv.push(s.to_string());
-                            }
+        let mut client = lock.take().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
+        
+        let (client, result) = get_runtime().spawn(async move {
+            let res = client.read_response().await;
+            (client, res)
+        }).await.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        
+        *lock = Some(client);
+        let val = result.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        
+        // Parse the complex KataGo JSON into our simpler Record
+        let id = val["id"].as_str().unwrap_or("").to_string();
+        let turn_number = val["turnNumber"].as_u64().unwrap_or(0) as u32;
+        
+        let root_info_val = &val["rootInfo"];
+        let root_info = AnalysisRootInfo {
+            winrate: root_info_val["winrate"].as_f64().unwrap_or(0.0),
+            score_lead: root_info_val["scoreLead"].as_f64().unwrap_or(0.0),
+            visits: root_info_val["visits"].as_u64().unwrap_or(0) as u32,
+        };
+        
+        let mut move_infos = Vec::new();
+        if let Some(moves) = val["moveInfos"].as_array() {
+            for m in moves {
+                let mut pv = Vec::new();
+                if let Some(pv_arr) = m["pv"].as_array() {
+                    for p in pv_arr {
+                        if let Some(s) = p.as_str() {
+                            pv.push(s.to_string());
                         }
                     }
-                    move_infos.push(AnalysisMoveInfo {
-                        move_str: m["move"].as_str().unwrap_or("").to_string(),
-                        visits: m["visits"].as_u64().unwrap_or(0) as u32,
-                        winrate: m["winrate"].as_f64().unwrap_or(0.0),
-                        score_lead: m["scoreLead"].as_f64().unwrap_or(0.0),
-                        pv,
-                    });
                 }
+                move_infos.push(AnalysisMoveInfo {
+                    move_str: m["move"].as_str().unwrap_or("").to_string(),
+                    visits: m["visits"].as_u64().unwrap_or(0) as u32,
+                    winrate: m["winrate"].as_f64().unwrap_or(0.0),
+                    score_lead: m["scoreLead"].as_f64().unwrap_or(0.0),
+                    pv,
+                });
             }
-            
-            Ok(AnalysisResult {
-                id,
-                turn_number,
-                root_info,
-                move_infos,
-            })
-        } else {
-            Err(SgfError::ParseError { message: "Engine not started".into() })
         }
+        
+        Ok(AnalysisResult {
+            id,
+            turn_number,
+            root_info,
+            move_infos,
+        })
     }
 
     pub async fn stop(&self) -> Result<(), SgfError> {
         let mut lock = self.client.lock().await;
         if let Some(client) = lock.take() {
-            client.stop().await
+            get_runtime().spawn(async move {
+                client.stop().await
+            }).await
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })?
                 .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
         }
         Ok(())

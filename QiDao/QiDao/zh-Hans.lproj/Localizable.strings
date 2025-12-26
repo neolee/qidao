@@ -55,3 +55,14 @@
 "Next Move (↓)" = "下一步 (↓)";
 "vs" = "对阵";
 "Failed to decode SGF file" = "无法解码 SGF 文件";
+"AI Analysis" = "AI 分析";
+"Start AI" = "开启 AI";
+"Stop AI" = "停止 AI";
+"Analyzing..." = "分析中...";
+"Starting AI..." = "正在启动 AI...";
+"AI Stopped" = "AI 已停止";
+"AI Error: %@" = "AI 错误: %@";
+"AI Analysis Inactive" = "AI 分析未开启";
+"No Data" = "无数据";
+"Score Lead" = "目数领先";
+"Win Rate" = "胜率";

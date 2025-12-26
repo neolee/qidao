@@ -51,6 +51,22 @@ class BoardViewModel: ObservableObject {
     @Published var treeEdges: [TreeVisualEdge] = []
     @Published var currentNodeId: String = ""
 
+    // AI Analysis
+    @Published var isAnalyzing: Bool = false
+    @Published var analysisResult: AnalysisResult? = nil
+    @Published var enginePath: String = UserDefaults.standard.string(forKey: "enginePath") ?? "/opt/homebrew/bin/katago" {
+        didSet { UserDefaults.standard.set(enginePath, forKey: "enginePath") }
+    }
+    @Published var engineArgs: String = UserDefaults.standard.string(forKey: "engineArgs") ?? "analysis -config /opt/homebrew/share/go-engines/analysis.cfg" {
+        didSet { UserDefaults.standard.set(engineArgs, forKey: "engineArgs") }
+    }
+    @Published var engineModel: String = UserDefaults.standard.string(forKey: "engineModel") ?? "/opt/homebrew/share/go-engines/kata1-b28c512nbt-s9435149568-d4923088660.bin.gz" {
+        didSet { UserDefaults.standard.set(engineModel, forKey: "engineModel") }
+    }
+
+    private var analysisEngine: AnalysisEngine? = nil
+    private var analysisTask: Task<Void, Never>? = nil
+
     var treeWidth: CGFloat {
         let maxX = treeNodes.map { $0.x }.max() ?? 0
         return maxX
@@ -267,6 +283,95 @@ class BoardViewModel: ObservableObject {
         }
     }
 
+    // MARK: - AI Analysis
+
+    func toggleAnalysis() {
+        if isAnalyzing {
+            stopAnalysis()
+        } else {
+            startAnalysis()
+        }
+    }
+
+    func startAnalysis() {
+        guard analysisEngine == nil else { return }
+        
+        isAnalyzing = true
+        message = "Starting AI...".localized
+        
+        Task {
+            do {
+                let engine = AnalysisEngine()
+                var args = engineArgs.split(separator: " ").map(String.init)
+                if !engineModel.isEmpty {
+                    args.append("-model")
+                    args.append(engineModel)
+                }
+                try await engine.start(executable: enginePath, args: args)
+                self.analysisEngine = engine
+                updateAnalysis()
+            } catch {
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    self.message = "AI Error: \(error)".localized
+                }
+            }
+        }
+    }
+
+    func stopAnalysis() {
+        isAnalyzing = false
+        analysisResult = nil
+        analysisTask?.cancel()
+        analysisTask = nil
+        if let engine = analysisEngine {
+            Task {
+                try? await engine.stop()
+            }
+        }
+        analysisEngine = nil
+        message = "AI Stopped".localized
+    }
+
+    func updateAnalysis() {
+        guard isAnalyzing, let engine = analysisEngine else { return }
+        
+        analysisTask?.cancel()
+        
+        let moves = game.getAnalysisMoves()
+        
+        analysisTask = Task {
+            do {
+                let query: [String: Any] = [
+                    "id": "qidao",
+                    "moves": moves,
+                    "initialStones": [],
+                    "rules": "chinese",
+                    "komi": metadata.komi,
+                    "boardXSize": metadata.size,
+                    "boardYSize": metadata.size,
+                    "analyzeTurns": [moves.count],
+                    "maxVisits": 100
+                ]
+                let jsonData = try JSONSerialization.data(withJSONObject: query)
+                let jsonString = String(data: jsonData, encoding: .utf8)!
+                
+                try await engine.analyze(queryJson: jsonString)
+                let result = try await engine.getNextResult()
+                
+                if !Task.isCancelled {
+                    await MainActor.run {
+                        self.analysisResult = result
+                    }
+                }
+            } catch {
+                if !Task.isCancelled {
+                    print("Analysis error: \(error)")
+                }
+            }
+        }
+    }
+
     private func rebuildTree() {
         nodeMap = [:]
         var nodes: [TreeVisualNode] = []
@@ -365,6 +470,7 @@ class BoardViewModel: ObservableObject {
                 self.rebuildTree()
             }
             self.refreshMessage()
+            self.updateAnalysis()
         }
     }
 
@@ -437,5 +543,26 @@ class BoardViewModel: ObservableObject {
         } catch {
             self.message = "\("Save Failed".localized): \(error.localizedDescription)"
         }
+    }
+
+    func decodeKataGoMove(_ move: String) -> (x: Int, y: Int)? {
+        let move = move.uppercased()
+        guard move.count >= 2 else { return nil }
+        
+        let colChar = move.first!
+        let rowStr = move.dropFirst()
+        
+        guard let row = Int(rowStr) else { return nil }
+        
+        let colMap: [Character: Int] = [
+            "A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7,
+            "J": 8, "K": 9, "L": 10, "M": 11, "N": 12, "O": 13, "P": 14, "Q": 15,
+            "R": 16, "S": 17, "T": 18
+        ]
+        
+        guard let x = colMap[colChar] else { return nil }
+        let y = Int(metadata.size) - row
+        
+        return (x, y)
     }
 }

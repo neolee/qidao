@@ -67,12 +67,18 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - **Focus Restoration**: SwiftUI focus can be lost when a focused element (like an inline `TextField`) is removed from the hierarchy. We use `@FocusState` combined with `DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)` to explicitly restore focus to the main container after operations like "Jump to Move" or closing dialogs.
 
 ## 8. Immediate TODOs
-1. **Engine**: Implement basic GTP communication in Rust for AI analysis.
-2. **UI**: Add AI analysis overlay on the board (win rates, suggested moves).
-3. **Config**: Add engine path and weights configuration in UI.
+1. **UI**: Fix SwiftUI `ProgressView` layout warning in `RightSidebarView`.
+2. **UI**: Move Win Rate bar/graph to `LeftSidebarView`.
+3. **UI**: Implement Ownership/Territory mini-board in `RightSidebarView` (Evaluation section).
+4. **Engine**: Implement iterative deepening for AI analysis (multiple queries with increasing visits).
+5. **Config**: Add engine path and weights configuration in UI.
 
 ## 9. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
 - [x] **Phase 2: UI/UX Foundation**: Refined 3D stone visuals, sound effects system, and multi-language support. Fixed sandbox-related permission issues.
 - [x] **Phase 3: Variation Tree & Navigation**: Implemented graphical variation tree using `Canvas`, keyboard-based branch switching, and optimized sound feedback. Added global "Jump to Move" with inline UI and focus management.
+- [x] **Phase 4: AI Engine Integration (Core)**: Implemented `GtpEngine` and `AnalysisEngine` in Rust. Added support for KataGo Analysis API with JSON-based queries. Verified with standalone test tools.
+- [x] **Phase 5: AI UI Integration**: Integrated `AnalysisEngine` into `BoardViewModel`. Added real-time win rate analysis, score lead display, and AI suggested moves overlay on the board. Implemented engine lifecycle management and localization.
+- [x] **Bug Fix: AI Engine Stability**: Resolved KataGo startup issues (missing model path, log directory permissions) and coordinate format errors (SGF vs GTP). Fixed SwiftUI `ProgressView` layout crashes by using custom drawing.
+- [x] **Bug Fix: Tokio Runtime Integration**: Resolved "no reactor running" and "future not Send" errors by implementing a global Tokio runtime and using `spawn` to ensure async operations run in the correct context.
 

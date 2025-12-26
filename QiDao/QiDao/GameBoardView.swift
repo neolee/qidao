@@ -68,6 +68,26 @@ struct GameBoardView: View {
                         }
                     }
                 }
+
+                // 7. AI Analysis Overlay
+                if let result = viewModel.analysisResult {
+                    let maxVisits = result.moveInfos.map { $0.visits }.max() ?? 0
+                    ForEach(result.moveInfos, id: \.moveStr) { info in
+                        if let pos = viewModel.decodeKataGoMove(info.moveStr) {
+                            AIMoveMarker(
+                                winRate: info.winrate,
+                                scoreLead: info.scoreLead,
+                                isBest: info.visits == maxVisits && maxVisits > 0,
+                                theme: viewModel.theme,
+                                size: spacing * 0.8
+                            )
+                            .position(
+                                x: CGFloat(pos.x + 1) * spacing,
+                                y: CGFloat(pos.y + 1) * spacing
+                            )
+                        }
+                    }
+                }
             }
         }
         .frame(width: size, height: size)
@@ -232,5 +252,31 @@ struct StarPoints: Shape {
         }
 
         return path
+    }
+}
+
+struct AIMoveMarker: View {
+    let winRate: Double
+    let scoreLead: Double
+    let isBest: Bool
+    let theme: BoardTheme
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(isBest ? Color.blue.opacity(0.8) : Color.green.opacity(0.6))
+                .frame(width: size, height: size)
+                .shadow(radius: 2)
+            
+            VStack(spacing: 0) {
+                Text(String(format: "%.1f%%", winRate * 100))
+                    .font(.system(size: size * 0.25, weight: .bold))
+                    .foregroundColor(.white)
+                Text(String(format: "%+.1f", scoreLead))
+                    .font(.system(size: size * 0.2, weight: .medium))
+                    .foregroundColor(.white.opacity(0.9))
+            }
+        }
     }
 }

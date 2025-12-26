@@ -251,6 +251,42 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_ANALYSISENGINE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_ANALYSISENGINE
+void*_Nonnull uniffi_qidao_core_fn_clone_analysisengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_ANALYSISENGINE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_ANALYSISENGINE
+void uniffi_qidao_core_fn_free_analysisengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_ANALYSISENGINE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_ANALYSISENGINE_NEW
+void*_Nonnull uniffi_qidao_core_fn_constructor_analysisengine_new(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_ANALYZE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_ANALYZE
+uint64_t uniffi_qidao_core_fn_method_analysisengine_analyze(void*_Nonnull ptr, RustBuffer query_json
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
+uint64_t uniffi_qidao_core_fn_method_analysisengine_get_next_result(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_START
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_START
+uint64_t uniffi_qidao_core_fn_method_analysisengine_start(void*_Nonnull ptr, RustBuffer executable, RustBuffer args
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_STOP
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_STOP
+uint64_t uniffi_qidao_core_fn_method_analysisengine_stop(void*_Nonnull ptr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_BOARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_BOARD
 void*_Nonnull uniffi_qidao_core_fn_clone_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -309,6 +345,11 @@ int8_t uniffi_qidao_core_fn_method_game_can_go_back(void*_Nonnull ptr, RustCallS
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_FORWARD
 int8_t uniffi_qidao_core_fn_method_game_can_go_forward(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ANALYSIS_MOVES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ANALYSIS_MOVES
+RustBuffer uniffi_qidao_core_fn_method_game_get_analysis_moves(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_BOARD
@@ -399,6 +440,37 @@ void uniffi_qidao_core_fn_method_game_set_metadata(void*_Nonnull ptr, RustBuffer
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_TO_SGF
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_TO_SGF
 RustBuffer uniffi_qidao_core_fn_method_game_to_sgf(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GTPENGINE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GTPENGINE
+void*_Nonnull uniffi_qidao_core_fn_clone_gtpengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_GTPENGINE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_GTPENGINE
+void uniffi_qidao_core_fn_free_gtpengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GTPENGINE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GTPENGINE_NEW
+void*_Nonnull uniffi_qidao_core_fn_constructor_gtpengine_new(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_SEND_COMMAND
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_SEND_COMMAND
+uint64_t uniffi_qidao_core_fn_method_gtpengine_send_command(void*_Nonnull ptr, RustBuffer cmd
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_START
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_START
+uint64_t uniffi_qidao_core_fn_method_gtpengine_start(void*_Nonnull ptr, RustBuffer executable, RustBuffer args
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_STOP
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_STOP
+uint64_t uniffi_qidao_core_fn_method_gtpengine_stop(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFNODE
@@ -743,6 +815,30 @@ uint16_t uniffi_qidao_core_checksum_func_parse_sgf(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_ANALYZE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_ANALYZE
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_analyze(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_get_next_result(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_START
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_START
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_start(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_STOP
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_STOP
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_stop(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_GET_SIZE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_BOARD_GET_SIZE
 uint16_t uniffi_qidao_core_checksum_method_board_get_size(void
@@ -770,6 +866,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_can_go_back(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_FORWARD
 uint16_t uniffi_qidao_core_checksum_method_game_can_go_forward(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_ANALYSIS_MOVES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_ANALYSIS_MOVES
+uint16_t uniffi_qidao_core_checksum_method_game_get_analysis_moves(void
     
 );
 #endif
@@ -881,6 +983,24 @@ uint16_t uniffi_qidao_core_checksum_method_game_to_sgf(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GTPENGINE_SEND_COMMAND
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GTPENGINE_SEND_COMMAND
+uint16_t uniffi_qidao_core_checksum_method_gtpengine_send_command(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GTPENGINE_START
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GTPENGINE_START
+uint16_t uniffi_qidao_core_checksum_method_gtpengine_start(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GTPENGINE_STOP
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GTPENGINE_STOP
+uint16_t uniffi_qidao_core_checksum_method_gtpengine_stop(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_SGFNODE_GET_CHILDREN
 uint16_t uniffi_qidao_core_checksum_method_sgfnode_get_children(void
@@ -905,6 +1025,12 @@ uint16_t uniffi_qidao_core_checksum_method_sgftree_root(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_ANALYSISENGINE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_ANALYSISENGINE_NEW
+uint16_t uniffi_qidao_core_checksum_constructor_analysisengine_new(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_BOARD_NEW
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_BOARD_NEW
 uint16_t uniffi_qidao_core_checksum_constructor_board_new(void
@@ -920,6 +1046,12 @@ uint16_t uniffi_qidao_core_checksum_constructor_game_from_sgf(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_GAME_NEW
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_GAME_NEW
 uint16_t uniffi_qidao_core_checksum_constructor_game_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_GTPENGINE_NEW
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_CONSTRUCTOR_GTPENGINE_NEW
+uint16_t uniffi_qidao_core_checksum_constructor_gtpengine_new(void
     
 );
 #endif

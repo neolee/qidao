@@ -72,6 +72,30 @@ struct LeftSidebarView: View {
             }
             .textSelection(.enabled)
 
+            GroupBox(label: Label("AI Analysis".localized, systemImage: "cpu")) {
+                VStack(spacing: 10) {
+                    Button(action: { viewModel.toggleAnalysis() }) {
+                        Label(
+                            viewModel.isAnalyzing ? "Stop AI".localized : "Start AI".localized,
+                            systemImage: viewModel.isAnalyzing ? "stop.fill" : "play.fill"
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(viewModel.isAnalyzing ? .red : .blue)
+                    .focusable(false)
+
+                    if viewModel.isAnalyzing {
+                        HStack {
+                            CustomSpinner()
+                            Text("Analyzing...".localized)
+                                .font(.caption)
+                        }
+                    }
+                }
+                .padding(5)
+            }
+
             GroupBox(label: Label("Win Rate".localized, systemImage: "chart.line.uptrend.xyaxis")) {
                 Text("Chart Placeholder")
                     .frame(height: 150)
@@ -91,5 +115,22 @@ struct LeftSidebarView: View {
         }
         .padding()
         .frame(minWidth: 200, maxWidth: 300)
+    }
+}
+
+struct CustomSpinner: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.7)
+            .stroke(Color.accentColor, lineWidth: 2)
+            .frame(width: 12, height: 12)
+            .rotationEffect(Angle(degrees: isAnimating ? 360 : 0))
+            .onAppear {
+                withAnimation(Animation.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    isAnimating = true
+                }
+            }
     }
 }

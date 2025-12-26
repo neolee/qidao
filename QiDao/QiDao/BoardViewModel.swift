@@ -458,7 +458,7 @@ class BoardViewModel: ObservableObject {
                     "id": "qidao-\(currentNodeId)",
                     "moves": [] as [Any],
                     "initialStones": initialStones,
-                    "player": nextPlayer,
+                    "initialPlayer": nextPlayer,
                     "rules": "chinese",
                     "komi": metadata.komi,
                     "boardXSize": metadata.size,
@@ -484,20 +484,38 @@ class BoardViewModel: ObservableObject {
                 while !Task.isCancelled {
                     if let result = try? await engine.getNextResult() {
                         if !Task.isCancelled && result.id == "qidao-\(currentNodeId)" {
-                            self.analysisResult = result
+                            // Normalize winrate and scoreLead to Black's perspective for the UI and history
+                            // KataGo returns them from the perspective of the player whose turn it is.
+                            let isWhiteTurn = self.nextColor == .white
+                            let normalizedWinRate = isWhiteTurn ? 1.0 - result.rootInfo.winrate : result.rootInfo.winrate
+                            let normalizedScoreLead = isWhiteTurn ? -result.rootInfo.scoreLead : result.rootInfo.scoreLead
+
+                            let normalizedResult = AnalysisResult(
+                                id: result.id,
+                                turnNumber: result.turnNumber,
+                                rootInfo: AnalysisRootInfo(
+                                    winrate: normalizedWinRate,
+                                    scoreLead: normalizedScoreLead,
+                                    visits: result.rootInfo.visits
+                                ),
+                                moveInfos: result.moveInfos,
+                                ownership: result.ownership
+                            )
+
+                            self.analysisResult = normalizedResult
 
                             // Update history for the current turn
                             let turn = self.moveCount
                             if self.winRateHistory.count > turn {
-                                self.winRateHistory[turn] = result.rootInfo.winrate
-                                self.scoreLeadHistory[turn] = result.rootInfo.scoreLead
+                                self.winRateHistory[turn] = normalizedWinRate
+                                self.scoreLeadHistory[turn] = normalizedScoreLead
                             } else {
                                 while self.winRateHistory.count < turn {
                                     self.winRateHistory.append(0.5)
                                     self.scoreLeadHistory.append(0.0)
                                 }
-                                self.winRateHistory.append(result.rootInfo.winrate)
-                                self.scoreLeadHistory.append(result.rootInfo.scoreLead)
+                                self.winRateHistory.append(normalizedWinRate)
+                                self.scoreLeadHistory.append(normalizedScoreLead)
                             }
 
                             // If we reached max visits, we can stop polling for this turn

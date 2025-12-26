@@ -11,6 +11,8 @@ pub struct AnalysisQuery {
     pub id: String,
     pub moves: Vec<(String, String)>, // (color, move)
     pub initial_stones: Vec<(String, String)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub initial_player: Option<String>,
     pub rules: String,
     pub komi: f64,
     pub board_x_size: u32,
@@ -20,6 +22,10 @@ pub struct AnalysisQuery {
     pub max_visits: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub report_during_search_every: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_ownership: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_policy: Option<bool>,
 }
 
 pub struct AnalysisClient {

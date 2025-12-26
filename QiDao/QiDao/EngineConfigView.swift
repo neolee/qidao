@@ -172,7 +172,7 @@ struct EngineConfigView: View {
                         ForEach(localConfig.analysis.advancedParams.keys.sorted(), id: \.self) { key in
                             HStack {
                                 Text(key).frame(width: 150, alignment: .leading)
-                                TextField("Value", text: Binding(
+                                TextField("", text: Binding(
                                     get: { localConfig.analysis.advancedParams[key] ?? "" },
                                     set: { localConfig.analysis.advancedParams[key] = $0 }
                                 ))
@@ -200,22 +200,30 @@ struct EngineConfigView: View {
     private var displayView: some View {
         Form {
             Section(header: Text("Board Overlay".localized)) {
-                Stepper(value: $localConfig.display.maxCandidates, in: 1...100) {
-                    HStack {
-                        Text("Max Candidates".localized)
-                        Spacer()
-                        Text("\(localConfig.display.maxCandidates)")
-                            .foregroundColor(.secondary)
-                    }
+                HStack {
+                    Text("Max Candidates".localized)
+                    Spacer()
+                    TextField("", value: $localConfig.display.maxCandidates, formatter: NumberFormatter())
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 100)
+                    Stepper("", value: $localConfig.display.maxCandidates, in: 1...100)
+                        .labelsHidden()
+                        .controlSize(.small)
                 }
 
                 Toggle("Show Ownership Map".localized, isOn: $localConfig.display.showOwnership)
                 Toggle("Show Win Rate Graph".localized, isOn: $localConfig.display.showWinRateGraph)
                 
-                Picker("Overlay Win Rate".localized, selection: $localConfig.display.overlayWinRatePerspective) {
-                    ForEach(WinRatePerspective.allCases, id: \.self) { perspective in
-                        Text(perspective.localized).tag(perspective)
+                HStack {
+                    Text("Overlay Win Rate".localized)
+                    Spacer()
+                    Picker("", selection: $localConfig.display.overlayWinRatePerspective) {
+                        ForEach(WinRatePerspective.allCases, id: \.self) { perspective in
+                            Text(perspective.localized).tag(perspective)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .frame(width: 180)
                 }
             }
         }

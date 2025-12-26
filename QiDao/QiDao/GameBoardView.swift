@@ -73,11 +73,27 @@ struct GameBoardView: View {
                 if let result = viewModel.analysisResult {
                     let sortedMoves = result.moveInfos.sorted { $0.visits > $1.visits }
                     let displayCount = min(sortedMoves.count, viewModel.config.display.maxCandidates)
+                    let isWhiteTurn = viewModel.nextColor == .white
+                    let perspective = viewModel.config.display.overlayWinRatePerspective
+                    
                     ForEach(Array(sortedMoves.prefix(displayCount).enumerated()), id: \.element.moveStr) { index, info in
                         if let pos = viewModel.decodeKataGoMove(info.moveStr) {
+                            let displayWinRate = WinRateConverter.convertWinRate(
+                                info.winrate,
+                                reportedAs: .black,
+                                target: perspective,
+                                isWhiteTurn: isWhiteTurn
+                            )
+                            let displayScoreLead = WinRateConverter.convertScoreLead(
+                                info.scoreLead,
+                                reportedAs: .black,
+                                target: perspective,
+                                isWhiteTurn: isWhiteTurn
+                            )
+                            
                             AIMoveMarker(
-                                winRate: info.winrate,
-                                scoreLead: info.scoreLead,
+                                winRate: displayWinRate,
+                                scoreLead: displayScoreLead,
                                 rank: index + 1,
                                 theme: viewModel.theme,
                                 size: spacing * 0.95

@@ -30,18 +30,26 @@ struct EngineProfile: Identifiable, Codable, Equatable {
 }
 
 struct AnalysisSettings: Codable, Equatable {
-    var maxVisits: Int = 1000
-    var maxTime: Double = 10.0
+    var maxVisits: Int? = 1000
+    var maxTime: Double? = 10.0
     var iterativeDeepening: Bool = true
-    var reportDuringSearchEvery: Double = 0.5
+    var reportDuringSearchEvery: Double? = 0.5
     var includePolicy: Bool = true
     var advancedParams: [String: String] = [:]
+}
+
+enum WinRatePerspective: String, Codable, CaseIterable {
+    case black = "Black"
+    case current = "Current Player"
+    
+    var localized: String { self.rawValue.localized }
 }
 
 struct DisplaySettings: Codable, Equatable {
     var maxCandidates: Int = 5
     var showOwnership: Bool = true
     var showWinRateGraph: Bool = true
+    var overlayWinRatePerspective: WinRatePerspective = .current
 }
 
 struct AppConfig: Codable {

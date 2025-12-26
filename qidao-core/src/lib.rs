@@ -974,6 +974,7 @@ pub struct AnalysisResult {
 #[derive(uniffi::Object)]
 pub struct AnalysisEngine {
     client: Arc<tokio::sync::Mutex<Option<engine::AnalysisClient>>>,
+    internal_logs: Arc<tokio::sync::Mutex<Vec<String>>>,
 }
 
 #[uniffi::export]
@@ -982,11 +983,27 @@ impl AnalysisEngine {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             client: Arc::new(tokio::sync::Mutex::new(None)),
+            internal_logs: Arc::new(tokio::sync::Mutex::new(Vec::new())),
         })
+    }
+
+    async fn add_internal_log(&self, msg: String) {
+        let mut logs = self.internal_logs.lock().await;
+        logs.push(msg);
+        if logs.len() > 100 {
+            logs.remove(0);
+        }
     }
 
     pub async fn start(&self, executable: String, args: Vec<String>) -> Result<(), SgfError> {
         let client_mutex = Arc::clone(&self.client);
+        let engine_clone = Arc::new(Self {
+            client: Arc::clone(&self.client),
+            internal_logs: Arc::clone(&self.internal_logs),
+        });
+        
+        engine_clone.add_internal_log(format!("Starting engine: {} with args: {:?}", executable, args)).await;
+
         get_runtime().spawn(async move {
             let client = engine::AnalysisClient::start(&executable, &args).await
                 .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
@@ -998,6 +1015,7 @@ impl AnalysisEngine {
     }
 
     pub async fn analyze(&self, query_json: String) -> Result<(), SgfError> {
+        self.add_internal_log(format!(">>> SEND QUERY: {}", query_json)).await;
         let client_mutex = Arc::clone(&self.client);
         get_runtime().spawn(async move {
             let mut lock = client_mutex.lock().await;
@@ -1016,6 +1034,7 @@ impl AnalysisEngine {
 
     pub async fn get_next_result(&self) -> Result<AnalysisResult, SgfError> {
         let client_mutex = Arc::clone(&self.client);
+        let internal_logs = Arc::clone(&self.internal_logs);
         get_runtime().spawn(async move {
             let mut lock = client_mutex.lock().await;
             let client = lock.as_mut().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
@@ -1029,6 +1048,25 @@ impl AnalysisEngine {
             };
 
             let val = result.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+            
+            // Log the response (truncated if too long)
+            let response_str = val.to_string();
+            let log_str = if response_str.len() > 500 {
+                format!("<<< RECV RESULT (truncated): {}...", &response_str[..500])
+            } else {
+                format!("<<< RECV RESULT: {}", response_str)
+            };
+            
+            {
+                let mut logs = internal_logs.lock().await;
+                logs.push(log_str);
+                if logs.len() > 100 { logs.remove(0); }
+            }
+
+            // Check for errors in the response
+            if let Some(err) = val["error"].as_str() {
+                return Err(SgfError::ParseError { message: format!("Engine error: {}", err) });
+            }
 
             // Parse the complex KataGo JSON into our simpler Record
             let id = val["id"].as_str().unwrap_or("").to_string();
@@ -1084,23 +1122,28 @@ impl AnalysisEngine {
 
     pub async fn get_logs(&self) -> Vec<String> {
         let client_mutex = Arc::clone(&self.client);
+        let internal_logs_mutex = Arc::clone(&self.internal_logs);
         get_runtime().spawn(async move {
-            let mut lock = client_mutex.lock().await;
-            let mut client = match lock.take() {
-                Some(c) => c,
-                None => return vec![],
-            };
-
             let mut logs = Vec::new();
-            // Try to read multiple lines if available
-            for _ in 0..50 {
-                match client.read_stderr_line().await {
-                    Ok(Some(line)) => logs.push(line),
-                    _ => break,
+            
+            // 1. Get internal logs
+            {
+                let mut internal = internal_logs_mutex.lock().await;
+                logs.append(&mut internal);
+            }
+
+            // 2. Get stderr logs
+            let mut lock = client_mutex.lock().await;
+            if let Some(client) = lock.as_mut() {
+                // Try to read multiple lines if available
+                for _ in 0..50 {
+                    match client.read_stderr_line().await {
+                        Ok(Some(line)) => logs.push(format!("[STDERR] {}", line)),
+                        _ => break,
+                    }
                 }
             }
 
-            *lock = Some(client);
             logs
         }).await.unwrap_or_default()
     }

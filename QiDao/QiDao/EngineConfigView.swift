@@ -119,7 +119,7 @@ struct EngineConfigView: View {
                     }
 
                     HStack {
-                        TextField("Config Path".localized, text: $localConfig.profiles[index].config)
+                        TextField("Config Path (Required)".localized, text: $localConfig.profiles[index].config)
                         Button("Browse...".localized) {
                             selectFile(canChooseDirectories: false) { url in
                                 localConfig.profiles[index].config = url.path
@@ -140,17 +140,15 @@ struct EngineConfigView: View {
                 HStack {
                     Text("Max Visits".localized)
                     Spacer()
-                    TextField("", value: $localConfig.analysis.maxVisits, formatter: NumberFormatter())
-                        .frame(width: 80)
-                        .multilineTextAlignment(.trailing)
+                    OptionalNumberField(value: $localConfig.analysis.maxVisits, placeholder: "Default".localized)
+                        .frame(width: 100)
                 }
 
                 HStack {
                     Text("Max Time (seconds)".localized)
                     Spacer()
-                    TextField("", value: $localConfig.analysis.maxTime, formatter: NumberFormatter())
-                        .frame(width: 80)
-                        .multilineTextAlignment(.trailing)
+                    OptionalNumberField(value: $localConfig.analysis.maxTime, placeholder: "Default".localized)
+                        .frame(width: 100)
                 }
 
                 Toggle("Iterative Deepening".localized, isOn: $localConfig.analysis.iterativeDeepening)
@@ -158,9 +156,8 @@ struct EngineConfigView: View {
                 HStack {
                     Text("Report Interval (s)".localized)
                     Spacer()
-                    TextField("", value: $localConfig.analysis.reportDuringSearchEvery, formatter: NumberFormatter())
-                        .frame(width: 80)
-                        .multilineTextAlignment(.trailing)
+                    OptionalNumberField(value: $localConfig.analysis.reportDuringSearchEvery, placeholder: "Default".localized)
+                        .frame(width: 100)
                 }
             }
 
@@ -214,6 +211,12 @@ struct EngineConfigView: View {
 
                 Toggle("Show Ownership Map".localized, isOn: $localConfig.display.showOwnership)
                 Toggle("Show Win Rate Graph".localized, isOn: $localConfig.display.showWinRateGraph)
+                
+                Picker("Overlay Win Rate".localized, selection: $localConfig.display.overlayWinRatePerspective) {
+                    ForEach(WinRatePerspective.allCases, id: \.self) { perspective in
+                        Text(perspective.localized).tag(perspective)
+                    }
+                }
             }
         }
         .formStyle(.grouped)
@@ -229,5 +232,38 @@ struct EngineConfigView: View {
                 completion(url)
             }
         }
+    }
+}
+
+struct OptionalNumberField<T: LosslessStringConvertible & Equatable>: View {
+    @Binding var value: T?
+    let placeholder: String
+    @State private var textValue: String = ""
+
+    var body: some View {
+        TextField("", text: $textValue, prompt: Text(placeholder))
+            .multilineTextAlignment(.trailing)
+            .textFieldStyle(.roundedBorder)
+            .onAppear {
+                if let v = value {
+                    textValue = "\(v)"
+                }
+            }
+            .onChange(of: textValue) {
+                if textValue.isEmpty {
+                    value = nil
+                } else if let newValue = T(textValue) {
+                    value = newValue
+                }
+            }
+            .onChange(of: value) {
+                if let v = value {
+                    if textValue != "\(v)" {
+                        textValue = "\(v)"
+                    }
+                } else {
+                    textValue = ""
+                }
+            }
     }
 }

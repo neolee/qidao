@@ -21,6 +21,8 @@ pub struct AnalysisQuery {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_visits: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_time: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub report_during_search_every: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub include_ownership: Option<bool>,

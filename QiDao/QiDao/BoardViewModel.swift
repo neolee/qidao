@@ -115,10 +115,19 @@ class BoardViewModel: ObservableObject {
         return nil
     }
 
+    struct LogEntry: Identifiable {
+        let id = UUID()
+        let timestamp = Date()
+        let message: String
+        let isError: Bool
+        let isCommunication: Bool
+    }
+
     // AI Analysis
     @Published var isAnalyzing: Bool = false
     @Published var analysisResult: AnalysisResult? = nil
-    @Published var engineLogs: String = ""
+    @Published var logEntries: [LogEntry] = []
+    @Published var showAllLogs: Bool = false
     @Published var winRateHistory: [Double] = []
     @Published var scoreLeadHistory: [Double] = []
     @Published var hoveredVariation: [String]? = nil
@@ -383,6 +392,14 @@ class BoardViewModel: ObservableObject {
             args.append(profile.model)
         }
 
+        // Validation: KataGo analysis mode requires a config file
+        if args.contains("analysis") && profile.config.isEmpty {
+            self.isAnalyzing = false
+            self.message = "Error: Config file is required for analysis mode".localized
+            self.addLog("[ERROR] Config file is required. Please set it in Engine Settings.", isError: true)
+            return
+        }
+
         Task {
             do {
                 let engine = AnalysisEngine()
@@ -394,6 +411,45 @@ class BoardViewModel: ObservableObject {
             } catch {
                 self.isAnalyzing = false
                 self.message = "AI Error: \(error)".localized
+                self.addLog("AI Error: \(error)", isError: true)
+            }
+        }
+    }
+
+    private func addLog(_ message: String, isError: Bool = false) {
+        var displayMessage = message
+        let isStderrPrefixed = message.hasPrefix("[STDERR]")
+        if isStderrPrefixed {
+            // Remove "[STDERR] " prefix if present, otherwise just "[STDERR]"
+            if message.hasPrefix("[STDERR] ") {
+                displayMessage = String(message.dropFirst(9))
+            } else {
+                displayMessage = String(message.dropFirst(8))
+            }
+        }
+
+        let trimmed = displayMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return }
+        
+        let isComm = trimmed.contains(">>>") || trimmed.contains("<<<")
+        
+        // Improved error detection for engine logs
+        let lowerTrimmed = trimmed.lowercased()
+        let containsErrorMarker = lowerTrimmed.contains("[error]") || 
+                                 lowerTrimmed.contains("fatal error") || 
+                                 lowerTrimmed.hasPrefix("error:") ||
+                                 lowerTrimmed.contains(" error: ")
+        
+        // If it's from stderr, we only treat it as an error if it has a strong error marker.
+        // If it's NOT from stderr (internal logs), we use the containsErrorMarker logic.
+        let finalIsError = isError || containsErrorMarker
+
+        let entry = LogEntry(message: displayMessage, isError: finalIsError, isCommunication: isComm)
+
+        DispatchQueue.main.async {
+            self.logEntries.append(entry)
+            if self.logEntries.count > 500 {
+                self.logEntries.removeFirst(100)
             }
         }
     }
@@ -404,14 +460,8 @@ class BoardViewModel: ObservableObject {
             while !Task.isCancelled {
                 if let engine = analysisEngine {
                     let logs = await engine.getLogs()
-                    if !logs.isEmpty {
-                        let newLogs = logs.joined(separator: "\n")
-                        self.engineLogs += newLogs + "\n"
-
-                        // Keep logs within a reasonable size
-                        if self.engineLogs.count > 10000 {
-                            self.engineLogs = String(self.engineLogs.suffix(5000))
-                        }
+                    for log in logs {
+                        self.addLog(log)
                     }
                 }
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
@@ -447,32 +497,49 @@ class BoardViewModel: ObservableObject {
         let initialStones = game.getCurrentBoardStones()
         let nextPlayer = nextColor == .black ? "B" : "W"
         let currentNodeId = game.getCurrentNode().getId()
+        let analysisSettings = config.analysis
+        let displaySettings = config.display
+        let metadataSnapshot = metadata
+        let analyzingWhiteToMove = nextColor == .white
 
         analysisTask = Task {
             do {
                 // Debounce: wait for 0.5 seconds before starting analysis (reduced from 1s)
                 try await Task.sleep(nanoseconds: 500_000_000)
 
-                let analysisSettings = config.analysis
                 var query: [String: Any] = [
                     "id": "qidao-\(currentNodeId)",
                     "moves": [] as [Any],
                     "initialStones": initialStones,
                     "initialPlayer": nextPlayer,
                     "rules": "chinese",
-                    "komi": metadata.komi,
-                    "boardXSize": metadata.size,
-                    "boardYSize": metadata.size,
+                    "komi": metadataSnapshot.komi,
+                    "boardXSize": metadataSnapshot.size,
+                    "boardYSize": metadataSnapshot.size,
                     "analyzeTurns": [0],
-                    "maxVisits": analysisSettings.maxVisits,
-                    "reportDuringSearchEvery": analysisSettings.reportDuringSearchEvery,
-                    "includeOwnership": config.display.showOwnership,
+                    "includeOwnership": displaySettings.showOwnership,
                     "includePolicy": analysisSettings.includePolicy
                 ]
 
-                // Add advanced parameters
+                if let reportInterval = analysisSettings.reportDuringSearchEvery, reportInterval >= 0.001 {
+                    query["reportDuringSearchEvery"] = reportInterval
+                }
+
+                if let maxVisits = analysisSettings.maxVisits {
+                    query["maxVisits"] = maxVisits
+                }
+
+                var overrideSettings: [String: Any] = [:]
+                if let maxTime = analysisSettings.maxTime {
+                    overrideSettings["maxTime"] = maxTime
+                }
+
                 for (key, value) in analysisSettings.advancedParams {
-                    query[key] = value
+                    overrideSettings[key] = value
+                }
+
+                if !overrideSettings.isEmpty {
+                    query["overrideSettings"] = overrideSettings
                 }
 
                 let jsonData = try JSONSerialization.data(withJSONObject: query)
@@ -482,13 +549,22 @@ class BoardViewModel: ObservableObject {
 
                 // Continuous update loop
                 while !Task.isCancelled {
-                    if let result = try? await engine.getNextResult() {
+                    do {
+                        let result = try await engine.getNextResult()
                         if !Task.isCancelled && result.id == "qidao-\(currentNodeId)" {
-                            // Normalize winrate and scoreLead to Black's perspective for the UI and history
-                            // KataGo returns them from the perspective of the player whose turn it is.
-                            let isWhiteTurn = self.nextColor == .white
-                            let normalizedWinRate = isWhiteTurn ? 1.0 - result.rootInfo.winrate : result.rootInfo.winrate
-                            let normalizedScoreLead = isWhiteTurn ? -result.rootInfo.scoreLead : result.rootInfo.scoreLead
+                            // Normalize to Black's perspective for history and sidebar displays
+                            let normalizedWinRate = WinRateConverter.convertWinRate(
+                                result.rootInfo.winrate,
+                                reportedAs: .black,
+                                target: .black,
+                                isWhiteTurn: analyzingWhiteToMove
+                            )
+                            let normalizedScoreLead = WinRateConverter.convertScoreLead(
+                                result.rootInfo.scoreLead,
+                                reportedAs: .black,
+                                target: .black,
+                                isWhiteTurn: analyzingWhiteToMove
+                            )
 
                             let normalizedResult = AnalysisResult(
                                 id: result.id,
@@ -519,11 +595,16 @@ class BoardViewModel: ObservableObject {
                             }
 
                             // If we reached max visits, we can stop polling for this turn
-                            if result.rootInfo.visits >= UInt32(analysisSettings.maxVisits) {
+                            if let maxVisits = analysisSettings.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
                                 break
                             }
                         }
-                    } else {
+                    } catch {
+                        let errorMsg = "\(error)"
+                        if !errorMsg.contains("Timeout") {
+                            self.addLog("[ERROR] \(errorMsg)", isError: true)
+                        }
+                        
                         // If no result yet or timeout, wait a bit
                         if Task.isCancelled { break }
                         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s

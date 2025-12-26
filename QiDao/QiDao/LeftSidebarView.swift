@@ -164,22 +164,35 @@ struct LeftSidebarView: View {
                     Divider()
 
                     ScrollViewReader { proxy in
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text(viewModel.engineLogs.isEmpty ? "No logs...".localized : viewModel.engineLogs)
+                        VStack(alignment: .leading, spacing: 5) {
+                            ScrollView {
+                                // Render logs as a single selectable text block so user can select multiple lines
+                                let filteredEntries = viewModel.logEntries.filter { entry in
+                                    if viewModel.showAllLogs { return true }
+                                    return entry.isError || !entry.isCommunication
+                                }
+                                let combined = filteredEntries.map { $0.message }.joined(separator: "\n")
+
+                                Text(combined.isEmpty ? (viewModel.showAllLogs ? "No logs...".localized : "No errors...".localized) : combined)
                                     .font(.system(size: 10, design: .monospaced))
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                    .textSelection(.enabled)
 
                                 Color.clear
                                     .frame(height: 1)
                                     .id("logEnd")
                             }
-                        }
-                        .frame(maxHeight: .infinity)
-                        .onChange(of: viewModel.engineLogs) {
-                            withAnimation {
-                                proxy.scrollTo("logEnd", anchor: .bottom)
+                            .frame(maxHeight: .infinity)
+                            .onChange(of: viewModel.logEntries.count) {
+                                withAnimation {
+                                    proxy.scrollTo("logEnd", anchor: .bottom)
+                                }
                             }
+
+                            Toggle("Show All Logs".localized, isOn: $viewModel.showAllLogs)
+                                .font(.caption)
+                                .padding(.horizontal, 4)
+                                .padding(.bottom, 4)
                         }
                     }
                     .background(Color.black.opacity(0.03))

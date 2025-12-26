@@ -27,19 +27,33 @@ struct RightSidebarView: View {
 
                         Divider()
 
+                        let isWhiteTurn = viewModel.nextColor == .white
+
                         ScrollView {
                             VStack(spacing: 0) {
                                 ForEach(result.moveInfos.sorted(by: { $0.visits > $1.visits }), id: \.moveStr) { info in
+                                    let displayWinRate = WinRateConverter.convertWinRate(
+                                        info.winrate,
+                                        reportedAs: .black,
+                                        target: .black,
+                                        isWhiteTurn: isWhiteTurn
+                                    )
+                                    let displayScoreLead = WinRateConverter.convertScoreLead(
+                                        info.scoreLead,
+                                        reportedAs: .black,
+                                        target: .black,
+                                        isWhiteTurn: isWhiteTurn
+                                    )
                                     HStack {
                                         Text(info.moveStr)
                                             .font(.system(.body, design: .monospaced))
                                             .frame(width: 45, alignment: .leading)
 
-                                        Text(String(format: "%.1f", info.winrate * 100))
+                                        Text(String(format: "%.1f", displayWinRate * 100))
                                             .frame(maxWidth: .infinity, alignment: .trailing)
-                                            .foregroundColor(info.winrate > 0.5 ? .blue : .red)
+                                            .foregroundColor(displayWinRate > 0.5 ? .blue : .red)
 
-                                        Text(String(format: "%+.1f", info.scoreLead))
+                                        Text(String(format: "%+.1f", displayScoreLead))
                                             .frame(maxWidth: .infinity, alignment: .trailing)
 
                                         Text("\(info.visits)")

@@ -493,6 +493,8 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol AnalysisEngineProtocol: AnyObject {
+    func addInternalLog(msg: String) async
+
     func analyze(queryJson: String) async throws
 
     func getLogs() async -> [String]
@@ -558,6 +560,23 @@ open class AnalysisEngine:
         }
 
         try! rustCall { uniffi_qidao_core_fn_free_analysisengine(pointer, $0) }
+    }
+
+    open func addInternalLog(msg: String) async {
+        return
+            try! await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_qidao_core_fn_method_analysisengine_add_internal_log(
+                        self.uniffiClonePointer(),
+                        FfiConverterString.lower(msg)
+                    )
+                },
+                pollFunc: ffi_qidao_core_rust_future_poll_void,
+                completeFunc: ffi_qidao_core_rust_future_complete_void,
+                freeFunc: ffi_qidao_core_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: nil
+            )
     }
 
     open func analyze(queryJson: String) async throws {
@@ -2434,6 +2453,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_qidao_core_checksum_func_parse_sgf() != 27662 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_qidao_core_checksum_method_analysisengine_add_internal_log() != 36426 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_qidao_core_checksum_method_analysisengine_analyze() != 52960 {

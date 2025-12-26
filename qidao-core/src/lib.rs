@@ -4,6 +4,8 @@ use sgf_parse::{go::{parse, Prop}, SgfNode as ParserNode, SgfProp};
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
 
+pub mod engine;
+
 #[derive(uniffi::Record, Clone, Default)]
 pub struct GameMetadata {
     pub black_name: String,
@@ -620,6 +622,25 @@ impl Game {
         moves
     }
 
+    pub fn get_analysis_moves(&self) -> Vec<Vec<String>> {
+        let state = self.state.lock().unwrap();
+        let mut path = state.history.clone();
+        path.push(state.current_node.clone());
+        
+        let mut moves = Vec::new();
+        for node in path {
+            let props = node.properties.lock().unwrap();
+            for prop in props.iter() {
+                if prop.identifier == "B" || prop.identifier == "W" {
+                    if let Some(val) = prop.values.first() {
+                        moves.push(vec![prop.identifier.clone(), val.clone()]);
+                    }
+                }
+            }
+        }
+        moves
+    }
+
     pub fn can_go_back(&self) -> bool {
         !self.state.lock().unwrap().history.is_empty()
     }
@@ -750,4 +771,171 @@ fn find_node_at_depth(current: &Arc<SgfNode>, target: u32, path: Vec<Arc<SgfNode
         }
     }
     None
+}
+
+// --- Engine UniFFI Wrappers ---
+
+#[derive(uniffi::Record, Clone)]
+pub struct GtpResponse {
+    pub success: bool,
+    pub text: String,
+}
+
+#[derive(uniffi::Object)]
+pub struct GtpEngine {
+    client: Arc<tokio::sync::Mutex<Option<engine::GtpClient>>>,
+}
+
+#[uniffi::export]
+impl GtpEngine {
+    #[uniffi::constructor]
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self {
+            client: Arc::new(tokio::sync::Mutex::new(None)),
+        })
+    }
+
+    pub async fn start(&self, executable: String, args: Vec<String>) -> Result<(), SgfError> {
+        let client = engine::GtpClient::start(&executable, &args).await
+            .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        let mut lock = self.client.lock().await;
+        *lock = Some(client);
+        Ok(())
+    }
+
+    pub async fn send_command(&self, cmd: String) -> Result<String, SgfError> {
+        let mut lock = self.client.lock().await;
+        if let Some(client) = lock.as_mut() {
+            client.send_command(&cmd).await
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })
+        } else {
+            Err(SgfError::ParseError { message: "Engine not started".into() })
+        }
+    }
+
+    pub async fn stop(&self) -> Result<(), SgfError> {
+        let mut lock = self.client.lock().await;
+        if let Some(client) = lock.take() {
+            client.stop().await
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(uniffi::Record, Clone)]
+pub struct AnalysisMoveInfo {
+    pub move_str: String,
+    pub visits: u32,
+    pub winrate: f64,
+    pub score_lead: f64,
+    pub pv: Vec<String>,
+}
+
+#[derive(uniffi::Record, Clone)]
+pub struct AnalysisRootInfo {
+    pub winrate: f64,
+    pub score_lead: f64,
+    pub visits: u32,
+}
+
+#[derive(uniffi::Record, Clone)]
+pub struct AnalysisResult {
+    pub id: String,
+    pub turn_number: u32,
+    pub root_info: AnalysisRootInfo,
+    pub move_infos: Vec<AnalysisMoveInfo>,
+}
+
+#[derive(uniffi::Object)]
+pub struct AnalysisEngine {
+    client: Arc<tokio::sync::Mutex<Option<engine::AnalysisClient>>>,
+}
+
+#[uniffi::export]
+impl AnalysisEngine {
+    #[uniffi::constructor]
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self {
+            client: Arc::new(tokio::sync::Mutex::new(None)),
+        })
+    }
+
+    pub async fn start(&self, executable: String, args: Vec<String>) -> Result<(), SgfError> {
+        let client = engine::AnalysisClient::start(&executable, &args).await
+            .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        let mut lock = self.client.lock().await;
+        *lock = Some(client);
+        Ok(())
+    }
+
+    pub async fn analyze(&self, query_json: String) -> Result<(), SgfError> {
+        let mut lock = self.client.lock().await;
+        if let Some(client) = lock.as_mut() {
+            let query: engine::AnalysisQuery = serde_json::from_str(&query_json)
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+            client.send_query(&query).await
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })
+        } else {
+            Err(SgfError::ParseError { message: "Engine not started".into() })
+        }
+    }
+
+    pub async fn get_next_result(&self) -> Result<AnalysisResult, SgfError> {
+        let mut lock = self.client.lock().await;
+        if let Some(client) = lock.as_mut() {
+            let val = client.read_response().await
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+            
+            // Parse the complex KataGo JSON into our simpler Record
+            let id = val["id"].as_str().unwrap_or("").to_string();
+            let turn_number = val["turnNumber"].as_u64().unwrap_or(0) as u32;
+            
+            let root_info_val = &val["rootInfo"];
+            let root_info = AnalysisRootInfo {
+                winrate: root_info_val["winrate"].as_f64().unwrap_or(0.0),
+                score_lead: root_info_val["scoreLead"].as_f64().unwrap_or(0.0),
+                visits: root_info_val["visits"].as_u64().unwrap_or(0) as u32,
+            };
+            
+            let mut move_infos = Vec::new();
+            if let Some(moves) = val["moveInfos"].as_array() {
+                for m in moves {
+                    let mut pv = Vec::new();
+                    if let Some(pv_arr) = m["pv"].as_array() {
+                        for p in pv_arr {
+                            if let Some(s) = p.as_str() {
+                                pv.push(s.to_string());
+                            }
+                        }
+                    }
+                    move_infos.push(AnalysisMoveInfo {
+                        move_str: m["move"].as_str().unwrap_or("").to_string(),
+                        visits: m["visits"].as_u64().unwrap_or(0) as u32,
+                        winrate: m["winrate"].as_f64().unwrap_or(0.0),
+                        score_lead: m["scoreLead"].as_f64().unwrap_or(0.0),
+                        pv,
+                    });
+                }
+            }
+            
+            Ok(AnalysisResult {
+                id,
+                turn_number,
+                root_info,
+                move_infos,
+            })
+        } else {
+            Err(SgfError::ParseError { message: "Engine not started".into() })
+        }
+    }
+
+    pub async fn stop(&self) -> Result<(), SgfError> {
+        let mut lock = self.client.lock().await;
+        if let Some(client) = lock.take() {
+            client.stop().await
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+        }
+        Ok(())
+    }
 }

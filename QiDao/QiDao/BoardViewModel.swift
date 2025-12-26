@@ -492,7 +492,8 @@ class BoardViewModel: ObservableObject {
         }
 
         analysisTask?.cancel()
-        analysisResult = nil
+        // Don't clear analysisResult here to avoid UI flickering.
+        // The UI will keep showing the previous result until new data arrives.
 
         let initialStones = game.getCurrentBoardStones()
         let nextPlayer = nextColor == .black ? "B" : "W"

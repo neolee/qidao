@@ -70,7 +70,8 @@ struct GameBoardView: View {
                 }
 
                 // 7. AI Analysis Overlay
-                if let result = viewModel.analysisResult {
+                // Only show if the result matches the current board state
+                if let result = viewModel.analysisResult, result.id == "qidao-\(viewModel.currentNodeId)" {
                     let sortedMoves = result.moveInfos.sorted { $0.visits > $1.visits }
                     let displayCount = min(sortedMoves.count, viewModel.config.display.maxCandidates)
                     let isWhiteTurn = viewModel.nextColor == .white

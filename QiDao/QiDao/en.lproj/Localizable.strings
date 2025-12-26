@@ -112,8 +112,12 @@
 "Iterative Deepening" = "Iterative Deepening";
 "Report Interval (s)" = "Report Interval (s)";
 "Advanced Parameters" = "Advanced Parameters";
-"Key-Value pairs for KataGo Analysis API" = "Key-Value pairs for KataGo Analysis API";
-"Add Parameter" = "Add Parameter";
+"Key-Value pairs for KataGo Analysis API (overrideSettings)" = "Key-Value pairs for KataGo Analysis API (overrideSettings)";
+"Parameter" = "Parameter";
+"Value" = "Value";
+"Add New Parameter" = "Add New Parameter";
+"key" = "key";
+"value" = "value";
 "Board Overlay" = "Board Overlay";
 "Max Candidates" = "Max Candidates";
 "Show Ownership Map" = "Show Ownership Map";

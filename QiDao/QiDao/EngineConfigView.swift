@@ -8,6 +8,8 @@ struct EngineConfigView: View {
     @State private var selectedTab: ConfigTab = .profiles
     @State private var localConfig: AppConfig = ConfigManager.shared.config
     @State private var showAdvanced: Bool = false
+    @State private var newParamKey: String = ""
+    @State private var newParamValue: String = ""
 
     enum ConfigTab: String, CaseIterable {
         case profiles = "Engine Profiles"
@@ -163,32 +165,71 @@ struct EngineConfigView: View {
 
             Section {
                 DisclosureGroup("Advanced Parameters".localized, isExpanded: $showAdvanced) {
-                    VStack(alignment: .leading) {
-                        Text("Key-Value pairs for KataGo Analysis API".localized)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Key-Value pairs for KataGo Analysis API (overrideSettings)".localized)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .padding(.bottom, 4)
 
-                        ForEach(localConfig.analysis.advancedParams.keys.sorted(), id: \.self) { key in
-                            HStack {
-                                Text(key).frame(width: 150, alignment: .leading)
-                                TextField("", text: Binding(
-                                    get: { localConfig.analysis.advancedParams[key] ?? "" },
-                                    set: { localConfig.analysis.advancedParams[key] = $0 }
-                                ))
-                                Button(action: { localConfig.analysis.advancedParams.removeValue(forKey: key) }) {
-                                    Image(systemName: "minus.circle")
+                        if !localConfig.analysis.advancedParams.isEmpty {
+                            VStack(spacing: 8) {
+                                HStack {
+                                    Text("Parameter".localized).font(.caption.bold()).frame(maxWidth: .infinity, alignment: .leading)
+                                    Text("Value".localized).font(.caption.bold()).frame(maxWidth: .infinity, alignment: .trailing)
+                                    Spacer().frame(width: 39)
+                                }
+
+                                ForEach(localConfig.analysis.advancedParams.keys.sorted(), id: \.self) { key in
+                                    HStack {
+                                        Text(key)
+                                            .font(.system(.body, design: .monospaced))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                                        TextField("", text: Binding(
+                                            get: { localConfig.analysis.advancedParams[key] ?? "" },
+                                            set: { localConfig.analysis.advancedParams[key] = $0 }
+                                        ))
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(maxWidth: .infinity)
+
+                                        Button(action: { localConfig.analysis.advancedParams.removeValue(forKey: key) }) {
+                                            Image(systemName: "minus.circle.fill")
+                                                .foregroundColor(.red)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .frame(width: 30)
+                                    }
+                                }
+                            }
+                            .padding(8)
+                            .background(Color.black.opacity(0.03))
+                            .cornerRadius(8)
+                        }
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Add New Parameter".localized).font(.caption.bold())
+                            HStack(spacing: 20) {
+                                TextField("key".localized, text: $newParamKey)
+                                    .textFieldStyle(.roundedBorder)
+                                TextField("value".localized, text: $newParamValue)
+                                    .textFieldStyle(.roundedBorder)
+                                Button(action: {
+                                    if !newParamKey.isEmpty {
+                                        localConfig.analysis.advancedParams[newParamKey] = newParamValue
+                                        newParamKey = ""
+                                        newParamValue = ""
+                                    }
+                                }) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundColor(.green)
+                                        .font(.title3)
                                 }
                                 .buttonStyle(.plain)
+                                .offset(y: -3)
+                                .disabled(newParamKey.isEmpty)
                             }
                         }
-
-                        Button(action: {
-                            localConfig.analysis.advancedParams["new_param"] = "value"
-                        }) {
-                            Label("Add Parameter".localized, systemImage: "plus")
-                        }
-                        .padding(.top, 4)
                     }
                     .padding(.vertical, 8)
                 }
@@ -213,7 +254,7 @@ struct EngineConfigView: View {
 
                 Toggle("Show Ownership Map".localized, isOn: $localConfig.display.showOwnership)
                 Toggle("Show Win Rate Graph".localized, isOn: $localConfig.display.showWinRateGraph)
-                
+
                 HStack {
                     Text("Overlay Win Rate".localized)
                     Spacer()

@@ -113,8 +113,12 @@
 "Iterative Deepening" = "迭代加深 (逐步增加计算量)";
 "Report Interval (s)" = "报告间隔 (秒)";
 "Advanced Parameters" = "高级参数";
-"Key-Value pairs for KataGo Analysis API" = "KataGo Analysis API 的键值对参数";
-"Add Parameter" = "添加参数";
+"Key-Value pairs for KataGo Analysis API (overrideSettings)" = "KataGo Analysis API 的键值对参数 (overrideSettings)";
+"Parameter" = "参数名";
+"Value" = "参数值";
+"Add New Parameter" = "添加新参数";
+"key" = "键";
+"value" = "值";
 "Board Overlay" = "棋盘叠加显示";
 "Max Candidates" = "最大候选点数量";
 "Show Ownership Map" = "显示形势分布图 (领地图)";

@@ -536,7 +536,14 @@ class BoardViewModel: ObservableObject {
                 }
 
                 for (key, value) in analysisSettings.advancedParams {
-                    overrideSettings[key] = value
+                    // Try to parse as Bool, then Double, then fallback to String
+                    if let boolVal = Bool(value.lowercased()) {
+                        overrideSettings[key] = boolVal
+                    } else if let doubleVal = Double(value) {
+                        overrideSettings[key] = doubleVal
+                    } else {
+                        overrideSettings[key] = value
+                    }
                 }
 
                 if !overrideSettings.isEmpty {

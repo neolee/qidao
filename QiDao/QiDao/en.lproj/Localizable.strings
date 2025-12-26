@@ -84,9 +84,6 @@
 "Engine Executable" = "Engine Executable";
 "Path to KataGo" = "Path to KataGo";
 "Browse..." = "Browse...";
-"Model File" = "Model File";
-"Path to .bin.gz" = "Path to .bin.gz";
-"Config Path (Required)" = "Config Path (Required)";
 "Arguments" = "Arguments";
 "Additional arguments" = "Additional arguments";
 "Analysis Settings" = "Analysis Settings";

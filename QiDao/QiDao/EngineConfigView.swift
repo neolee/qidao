@@ -119,7 +119,7 @@ struct EngineConfigView: View {
                     }
 
                     HStack {
-                        TextField("Config Path (Required)".localized, text: $localConfig.profiles[index].config)
+                        TextField("Config Path".localized, text: $localConfig.profiles[index].config)
                         Button("Browse...".localized) {
                             selectFile(canChooseDirectories: false) { url in
                                 localConfig.profiles[index].config = url.path
@@ -200,7 +200,7 @@ struct EngineConfigView: View {
     private var displayView: some View {
         Form {
             Section(header: Text("Board Overlay".localized)) {
-                Stepper(value: $localConfig.display.maxCandidates, in: 1...20) {
+                Stepper(value: $localConfig.display.maxCandidates, in: 1...100) {
                     HStack {
                         Text("Max Candidates".localized)
                         Spacer()

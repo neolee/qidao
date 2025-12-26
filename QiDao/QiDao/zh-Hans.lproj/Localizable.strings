@@ -85,9 +85,6 @@
 "Engine Executable" = "引擎可执行文件";
 "Path to KataGo" = "KataGo 路径";
 "Browse..." = "浏览...";
-"Model File" = "权重文件 (Model)";
-"Path to .bin.gz" = ".bin.gz 文件路径";
-"Config Path (Required)" = "配置文件路径 (必填)";
 "Arguments" = "启动参数";
 "Additional arguments" = "额外启动参数";
 "Analysis Settings" = "分析设置";

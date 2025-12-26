@@ -73,7 +73,29 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 4. **Engine**: Implement iterative deepening for AI analysis (multiple queries with increasing visits).
 5. **Config**: Add engine path and weights configuration in UI.
 
-## 9. Progress Log
+## 9. Implementation Plan (Dec 26, 2025)
+
+### Phase 1: UI Layout & Basic Optimization
+- **Left Sidebar**: Merge AI Analysis and Engine Logs into "AI Engine" section. Add start/stop and config buttons. Add status icon and selectable message area.
+- **Right Sidebar**: Refactor "Move Evaluation" into a 4-5 column table (Move, Win Rate, Score Lead, Visits).
+- **Board Toolbar**: Replace "Show Move Numbers" checkbox with a Picker (All, Last 10, 5, 1, None).
+- **Overlay Logic**: Ensure AI overlays are cleared immediately upon move placement to avoid visual lag.
+
+### Phase 2: AI Configuration & Communication
+- **Config Sheet**: Implement a detailed settings UI for engine paths, arguments, and weights.
+- **Engine Logs**: Capture and display raw GTP/Analysis API logs in the UI with auto-scroll.
+
+### Phase 3: Visual Markers & AI Enhancements
+- **Move Markers**: Implement "-1" (large hollow circle) and "-2/-3" (small solid circle) markers when move numbers are hidden.
+- **Next Move**: Highlight the actual next move from SGF when AI is active.
+- **AI Overlay**: Color-code candidates (Blue/Green/Orange), add rank numbers (1-9), and refine text layout.
+
+### Phase 4: Advanced Visualization
+- **Win Rate Graph**: Real-time win rate bar and historical win rate/score lead line chart in Left Sidebar.
+- **Hover Preview**: Show AI variation path when hovering over a candidate move.
+- **Ownership Map**: Implement the mini-board for territory/ownership visualization.
+
+## 10. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
 - [x] **Phase 2: UI/UX Foundation**: Refined 3D stone visuals, sound effects system, and multi-language support. Fixed sandbox-related permission issues.
 - [x] **Phase 3: Variation Tree & Navigation**: Implemented graphical variation tree using `Canvas`, keyboard-based branch switching, and optimized sound feedback. Added global "Jump to Move" with inline UI and focus management.

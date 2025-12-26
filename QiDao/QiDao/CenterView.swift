@@ -36,9 +36,14 @@ struct CenterView: View {
 
                 Divider().frame(height: 20)
 
-                Toggle("Numbers".localized, isOn: $viewModel.showMoveNumbers)
-                    .toggleStyle(.checkbox)
-                    .focusable(false)
+                Picker("Numbers".localized, selection: $viewModel.moveNumberDisplay) {
+                    ForEach(MoveNumberDisplay.allCases) { display in
+                        Text(display.label).tag(display)
+                    }
+                }
+                .pickerStyle(.menu)
+                .id("moveNumberPicker_\(langManager.selectedLanguage.rawValue)")
+
                 Toggle("Coordinates".localized, isOn: $viewModel.showCoordinates)
                     .toggleStyle(.checkbox)
                     .focusable(false)
@@ -62,11 +67,6 @@ struct CenterView: View {
                 .menuStyle(.button)
                 .frame(width: 120)
                 .focusable(false)
-
-                Text(viewModel.message)
-                    .font(.callout)
-                    .foregroundColor(.secondary)
-                    .textSelection(.enabled)
             }
             .padding()
             .background(.ultraThinMaterial)

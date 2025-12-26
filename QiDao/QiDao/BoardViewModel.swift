@@ -30,14 +30,35 @@ struct TreeVisualEdge: Identifiable {
     let to: CGPoint
 }
 
+enum MoveNumberDisplay: Int, CaseIterable, Identifiable {
+    case all = 0
+    case last10 = 10
+    case last5 = 5
+    case last1 = 1
+    case none = -1
+
+    var id: Int { self.rawValue }
+
+    var label: String {
+        switch self {
+        case .all: return "All".localized
+        case .last10: return "Last 10".localized
+        case .last5: return "Last 5".localized
+        case .last1: return "Last 1".localized
+        case .none: return "None".localized
+        }
+    }
+}
+
+@MainActor
 class BoardViewModel: ObservableObject {
     @Published var message: String = "Ready".localized
     @Published var gameInfo: String = ""
     @Published var board: Board = Board(size: 19)
     @Published var nextColor: StoneColor = .black
     @Published var theme: BoardTheme = .defaultWood
-    @Published var showMoveNumbers: Bool = true {
-        didSet { UserDefaults.standard.set(showMoveNumbers, forKey: "showMoveNumbers") }
+    @Published var moveNumberDisplay: MoveNumberDisplay = .all {
+        didSet { UserDefaults.standard.set(moveNumberDisplay.rawValue, forKey: "moveNumberDisplay") }
     }
     @Published var showCoordinates: Bool = true {
         didSet { UserDefaults.standard.set(showCoordinates, forKey: "showCoordinates") }
@@ -46,6 +67,8 @@ class BoardViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
     }
     @Published var lastMove: (x: Int, y: Int)? = nil
+    @Published var moveCount: Int = 0
+    @Published var maxMoveCount: Int = 0
     @Published var variations: [Variation] = []
     @Published var treeNodes: [TreeVisualNode] = []
     @Published var treeEdges: [TreeVisualEdge] = []
@@ -54,6 +77,7 @@ class BoardViewModel: ObservableObject {
     // AI Analysis
     @Published var isAnalyzing: Bool = false
     @Published var analysisResult: AnalysisResult? = nil
+    @Published var engineLogs: String = ""
     @Published var enginePath: String = UserDefaults.standard.string(forKey: "enginePath") ?? "/opt/homebrew/bin/katago" {
         didSet { UserDefaults.standard.set(enginePath, forKey: "enginePath") }
     }
@@ -127,15 +151,20 @@ class BoardViewModel: ObservableObject {
 
     // Track move history for numbering
     @Published var moveNumbers: [String: Int] = [:]
-    @Published var moveCount: Int = 0
-    @Published var maxMoveCount: Int = 0
 
     init() {
         // Initialize Game Controller
         self.game = Game(size: 19)
 
         // Load persisted settings
-        self.showMoveNumbers = UserDefaults.standard.object(forKey: "showMoveNumbers") as? Bool ?? true
+        if let rawValue = UserDefaults.standard.object(forKey: "moveNumberDisplay") as? Int,
+           let display = MoveNumberDisplay(rawValue: rawValue) {
+            self.moveNumberDisplay = display
+        } else {
+            // Migration from old showMoveNumbers
+            let oldShow = UserDefaults.standard.object(forKey: "showMoveNumbers") as? Bool ?? true
+            self.moveNumberDisplay = oldShow ? .all : .none
+        }
         self.showCoordinates = UserDefaults.standard.object(forKey: "showCoordinates") as? Bool ?? true
         self.playSound = UserDefaults.standard.object(forKey: "playSound") as? Bool ?? true
 
@@ -295,10 +324,10 @@ class BoardViewModel: ObservableObject {
 
     func startAnalysis() {
         guard analysisEngine == nil else { return }
-        
+
         isAnalyzing = true
         message = "Starting AI...".localized
-        
+
         Task {
             do {
                 let engine = AnalysisEngine()
@@ -309,12 +338,11 @@ class BoardViewModel: ObservableObject {
                 }
                 try await engine.start(executable: enginePath, args: args)
                 self.analysisEngine = engine
+                self.message = "Ready".localized
                 updateAnalysis()
             } catch {
-                await MainActor.run {
-                    self.isAnalyzing = false
-                    self.message = "AI Error: \(error)".localized
-                }
+                self.isAnalyzing = false
+                self.message = "AI Error: \(error)".localized
             }
         }
     }
@@ -334,14 +362,21 @@ class BoardViewModel: ObservableObject {
     }
 
     func updateAnalysis() {
-        guard isAnalyzing, let engine = analysisEngine else { return }
-        
+        guard isAnalyzing, let engine = analysisEngine else {
+            analysisResult = nil
+            return
+        }
+
         analysisTask?.cancel()
-        
+        analysisResult = nil
+
         let moves = game.getAnalysisMoves()
-        
+
         analysisTask = Task {
             do {
+                // Debounce: wait for 1 second before starting analysis
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+
                 let query: [String: Any] = [
                     "id": "qidao",
                     "moves": moves,
@@ -355,14 +390,12 @@ class BoardViewModel: ObservableObject {
                 ]
                 let jsonData = try JSONSerialization.data(withJSONObject: query)
                 let jsonString = String(data: jsonData, encoding: .utf8)!
-                
+
                 try await engine.analyze(queryJson: jsonString)
                 let result = try await engine.getNextResult()
-                
+
                 if !Task.isCancelled {
-                    await MainActor.run {
-                        self.analysisResult = result
-                    }
+                    self.analysisResult = result
                 }
             } catch {
                 if !Task.isCancelled {
@@ -487,6 +520,20 @@ class BoardViewModel: ObservableObject {
         return count
     }
 
+    func getDisplayMoveNumber(x: Int, y: Int) -> Int? {
+        guard let num = moveNumbers["\(x),\(y)"] else { return nil }
+        switch moveNumberDisplay {
+        case .all: return num
+        case .none: return nil
+        default:
+            if num > moveCount - moveNumberDisplay.rawValue {
+                return num
+            } else {
+                return nil
+            }
+        }
+    }
+
     func resetBoard() {
         self.game = Game(size: 19)
         syncStateWithGame(rebuildTree: true)
@@ -548,21 +595,21 @@ class BoardViewModel: ObservableObject {
     func decodeKataGoMove(_ move: String) -> (x: Int, y: Int)? {
         let move = move.uppercased()
         guard move.count >= 2 else { return nil }
-        
+
         let colChar = move.first!
         let rowStr = move.dropFirst()
-        
+
         guard let row = Int(rowStr) else { return nil }
-        
+
         let colMap: [Character: Int] = [
             "A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7,
             "J": 8, "K": 9, "L": 10, "M": 11, "N": 12, "O": 13, "P": 14, "Q": 15,
             "R": 16, "S": 17, "T": 18
         ]
-        
+
         guard let x = colMap[colChar] else { return nil }
         let y = Int(metadata.size) - row
-        
+
         return (x, y)
     }
 }

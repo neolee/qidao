@@ -66,3 +66,14 @@
 "No Data" = "无数据";
 "Score Lead" = "目数领先";
 "Win Rate" = "胜率";
+"AI Engine" = "AI 引擎";
+"No logs..." = "暂无日志...";
+"Win %" = "胜率%";
+"Lead" = "目数";
+"Visits" = "计算量";
+"All" = "全部";
+"Last 10" = "最近10手";
+"Last 5" = "最近5手";
+"Last 1" = "最近1手";
+"None" = "不显示";
+"Ownership Map" = "形势分布图";

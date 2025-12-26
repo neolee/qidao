@@ -34,13 +34,11 @@ struct GameBoardView: View {
                 ForEach(0..<gridSize, id: \.self) { y in
                     ForEach(0..<gridSize, id: \.self) { x in
                         if let color = viewModel.board.getStone(x: UInt32(x), y: UInt32(y)) {
-                            let moveNum = viewModel.moveNumbers["\(x),\(y)"]
-
                             StoneView(
                                 color: color,
                                 theme: viewModel.theme,
                                 size: spacing * 0.95,
-                                moveNumber: viewModel.showMoveNumbers ? moveNum : nil,
+                                moveNumber: viewModel.getDisplayMoveNumber(x: x, y: y),
                                 isLastMove: viewModel.lastMove?.x == x && viewModel.lastMove?.y == y
                             )
                             .position(
@@ -79,7 +77,7 @@ struct GameBoardView: View {
                                 scoreLead: info.scoreLead,
                                 isBest: info.visits == maxVisits && maxVisits > 0,
                                 theme: viewModel.theme,
-                                size: spacing * 0.8
+                                size: spacing * 0.95
                             )
                             .position(
                                 x: CGFloat(pos.x + 1) * spacing,

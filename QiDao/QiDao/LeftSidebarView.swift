@@ -4,9 +4,11 @@ import qidao_coreFFI
 struct LeftSidebarView: View {
     @ObservedObject var viewModel: BoardViewModel
     @Binding var showInfoEditor: Bool
+    @Binding var showEngineConfig: Bool
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 15) {
             GroupBox(label: Label("Game Info".localized, systemImage: "info.circle")) {
                 VStack(alignment: .leading, spacing: 8) {
                     if !viewModel.metadata.gameName.isEmpty {
@@ -72,49 +74,88 @@ struct LeftSidebarView: View {
             }
             .textSelection(.enabled)
 
-            GroupBox(label: Label("AI Analysis".localized, systemImage: "cpu")) {
+            GroupBox(label: Label("Win Rate".localized, systemImage: "chart.line.uptrend.xyaxis")) {
                 VStack(spacing: 10) {
-                    Button(action: { viewModel.toggleAnalysis() }) {
-                        Label(
-                            viewModel.isAnalyzing ? "Stop AI".localized : "Start AI".localized,
-                            systemImage: viewModel.isAnalyzing ? "stop.fill" : "play.fill"
-                        )
+                    // Real-time win rate bar (placeholder)
+                    Text("Win Rate Bar Placeholder")
+                        .font(.caption)
+                        .frame(height: 20)
                         .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(viewModel.isAnalyzing ? .red : .blue)
-                    .focusable(false)
+                        .background(Color.blue.opacity(0.1))
 
-                    if viewModel.isAnalyzing {
-                        HStack {
-                            CustomSpinner()
-                            Text("Analyzing...".localized)
-                                .font(.caption)
-                        }
-                    }
+                    // Chart placeholder
+                    Text("Chart Placeholder")
+                        .font(.caption)
+                        .frame(height: 100)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.05))
                 }
                 .padding(5)
             }
 
-            GroupBox(label: Label("Win Rate".localized, systemImage: "chart.line.uptrend.xyaxis")) {
-                Text("Chart Placeholder")
-                    .frame(height: 150)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.black.opacity(0.05))
-            }
+            GroupBox(label: Label("AI Engine".localized, systemImage: "cpu")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        Button(action: { viewModel.toggleAnalysis() }) {
+                            Label(
+                                viewModel.isAnalyzing ? "Stop AI".localized : "Start AI".localized,
+                                systemImage: viewModel.isAnalyzing ? "stop.fill" : "play.fill"
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(viewModel.isAnalyzing ? .red : .blue)
+                        .focusable(false)
 
-            GroupBox(label: Label("Engine Logs".localized, systemImage: "terminal")) {
-                ScrollView {
-                    Text("GTP Log Placeholder...")
-                        .font(.system(.caption, design: .monospaced))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        Button(action: { showEngineConfig = true }) {
+                            Image(systemName: "gearshape")
+                                .padding(.horizontal, 8)
+                        }
+                        .buttonStyle(.bordered)
+                        .focusable(false)
+                    }
+
+                    HStack(spacing: 8) {
+                        if viewModel.isAnalyzing {
+                            CustomSpinner()
+                        } else {
+                            Image(systemName: "pause.circle")
+                                .foregroundColor(.secondary)
+                        }
+
+                        Text(viewModel.message)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .textSelection(.enabled)
+                    }
+                    .padding(.horizontal, 5)
+
+                    Divider()
+
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            Text(viewModel.engineLogs.isEmpty ? "No logs...".localized : viewModel.engineLogs)
+                                .font(.system(size: 10, design: .monospaced))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .id("logEnd")
+                        }
+                        .frame(maxHeight: .infinity)
+                        .onChange(of: viewModel.engineLogs) {
+                            proxy.scrollTo("logEnd", anchor: .bottom)
+                        }
+                    }
+                    .background(Color.black.opacity(0.03))
+                    .cornerRadius(4)
                 }
+                .padding(5)
                 .frame(maxHeight: .infinity)
             }
             .textSelection(.enabled)
+
+            Spacer(minLength: 0)
         }
         .padding()
-        .frame(minWidth: 200, maxWidth: 300)
+        .frame(minWidth: 250, maxWidth: 350)
     }
 }
 

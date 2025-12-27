@@ -117,16 +117,32 @@ struct GameBoardView: View {
                                 return .orange
                             }()
                             
-                            AIMoveMarker(
-                                winRate: displayWinRate,
-                                scoreLead: displayScoreLead,
-                                visits: Int(info.visits),
-                                rank: index + 1,
-                                color: markerColor,
-                                size: spacing * 0.95
-                            )
-                            .onHover { hovering in
-                                viewModel.hoveredVariation = hovering ? info.pv : nil
+                            ZStack {
+                                // 1. Stable Hover Target (Transparent but hit-testable)
+                                // Using a Rectangle ensures the entire intersection area captures the hover
+                                Color.white.opacity(0.001)
+                                    .frame(width: spacing, height: spacing)
+                                    .onHover { hovering in
+                                        withAnimation(.easeInOut(duration: 0.1)) {
+                                            if hovering {
+                                                viewModel.hoveredVariation = info.pv
+                                            } else if viewModel.hoveredVariation == info.pv {
+                                                viewModel.hoveredVariation = nil
+                                            }
+                                        }
+                                    }
+
+                                // 2. Visual Marker
+                                AIMoveMarker(
+                                    winRate: displayWinRate,
+                                    scoreLead: displayScoreLead,
+                                    visits: Int(info.visits),
+                                    rank: index + 1,
+                                    color: markerColor,
+                                    size: spacing * 0.95
+                                )
+                                .opacity(viewModel.hoveredVariation == nil ? 1.0 : 0.0)
+                                .allowsHitTesting(false) // Don't let the marker interfere with the hover target
                             }
                             .position(
                                 x: CGFloat(pos.x + 1) * spacing,
@@ -145,11 +161,12 @@ struct GameBoardView: View {
                             StoneView(
                                 color: stoneColor,
                                 theme: viewModel.theme,
-                                size: spacing * 0.8,
+                                size: spacing * 0.95,
                                 moveNumber: index + 1,
                                 markerType: nil
                             )
-                            .opacity(0.6)
+                            .opacity(0.8)
+                            .allowsHitTesting(false) // CRITICAL: Don't block hover events for markers below
                             .position(
                                 x: CGFloat(pos.x + 1) * spacing,
                                 y: CGFloat(pos.y + 1) * spacing

@@ -1,9 +1,9 @@
+/* UI Elements */
 "Game Info" = "对局信息";
 "Next" = "下一手";
 "Black" = "黑方";
 "White" = "白方";
-"Win Rate" = "胜率图";
-"Engine Logs" = "引擎日志";
+"Win Rate" = "胜率";
 "Theme" = "主题";
 "Reset" = "重置";
 "Numbers" = "手数";
@@ -14,9 +14,6 @@
 "Evaluation" = "形势评估";
 "Ready" = "就绪";
 "Board Reset" = "棋盘已重置";
-"Language" = "语言";
-"Default Wood" = "经典木质";
-"B&W Print" = "黑白印刷";
 "Move" = "手数";
 "Invalid Move" = "非法落子";
 "Open" = "打开";
@@ -25,20 +22,32 @@
 "Saved" = "已保存";
 "Load Failed" = "加载失败";
 "Save Failed" = "保存失败";
+"Cancel" = "取消";
+"Edit" = "编辑";
+"Settings" = "设置";
+"Browse..." = "浏览...";
+"All" = "全部";
+"Last 10" = "最近10手";
+"Last 5" = "最近5手";
+"Last 1" = "最近1手";
+"None" = "不显示";
+
+/* Game Metadata */
 "Event" = "赛事";
 "Date" = "日期";
 "Place" = "地点";
 "Result" = "结果";
 "Komi" = "贴目";
-"Edit" = "编辑";
 "Players" = "棋手信息";
 "Black Name" = "黑方姓名";
 "White Name" = "白方姓名";
 "Rank" = "段位";
 "Rules" = "规则";
 "Edit Game Info" = "编辑对局信息";
-"Cancel" = "取消";
 "Game Name" = "棋局名称";
+"vs" = "对阵";
+
+/* Game Results */
 "Black wins by resignation" = "黑中盘胜";
 "White wins by resignation" = "白中盘胜";
 "Black wins by time" = "黑超时胜";
@@ -48,60 +57,43 @@
 "points" = "目";
 "Draw" = "和棋";
 "Void" = "无结果";
+
+/* Navigation */
 "Go to Start" = "跳到开始";
 "Go to End" = "跳到最后";
 "Jump to Move" = "跳到指定手数";
 "Previous Move (↑)" = "上一步 (↑)";
 "Next Move (↓)" = "下一步 (↓)";
-"vs" = "对阵";
-"Failed to decode SGF file" = "无法解码 SGF 文件";
-"AI Analysis" = "AI 分析";
-"Start AI" = "开启 AI";
-"Stop AI" = "停止 AI";
-"Analyzing..." = "分析中...";
-"Starting AI..." = "正在启动 AI...";
-"AI Stopped" = "AI 已停止";
+
+/* AI Engine */
+"AI Analysis Inactive" = "AI 分析未启动";
+"AI Started" = "AI 已启动";
+"AI Not Started" = "AI 未启动";
+"AI Error" = "AI 错误";
 "AI Error: %@" = "AI 错误: %@";
-"Error: Config file is required for analysis mode" = "错误：分析模式需要配置文件";
-"Config file is required. Please set it in Engine Settings." = "需要配置文件，请在引擎设置中指定。";
-"AI Analysis Inactive" = "AI 分析未开启";
-"No Data" = "无数据";
-"Score Lead" = "目数领先";
-"Win Rate" = "胜率";
+"Starting AI..." = "正在启动 AI...";
+"Start AI" = "启动 AI";
+"Stop AI" = "停止 AI";
 "AI Engine" = "AI 引擎";
-"No logs..." = "暂无日志...";
-"No errors..." = "暂无错误...";
-"Show All Logs" = "显示全部日志";
+"Score Lead" = "目数领先";
 "Win %" = "胜率%";
 "Lead" = "目数";
 "Visits" = "计算量";
-"All" = "全部";
-"Last 10" = "最近10手";
-"Last 5" = "最近5手";
-"Last 1" = "最近1手";
-"None" = "不显示";
+"No Data" = "无数据";
+"No logs..." = "暂无日志...";
+"No errors..." = "暂无错误...";
+"Show All Logs" = "显示全部日志";
 "Ownership Map" = "形势分布图";
-"AI Engine Configuration" = "AI 引擎配置";
-"Engine Executable" = "引擎可执行文件";
-"Path to KataGo" = "KataGo 路径";
-"Browse..." = "浏览...";
-"Arguments" = "启动参数";
-"Additional arguments" = "额外启动参数";
-"Analysis Settings" = "分析设置";
-"Max Visits" = "最大计算量 (Visits)";
-"Reset to Default" = "恢复默认";
-"Settings" = "设置";
-"Engine Profiles" = "引擎方案";
-"Analysis" = "分析设置";
-"Display" = "界面设置";
-"Board Overlay" = "棋盘覆盖层";
-"Overlay Win Rate" = "棋盘胜率视角";
-"Current Player" = "当前方";
+"Show Ownership Map" = "显示形势分布图 (领地图)";
+"Show Win Rate Graph" = "显示胜率走势图";
+
+/* Engine Configuration */
 "Select Profile" = "选择方案";
 "Current Profile" = "当前方案";
 "Add Profile" = "添加方案";
 "Delete Profile" = "删除方案";
 "Profile Details" = "方案详情";
+"New Profile" = "新方案";
 "Default" = "默认";
 "Name" = "名称";
 "Executable Path" = "引擎路径";
@@ -109,9 +101,11 @@
 "Config Path" = "配置文件路径";
 "Extra Arguments" = "额外参数";
 "Basic Settings" = "基础设置";
+"Max Visits" = "最大计算量 (Visits)";
 "Max Time (seconds)" = "最大计算时间 (秒)";
 "Iterative Deepening" = "迭代加深 (逐步增加计算量)";
 "Report Interval (s)" = "报告间隔 (秒)";
+"Reset to Default" = "恢复默认";
 "Advanced Parameters" = "高级参数";
 "Key-Value pairs for KataGo Analysis API (overrideSettings)" = "KataGo Analysis API 的键值对参数 (overrideSettings)";
 "Parameter" = "参数名";
@@ -121,6 +115,13 @@
 "value" = "值";
 "Board Overlay" = "棋盘叠加显示";
 "Max Candidates" = "最大候选点数量";
-"Show Ownership Map" = "显示形势分布图 (领地图)";
-"Show Win Rate Graph" = "显示胜率走势图";
-"New Profile" = "新方案";
+"Overlay Win Rate" = "棋盘胜率视角";
+"Current Player" = "当前方";
+"Engine Profiles" = "引擎方案";
+"Analysis" = "分析设置";
+"Display" = "界面设置";
+
+/* Errors */
+"Failed to decode SGF file" = "无法解码 SGF 文件";
+"Error: Config file is required for analysis mode" = "错误：分析模式需要配置文件";
+

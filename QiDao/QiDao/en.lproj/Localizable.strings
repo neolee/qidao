@@ -1,9 +1,9 @@
+/* UI Elements */
 "Game Info" = "Game Info";
 "Next" = "Next";
 "Black" = "Black";
 "White" = "White";
 "Win Rate" = "Win Rate";
-"Engine Logs" = "Engine Logs";
 "Theme" = "Theme";
 "Reset" = "Reset";
 "Numbers" = "Numbers";
@@ -14,9 +14,6 @@
 "Evaluation" = "Evaluation";
 "Ready" = "Ready";
 "Board Reset" = "Board Reset";
-"Language" = "Language";
-"Default Wood" = "Default Wood";
-"B&W Print" = "B&W Print";
 "Move" = "Move";
 "Invalid Move" = "Invalid Move";
 "Open" = "Open";
@@ -25,20 +22,32 @@
 "Saved" = "Saved";
 "Load Failed" = "Load Failed";
 "Save Failed" = "Save Failed";
+"Cancel" = "Cancel";
+"Edit" = "Edit";
+"Settings" = "Settings";
+"Browse..." = "Browse...";
+"All" = "All";
+"Last 10" = "Last 10";
+"Last 5" = "Last 5";
+"Last 1" = "Last 1";
+"None" = "None";
+
+/* Game Metadata */
 "Event" = "Event";
 "Date" = "Date";
 "Place" = "Place";
 "Result" = "Result";
 "Komi" = "Komi";
-"Edit" = "Edit";
 "Players" = "Players";
 "Black Name" = "Black Name";
 "White Name" = "White Name";
 "Rank" = "Rank";
 "Rules" = "Rules";
 "Edit Game Info" = "Edit Game Info";
-"Cancel" = "Cancel";
 "Game Name" = "Game Name";
+"vs" = "vs";
+
+/* Game Results */
 "Black wins by resignation" = "Black wins by resignation";
 "White wins by resignation" = "White wins by resignation";
 "Black wins by time" = "Black wins by time";
@@ -48,59 +57,43 @@
 "points" = "points";
 "Draw" = "Draw";
 "Void" = "Void";
+
+/* Navigation */
 "Go to Start" = "Go to Start";
 "Go to End" = "Go to End";
 "Jump to Move" = "Jump to Move";
 "Previous Move (↑)" = "Previous Move (↑)";
 "Next Move (↓)" = "Next Move (↓)";
-"vs" = "vs";
-"Failed to decode SGF file" = "Failed to decode SGF file";
-"AI Analysis" = "AI Analysis";
+
+/* AI Engine */
+"AI Analysis Inactive" = "AI Analysis Inactive";
+"AI Started" = "AI Started";
+"AI Not Started" = "AI Not Started";
+"AI Error" = "AI Error";
+"AI Error: %@" = "AI Error: %@";
+"Starting AI..." = "Starting AI...";
 "Start AI" = "Start AI";
 "Stop AI" = "Stop AI";
-"Analyzing..." = "Analyzing...";
-"Starting AI..." = "Starting AI...";
-"AI Stopped" = "AI Stopped";
-"AI Error: %@" = "AI Error: %@";
-"Error: Config file is required for analysis mode" = "Error: Config file is required for analysis mode";
-"Config file is required. Please set it in Engine Settings." = "Config file is required. Please set it in Engine Settings.";
-"AI Analysis Inactive" = "AI Analysis Inactive";
-"No Data" = "No Data";
-"Score Lead" = "Score Lead";
 "AI Engine" = "AI Engine";
-"No logs..." = "No logs...";
-"No errors..." = "No errors...";
-"Show All Logs" = "Show All Logs";
+"Score Lead" = "Score Lead";
 "Win %" = "Win %";
 "Lead" = "Lead";
 "Visits" = "Visits";
-"All" = "All";
-"Last 10" = "Last 10";
-"Last 5" = "Last 5";
-"Last 1" = "Last 1";
-"None" = "None";
+"No Data" = "No Data";
+"No logs..." = "No logs...";
+"No errors..." = "No errors...";
+"Show All Logs" = "Show All Logs";
 "Ownership Map" = "Ownership Map";
-"AI Engine Configuration" = "AI Engine Configuration";
-"Engine Executable" = "Engine Executable";
-"Path to KataGo" = "Path to KataGo";
-"Browse..." = "Browse...";
-"Arguments" = "Arguments";
-"Additional arguments" = "Additional arguments";
-"Analysis Settings" = "Analysis Settings";
-"Max Visits" = "Max Visits";
-"Reset to Default" = "Reset to Default";
-"Settings" = "Settings";
-"Engine Profiles" = "Engine Profiles";
-"Analysis" = "Analysis";
-"Display" = "Display";
-"Board Overlay" = "Board Overlay";
-"Overlay Win Rate" = "Overlay Win Rate";
-"Current Player" = "Current Player";
+"Show Ownership Map" = "Show Ownership Map";
+"Show Win Rate Graph" = "Show Win Rate Graph";
+
+/* Engine Configuration */
 "Select Profile" = "Select Profile";
 "Current Profile" = "Current Profile";
 "Add Profile" = "Add Profile";
 "Delete Profile" = "Delete Profile";
 "Profile Details" = "Profile Details";
+"New Profile" = "New Profile";
 "Default" = "Default";
 "Name" = "Name";
 "Executable Path" = "Executable Path";
@@ -108,9 +101,11 @@
 "Config Path" = "Config Path";
 "Extra Arguments" = "Extra Arguments";
 "Basic Settings" = "Basic Settings";
+"Max Visits" = "Max Visits";
 "Max Time (seconds)" = "Max Time (seconds)";
 "Iterative Deepening" = "Iterative Deepening";
 "Report Interval (s)" = "Report Interval (s)";
+"Reset to Default" = "Reset to Default";
 "Advanced Parameters" = "Advanced Parameters";
 "Key-Value pairs for KataGo Analysis API (overrideSettings)" = "Key-Value pairs for KataGo Analysis API (overrideSettings)";
 "Parameter" = "Parameter";
@@ -120,6 +115,13 @@
 "value" = "value";
 "Board Overlay" = "Board Overlay";
 "Max Candidates" = "Max Candidates";
-"Show Ownership Map" = "Show Ownership Map";
-"Show Win Rate Graph" = "Show Win Rate Graph";
-"New Profile" = "New Profile";
+"Overlay Win Rate" = "Overlay Win Rate";
+"Current Player" = "Current Player";
+"Engine Profiles" = "Engine Profiles";
+"Analysis" = "Analysis";
+"Display" = "Display";
+
+/* Errors */
+"Failed to decode SGF file" = "Failed to decode SGF file";
+"Error: Config file is required for analysis mode" = "Error: Config file is required for analysis mode";
+

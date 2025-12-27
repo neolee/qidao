@@ -125,6 +125,7 @@ class BoardViewModel: ObservableObject {
 
     // AI Analysis
     @Published var isAnalyzing: Bool = false
+    @Published var engineMessage: String = "AI Not Started".localized
     @Published var analysisResult: AnalysisResult? = nil
     @Published var logEntries: [LogEntry] = []
     @Published var showAllLogs: Bool = false
@@ -136,6 +137,7 @@ class BoardViewModel: ObservableObject {
     private var analysisEngine: AnalysisEngine? = nil
     private var analysisTask: Task<Void, Never>? = nil
     private var logTask: Task<Void, Never>? = nil
+    private var isEngineReady: Bool = false
 
     var treeWidth: CGFloat {
         let maxX = treeNodes.map { $0.x }.max() ?? 0
@@ -372,7 +374,8 @@ class BoardViewModel: ObservableObject {
         guard analysisEngine == nil else { return }
 
         isAnalyzing = true
-        message = "Starting AI...".localized
+        isEngineReady = false
+        engineMessage = "Starting AI...".localized
 
         let profile = ConfigManager.shared.currentProfile
         let executable = profile.path
@@ -405,12 +408,12 @@ class BoardViewModel: ObservableObject {
                 let engine = AnalysisEngine()
                 try await engine.start(executable: executable, args: args)
                 self.analysisEngine = engine
-                self.message = "Ready".localized
+                // engineMessage will be updated via logs
                 self.startLogPolling()
                 updateAnalysis()
             } catch {
                 self.isAnalyzing = false
-                self.message = "AI Error: \(error)".localized
+                self.engineMessage = "AI Error: \(error)".localized
                 self.addLog("AI Error: \(error)", isError: true)
             }
         }
@@ -431,7 +434,8 @@ class BoardViewModel: ObservableObject {
         let trimmed = displayMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return }
         
-        let isComm = trimmed.contains(">>>") || trimmed.contains("<<<")
+        // Communication logs start with >>> or <<<
+        let isComm = trimmed.hasPrefix(">>>") || trimmed.hasPrefix("<<<")
         
         // Improved error detection for engine logs
         let lowerTrimmed = trimmed.lowercased()
@@ -441,7 +445,6 @@ class BoardViewModel: ObservableObject {
                                  lowerTrimmed.contains(" error: ")
         
         // If it's from stderr, we only treat it as an error if it has a strong error marker.
-        // If it's NOT from stderr (internal logs), we use the containsErrorMarker logic.
         let finalIsError = isError || containsErrorMarker
 
         let entry = LogEntry(message: displayMessage, isError: finalIsError, isCommunication: isComm)
@@ -450,6 +453,21 @@ class BoardViewModel: ObservableObject {
             self.logEntries.append(entry)
             if self.logEntries.count > 500 {
                 self.logEntries.removeFirst(100)
+            }
+
+            // Update engine status message
+            if trimmed.contains("Started, ready to begin handling requests") {
+                if !self.isEngineReady {
+                    self.isEngineReady = true
+                    self.engineMessage = "AI Started".localized
+                }
+            } else if trimmed.contains("info: visits") {
+                self.isEngineReady = true
+                self.engineMessage = trimmed
+            } else if self.isEngineReady && !isComm && !finalIsError {
+                self.engineMessage = trimmed
+            } else if finalIsError {
+                self.engineMessage = "AI Error".localized + ": " + trimmed
             }
         }
     }
@@ -471,6 +489,7 @@ class BoardViewModel: ObservableObject {
 
     func stopAnalysis() {
         isAnalyzing = false
+        isEngineReady = false
         analysisResult = nil
         analysisTask?.cancel()
         analysisTask = nil
@@ -482,7 +501,7 @@ class BoardViewModel: ObservableObject {
             }
         }
         analysisEngine = nil
-        message = "AI Stopped".localized
+        engineMessage = "AI Not Started".localized
     }
 
     func updateAnalysis() {

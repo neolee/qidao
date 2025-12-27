@@ -141,6 +141,7 @@ struct EngineConfigView: View {
             Section(header: Text("Basic Settings".localized)) {
                 HStack {
                     Text("Max Visits".localized)
+                        .frame(width: 160, alignment: .leading)
                     Spacer()
                     OptionalNumberField(value: $localConfig.analysis.maxVisits, placeholder: "Default".localized)
                         .frame(width: 100)
@@ -148,6 +149,7 @@ struct EngineConfigView: View {
 
                 HStack {
                     Text("Max Time (seconds)".localized)
+                        .frame(width: 160, alignment: .leading)
                     Spacer()
                     OptionalNumberField(value: $localConfig.analysis.maxTime, placeholder: "Default".localized)
                         .frame(width: 100)
@@ -157,6 +159,7 @@ struct EngineConfigView: View {
 
                 HStack {
                     Text("Report Interval (s)".localized)
+                        .frame(width: 160, alignment: .leading)
                     Spacer()
                     OptionalNumberField(value: $localConfig.analysis.reportDuringSearchEvery, placeholder: "Default".localized)
                         .frame(width: 100)
@@ -243,6 +246,7 @@ struct EngineConfigView: View {
             Section(header: Text("Board Overlay".localized)) {
                 HStack {
                     Text("Max Candidates".localized)
+                        .frame(width: 160, alignment: .leading)
                     Spacer()
                     TextField("", value: $localConfig.display.maxCandidates, formatter: NumberFormatter())
                         .textFieldStyle(.roundedBorder)
@@ -257,6 +261,7 @@ struct EngineConfigView: View {
 
                 HStack {
                     Text("Overlay Win Rate".localized)
+                        .frame(width: 160, alignment: .leading)
                     Spacer()
                     Picker("", selection: $localConfig.display.overlayWinRatePerspective) {
                         ForEach(WinRatePerspective.allCases, id: \.self) { perspective in

@@ -154,7 +154,7 @@ struct LeftSidebarView: View {
                                 .foregroundColor(.secondary)
                         }
 
-                        Text(viewModel.message)
+                        Text(viewModel.engineMessage)
                             .font(.caption)
                             .lineLimit(1)
                             .textSelection(.enabled)

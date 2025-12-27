@@ -694,6 +694,7 @@ class BoardViewModel: ObservableObject {
     private func syncStateWithGame(rebuildTree: Bool = false) {
         // Ensure updates happen on main thread and outside immediate view update cycle
         DispatchQueue.main.async {
+            self.analysisResult = nil // Clear AI overlay immediately on move
             self.board = self.game.getBoard()
             self.nextColor = self.game.getNextColor()
             self.moveCount = Int(self.game.getMoveCount())
@@ -721,9 +722,11 @@ class BoardViewModel: ObservableObject {
                 }
             }
 
-            // Update variations
+            // Update variations: Show A, B, C... only if there are multiple branches.
+            // If there's only one branch, don't show any variation marker.
             let children = self.game.getCurrentNode().getChildren()
-            self.variations = children.enumerated().map { (index, node) in
+            let variationChildren = children.count > 1 ? children : []
+            self.variations = variationChildren.enumerated().map { (index, node) in
                 let props = node.getProperties()
                 let moveProp = props.first { $0.identifier == "B" || $0.identifier == "W" }
                 var vx: Int? = nil
@@ -734,7 +737,7 @@ class BoardViewModel: ObservableObject {
                     vy = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
                     moveText = "\(prop.identifier) (\(vx!), \(vy!))"
                 } else {
-                    moveText = "Node \(index)"
+                    moveText = "Node \(index + 1)"
                 }
                 return Variation(id: index, moveText: moveText, x: vx, y: vy)
             }

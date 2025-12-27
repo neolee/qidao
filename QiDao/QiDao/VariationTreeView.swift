@@ -160,13 +160,19 @@ struct VariationMarker: View {
     let size: CGFloat
 
     var body: some View {
-        Circle()
-            .fill(Color.gray.opacity(0.5))
-            .frame(width: size * 0.5, height: size * 0.5)
-            .overlay(
-                Circle()
-                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.1), radius: 1)
+        ZStack {
+            Circle()
+                .fill(Color.gray.opacity(0.5))
+                .frame(width: size * 0.5, height: size * 0.5)
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.1), radius: 1)
+
+            Text(label)
+                .font(.system(size: size * 0.3, weight: .bold))
+                .foregroundColor(.white)
+        }
     }
 }

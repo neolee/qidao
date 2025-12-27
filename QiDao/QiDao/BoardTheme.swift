@@ -6,7 +6,7 @@ struct BoardTheme: Identifiable {
     let boardColor: Color
     let lineColor: Color
     let starPointColor: Color
-    let lastMoveMarkerColor: Color
+    let nextMoveMarkerColor: Color
     let gridLineWidth: CGFloat
     let blackStoneStyle: StoneStyle
     let whiteStoneStyle: StoneStyle
@@ -27,7 +27,7 @@ struct BoardTheme: Identifiable {
         boardColor: Color(red: 0.90, green: 0.70, blue: 0.49), // #e6b37e
         lineColor: Color(red: 0.27, green: 0.20, blue: 0.13), // #443322
         starPointColor: Color(red: 0.27, green: 0.20, blue: 0.13),
-        lastMoveMarkerColor: Color.red,
+        nextMoveMarkerColor: Color.red,
         gridLineWidth: 0.6,
         blackStoneStyle: StoneStyle(
             fill: AnyShapeStyle(Color(white: 0.1)),
@@ -55,7 +55,7 @@ struct BoardTheme: Identifiable {
         boardColor: .white,
         lineColor: .black,
         starPointColor: .black,
-        lastMoveMarkerColor: .black.opacity(0.8),
+        nextMoveMarkerColor: .black.opacity(0.8),
         gridLineWidth: 0.4,
         blackStoneStyle: StoneStyle(
             fill: AnyShapeStyle(Color.black),

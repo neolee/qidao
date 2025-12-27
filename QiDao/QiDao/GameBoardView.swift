@@ -40,7 +40,6 @@ struct GameBoardView: View {
                                 theme: viewModel.theme,
                                 size: spacing * 0.95,
                                 moveNumber: viewModel.getDisplayMoveNumber(x: x, y: y),
-                                isLastMove: viewModel.lastMove?.x == x && viewModel.lastMove?.y == y,
                                 markerType: viewModel.getMarkerType(x: x, y: y, moveNumber: moveNum)
                             )
                             .position(
@@ -69,13 +68,28 @@ struct GameBoardView: View {
                     }
                 }
 
-                // 7. AI Analysis Overlay
+                // 7. Next Move Highlight (SGF)
+                // Only show when AI is active, and make it a large thin circle
+                if viewModel.isAnalyzing, let nextMove = viewModel.nextSgfMove {
+                    Circle()
+                        .stroke(viewModel.theme.nextMoveMarkerColor.opacity(0.7), lineWidth: 2)
+                        .frame(width: spacing * 0.98, height: spacing * 0.98)
+                        .position(
+                            x: CGFloat(nextMove.x + 1) * spacing,
+                            y: CGFloat(nextMove.y + 1) * spacing
+                        )
+                }
+
+                // 8. AI Analysis Overlay
                 // Only show if the result matches the current board state
                 if let result = viewModel.analysisResult, result.id == "qidao-\(viewModel.currentNodeId)" {
                     let sortedMoves = result.moveInfos.sorted { $0.visits > $1.visits }
                     let displayCount = min(sortedMoves.count, viewModel.config.display.maxCandidates)
                     let isWhiteTurn = viewModel.nextColor == .white
                     let perspective = viewModel.config.display.overlayWinRatePerspective
+                    
+                    // Best win rate from current player's perspective
+                    let bestMoveWinRate = sortedMoves.first?.winrate ?? 0.5
                     
                     ForEach(Array(sortedMoves.prefix(displayCount).enumerated()), id: \.element.moveStr) { index, info in
                         if let pos = viewModel.decodeKataGoMove(info.moveStr) {
@@ -92,11 +106,21 @@ struct GameBoardView: View {
                                 isWhiteTurn: isWhiteTurn
                             )
                             
+                            let markerColor: Color = {
+                                if index == 0 { return .blue }
+                                // Compare win rates in Black's perspective (both are normalized to Black)
+                                if abs(info.winrate - bestMoveWinRate) <= 0.01 {
+                                    return .green
+                                }
+                                return .orange
+                            }()
+                            
                             AIMoveMarker(
                                 winRate: displayWinRate,
                                 scoreLead: displayScoreLead,
+                                visits: Int(info.visits),
                                 rank: index + 1,
-                                theme: viewModel.theme,
+                                color: markerColor,
                                 size: spacing * 0.95
                             )
                             .onHover { hovering in
@@ -110,7 +134,7 @@ struct GameBoardView: View {
                     }
                 }
 
-                // 8. Hovered Variation Preview
+                // 9. Hovered Variation Preview
                 if let pv = viewModel.hoveredVariation {
                     ForEach(Array(pv.enumerated()), id: \.offset) { index, moveStr in
                         if let pos = viewModel.decodeKataGoMove(moveStr) {
@@ -128,17 +152,6 @@ struct GameBoardView: View {
                             )
                         }
                     }
-                }
-
-                // 9. Next SGF Move Highlight
-                if viewModel.isAnalyzing, let next = viewModel.nextSgfMove {
-                    Circle()
-                        .stroke(Color.red, lineWidth: 3)
-                        .frame(width: spacing * 0.8, height: spacing * 0.8)
-                        .position(
-                            x: CGFloat(next.x + 1) * spacing,
-                            y: CGFloat(next.y + 1) * spacing
-                        )
                 }
             }
         }
@@ -163,33 +176,25 @@ struct StoneView: View {
     let theme: BoardTheme
     let size: CGFloat
     let moveNumber: Int?
-    let isLastMove: Bool
     let markerType: MarkerType?
 
     var body: some View {
         let style = (color == .black) ? theme.blackStoneStyle : theme.whiteStoneStyle
 
         ZStack {
-            // 1. Last move marker (outer edge)
-            if isLastMove {
-                Circle()
-                    .stroke(theme.lastMoveMarkerColor, lineWidth: 1)
-                    .frame(width: size + 4, height: size + 4)
-            }
-
-            // 2. Stone Shadow (3D effect)
+            // 1. Stone Shadow (3D effect)
             Circle()
                 .fill(style.shadowColor)
                 .offset(x: 1.5, y: 2.0)
                 .frame(width: size, height: size)
                 .blur(radius: 5)
 
-            // 3. Stone Body
+            // 2. Stone Body
             Circle()
                 .fill(style.fill)
                 .frame(width: size, height: size)
 
-            // 4. Subtle 3D Highlight
+            // 3. Subtle 3D Highlight
             if style.hasHighlight {
                 Circle()
                     .fill(
@@ -206,14 +211,14 @@ struct StoneView: View {
                     .frame(width: size, height: size)
             }
 
-            // 5. Stroke (if any)
+            // 4. Stroke (if any)
             if style.strokeWidth > 0 {
                 Circle()
                     .stroke(style.strokeColor, lineWidth: style.strokeWidth)
                     .frame(width: size, height: size)
             }
 
-            // 6. Move Number or Marker
+            // 5. Move Number or Marker
             if let num = moveNumber {
                 Text("\(num)")
                     .font(.system(size: size * 0.4, weight: .bold))
@@ -221,13 +226,15 @@ struct StoneView: View {
             } else if let marker = markerType {
                 switch marker {
                 case .last1:
+                    // Hollow circle, half radius
                     Circle()
                         .stroke(style.textColor, lineWidth: 2)
                         .frame(width: size * 0.5, height: size * 0.5)
                 case .last2, .last3:
+                    // Small solid circle, 1/4 radius
                     Circle()
                         .fill(style.textColor)
-                        .frame(width: size * 0.2, height: size * 0.2)
+                        .frame(width: size * 0.25, height: size * 0.25)
                 }
             }
         }
@@ -322,39 +329,48 @@ struct StarPoints: Shape {
 struct AIMoveMarker: View {
     let winRate: Double
     let scoreLead: Double
+    let visits: Int
     let rank: Int
-    let theme: BoardTheme
+    let color: Color
     let size: CGFloat
 
     var body: some View {
-        let color: Color = {
-            switch rank {
-            case 1: return .blue
-            case 2: return .green
-            case 3: return .orange
-            default: return .gray
-            }
-        }()
-
         ZStack {
             Circle()
-                .fill(color.opacity(0.7))
+                .fill(color.opacity(0.8))
                 .frame(width: size, height: size)
                 .shadow(radius: 2)
 
-            VStack(spacing: 0) {
-                Text("\(rank)")
-                    .font(.system(size: size * 0.2, weight: .black))
-                    .foregroundColor(.white.opacity(0.5))
-                    .offset(y: -size * 0.05)
-
-                Text(String(format: "%.1f%%", winRate * 100))
-                    .font(.system(size: size * 0.25, weight: .bold))
-                    .foregroundColor(.white)
-
-                Text(String(format: "%+.1f", scoreLead))
-                    .font(.system(size: size * 0.2, weight: .medium))
+            VStack(spacing: 0.2) {
+                // 1. Visits (Smaller, Not Bold)
+                Text("\(visits)")
+                    .font(.system(size: size * 0.25, weight: .regular))
                     .foregroundColor(.white.opacity(0.9))
+
+                // 2. Win Rate (Largest, Bold)
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(String(format: "%.1f", winRate * 100))
+                        .font(.system(size: size * 0.30, weight: .bold))
+                    Text("%")
+                        .font(.system(size: size * 0.15, weight: .bold))
+                }
+                .foregroundColor(.white)
+
+                // 3. Score Lead (Smaller, Not Bold)
+                Text(String(format: "%+.1f", scoreLead))
+                    .font(.system(size: size * 0.2, weight: .regular))
+                    .foregroundColor(.white.opacity(0.9))
+            }
+
+            // Rank number at top-right
+            if rank <= 9 {
+                Text("\(rank)")
+                    .font(.system(size: size * 0.20, weight: .black))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 2)
+                    .padding(.vertical, 2)
+                    .background(RoundedRectangle(cornerRadius: 2).fill(Color(white: 0.8).opacity(0.7)))
+                    .offset(x: size * 0.4, y: -size * 0.4)
             }
         }
     }

@@ -130,6 +130,9 @@
 "Analysis" = "Analysis";
 "Display" = "Display";
 
+/* Updates */
+"Check for Updates..." = "Check for Updates...";
+
 /* Errors */
 "Failed to decode SGF file" = "Failed to decode SGF file";
 "Error: Config file is required for analysis mode" = "Error: Config file is required for analysis mode";

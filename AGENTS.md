@@ -64,6 +64,7 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 
 ### Focus & Keyboard Shortcuts
 - **Global Shortcuts**: Keyboard listeners (`.onKeyPress`) are attached to the root `HSplitView` to ensure they capture events regardless of which sub-view is active.
+- **Delete Command**: Use `.onDeleteCommand` instead of raw `.onKeyPress` for the Delete/Backspace key. This is the standard macOS way to handle deletion and avoids system beeps or conflicts with text input.
 - **Focus Restoration**: SwiftUI focus can be lost when a focused element (like an inline `TextField`) is removed from the hierarchy. We use `@FocusState` combined with `DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)` to explicitly restore focus to the main container after operations like "Jump to Move" or closing dialogs.
 
 ### AI Engine Performance & Stability
@@ -73,11 +74,8 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - **Logging Optimization**: Communication logs (`>>>`/`<<<`) are truncated to 500 chars in the core and completely skipped (including string formatting/serialization) when `logging_enabled` is false.
 
 ## 8. Immediate TODOs
-1. **UI**: Fix SwiftUI `ProgressView` layout warning in `RightSidebarView`.
-2. **UI**: Move Win Rate bar/graph to `LeftSidebarView`.
-3. **UI**: Implement Ownership/Territory mini-board in `RightSidebarView` (Evaluation section).
-4. **Engine**: Implement iterative deepening for AI analysis (multiple queries with increasing visits).
-5. **Config**: Add engine path and weights configuration in UI.
+1. **Deployment**: Implement automatic CI/CD pipelines and auto-update mechanism for macOS.
+2. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
 
 ## 9. Implementation Plan (Dec 26, 2025)
 
@@ -116,4 +114,5 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - [x] **Bug Fix: Tokio Runtime Integration**: Resolved "no reactor running" and "future not Send" errors by implementing a global Tokio runtime and using `spawn` to ensure async operations run in the correct context.
 - [x] **Phase 6: AI UI Refinement & Visualization**: Refined AI move markers with transparency and rank styling. Implemented dynamic Win Rate Graph with history persistence. Added PV preview on hover and stabilized sidebar layouts to prevent flickering. Optimized variation marker visibility.
 - [x] **Phase 7: Core Optimization & Evaluation Board**: Refactored Rust engine locks for zero-latency navigation. Implemented "Evaluation Board" (mini-board) with grayscale ownership map and PV sequence. Added centralized logging control and buffer draining to prevent CPU spikes.
+- [x] **Phase 8: Branch Management & UX Refinement**: Implemented "Delete Current Branch" with confirmation dialog. Optimized file dialogs to be non-blocking and path-aware. Synchronized and cleaned up localization files. Refined keyboard focus and shortcut handling using `.onDeleteCommand`.
 

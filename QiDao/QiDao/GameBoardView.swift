@@ -125,9 +125,9 @@ struct GameBoardView: View {
                                     .onHover { hovering in
                                         withAnimation(.easeInOut(duration: 0.1)) {
                                             if hovering {
-                                                viewModel.hoveredVariation = info.pv
-                                            } else if viewModel.hoveredVariation == info.pv {
-                                                viewModel.hoveredVariation = nil
+                                                viewModel.hoveredMoveStr = info.moveStr
+                                            } else if viewModel.hoveredMoveStr == info.moveStr {
+                                                viewModel.hoveredMoveStr = nil
                                             }
                                         }
                                     }
@@ -141,7 +141,7 @@ struct GameBoardView: View {
                                     color: markerColor,
                                     size: spacing * 0.95
                                 )
-                                .opacity(viewModel.hoveredVariation == nil ? 1.0 : 0.0)
+                                .opacity(viewModel.hoveredMoveStr == nil ? 1.0 : 0.0)
                                 .allowsHitTesting(false) // Don't let the marker interfere with the hover target
                             }
                             .position(
@@ -153,7 +153,10 @@ struct GameBoardView: View {
                 }
 
                 // 9. Hovered Variation Preview
-                if let pv = viewModel.hoveredVariation {
+                if let hoveredMove = viewModel.hoveredMoveStr,
+                   let result = viewModel.analysisResult,
+                   let info = result.moveInfos.first(where: { $0.moveStr == hoveredMove }) {
+                    let pv = info.pv
                     let nextColor = viewModel.nextColor
                     ForEach(Array(pv.enumerated()), id: \.offset) { index, moveStr in
                         if let pos = viewModel.decodeKataGoMove(moveStr) {

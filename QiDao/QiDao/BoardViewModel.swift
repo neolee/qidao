@@ -143,7 +143,7 @@ class BoardViewModel: ObservableObject {
     }
     @Published var winRateHistory: [Int: Double] = [:]
     @Published var scoreLeadHistory: [Int: Double] = [:]
-    @Published var hoveredVariation: [String]? = nil
+    @Published var hoveredMoveStr: String? = nil
     @Published var config = ConfigManager.shared.config
 
     private var analysisEngine: AnalysisEngine? = nil
@@ -524,6 +524,7 @@ class BoardViewModel: ObservableObject {
     }
 
     func updateAnalysis() {
+        self.hoveredMoveStr = nil // Clear hover state when board changes
         guard isAnalyzing, let engine = analysisEngine else {
             analysisResult = nil
             return

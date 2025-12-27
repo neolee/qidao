@@ -109,7 +109,9 @@ struct LeftSidebarView: View {
                         if viewModel.isAnalyzing {
                             let maxCount = viewModel.maxMoveCount
                             let totalMoves = maxCount <= 100 ? 100 : ((maxCount + 49) / 50) * 50
-                            WinRateGraph(history: viewModel.winRateHistory, currentTurn: viewModel.moveCount, totalMoves: totalMoves)
+                            WinRateGraph(history: viewModel.winRateHistory, currentTurn: viewModel.moveCount, totalMoves: totalMoves) { turn in
+                                viewModel.jumpToMove(min(turn, viewModel.maxMoveCount))
+                            }
                                 .frame(height: 80)
                                 .padding(.top, 5)
                         } else {
@@ -230,14 +232,28 @@ struct WinRateGraph: View {
     let history: [Int: Double]
     let currentTurn: Int
     let totalMoves: Int
+    var onTap: ((Int) -> Void)? = nil
+
+    @State private var hoverLocation: CGPoint? = nil
 
     var body: some View {
         GeometryReader { geo in
-            ZStack {
-                // Background grid (Horizontal center line)
+            let step = geo.size.width / CGFloat(max(totalMoves, 1))
+
+            ZStack(alignment: .topLeading) {
+                // Background grid (0%, 50%, 100% lines)
                 Path { path in
+                    // 100% line (Top)
+                    path.move(to: CGPoint(x: 0, y: 0))
+                    path.addLine(to: CGPoint(x: geo.size.width, y: 0))
+
+                    // 50% line (Center)
                     path.move(to: CGPoint(x: 0, y: geo.size.height / 2))
                     path.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height / 2))
+
+                    // 0% line (Bottom)
+                    path.move(to: CGPoint(x: 0, y: geo.size.height))
+                    path.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height))
                 }
                 .stroke(Color.secondary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [2]))
 
@@ -245,8 +261,6 @@ struct WinRateGraph: View {
                 Path { path in
                     let sortedKeys = history.keys.sorted()
                     guard !sortedKeys.isEmpty else { return }
-                    
-                    let step = geo.size.width / CGFloat(max(totalMoves, 1))
 
                     var first = true
                     for turn in sortedKeys {
@@ -265,15 +279,55 @@ struct WinRateGraph: View {
                 .stroke(Color.blue, lineWidth: 1.5)
 
                 // Current turn indicator
-                let step = geo.size.width / CGFloat(max(totalMoves, 1))
                 let currentX = CGFloat(currentTurn) * step
-                
                 Rectangle()
                     .fill(Color.red.opacity(0.5))
                     .frame(width: 1)
                     .position(x: currentX, y: geo.size.height / 2)
+
+                // Hover indicator
+                if let loc = hoverLocation {
+                    let turn = Int(round(loc.x / step))
+                    let clampedTurn = max(0, min(turn, totalMoves))
+                    let hoverX = CGFloat(clampedTurn) * step
+
+                    // Vertical dashed line
+                    Path { path in
+                        path.move(to: CGPoint(x: hoverX, y: 0))
+                        path.addLine(to: CGPoint(x: hoverX, y: geo.size.height))
+                    }
+                    .stroke(Color.red.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [2]))
+
+                    // Win rate tooltip
+                    if let rate = history[clampedTurn] {
+                        Text(String(format: "%.1f%%", rate * 100))
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Color.black.opacity(0.7))
+                            .foregroundColor(.white)
+                            .cornerRadius(4)
+                            .position(x: hoverX, y: 12) // Move inside the graph area to avoid clipping
+                    }
+                }
             }
             .background(Color.black.opacity(0.05))
+            .contentShape(Rectangle())
+            .clipped() // Ensure nothing spills out, but tooltip is now inside
+            .onTapGesture { location in
+                let turn = Int(round(location.x / step))
+                onTap?(max(0, min(turn, totalMoves)))
+            }
+            .onContinuousHover { phase in
+                switch phase {
+                case .active(let location):
+                    hoverLocation = location
+                    NSCursor.pointingHand.set()
+                case .ended:
+                    hoverLocation = nil
+                    NSCursor.arrow.set()
+                }
+            }
             .cornerRadius(4)
         }
     }

@@ -973,8 +973,12 @@ pub struct AnalysisResult {
 
 #[derive(uniffi::Object)]
 pub struct AnalysisEngine {
-    client: Arc<tokio::sync::Mutex<Option<engine::AnalysisClient>>>,
+    stdin: Arc<tokio::sync::Mutex<Option<tokio::process::ChildStdin>>>,
+    stdout: Arc<tokio::sync::Mutex<Option<tokio::io::BufReader<tokio::process::ChildStdout>>>>,
+    stderr: Arc<tokio::sync::Mutex<Option<tokio::io::BufReader<tokio::process::ChildStderr>>>>,
+    child: Arc<tokio::sync::Mutex<Option<tokio::process::Child>>>,
     internal_logs: Arc<tokio::sync::Mutex<Vec<String>>>,
+    logging_enabled: Arc<tokio::sync::Mutex<bool>>,
 }
 
 #[uniffi::export]
@@ -982,12 +986,29 @@ impl AnalysisEngine {
     #[uniffi::constructor]
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
-            client: Arc::new(tokio::sync::Mutex::new(None)),
+            stdin: Arc::new(tokio::sync::Mutex::new(None)),
+            stdout: Arc::new(tokio::sync::Mutex::new(None)),
+            stderr: Arc::new(tokio::sync::Mutex::new(None)),
+            child: Arc::new(tokio::sync::Mutex::new(None)),
             internal_logs: Arc::new(tokio::sync::Mutex::new(Vec::new())),
+            logging_enabled: Arc::new(tokio::sync::Mutex::new(false)),
         })
     }
 
+    pub async fn set_logging_enabled(&self, enabled: bool) {
+        let mut lock = self.logging_enabled.lock().await;
+        *lock = enabled;
+    }
+
     async fn add_internal_log(&self, msg: String) {
+        // If it's a communication log, check if logging is enabled
+        if msg.starts_with(">>>") || msg.starts_with("<<<") {
+            let enabled = self.logging_enabled.lock().await;
+            if !*enabled {
+                return;
+            }
+        }
+
         let mut logs = self.internal_logs.lock().await;
         logs.push(msg);
         if logs.len() > 100 {
@@ -996,19 +1017,33 @@ impl AnalysisEngine {
     }
 
     pub async fn start(&self, executable: String, args: Vec<String>) -> Result<(), SgfError> {
-        let client_mutex = Arc::clone(&self.client);
-        let engine_clone = Arc::new(Self {
-            client: Arc::clone(&self.client),
-            internal_logs: Arc::clone(&self.internal_logs),
-        });
-        
-        engine_clone.add_internal_log(format!("Starting engine: {} with args: {:?}", executable, args)).await;
+        let stdin_mutex = Arc::clone(&self.stdin);
+        let stdout_mutex = Arc::clone(&self.stdout);
+        let stderr_mutex = Arc::clone(&self.stderr);
+        let child_mutex = Arc::clone(&self.child);
+
+        self.add_internal_log(format!("Starting engine: {} with args: {:?}", executable, args)).await;
 
         get_runtime().spawn(async move {
-            let client = engine::AnalysisClient::start(&executable, &args).await
+            let mut child = tokio::process::Command::new(executable)
+                .args(args)
+                .current_dir(std::env::temp_dir())
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .kill_on_drop(true)
+                .spawn()
                 .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
-            let mut lock = client_mutex.lock().await;
-            *lock = Some(client);
+
+            let stdin = child.stdin.take().ok_or_else(|| SgfError::ParseError { message: "Failed to open stdin".into() })?;
+            let stdout = child.stdout.take().ok_or_else(|| SgfError::ParseError { message: "Failed to open stdout".into() })?;
+            let stderr = child.stderr.take().ok_or_else(|| SgfError::ParseError { message: "Failed to open stderr".into() })?;
+
+            *stdin_mutex.lock().await = Some(stdin);
+            *stdout_mutex.lock().await = Some(tokio::io::BufReader::new(stdout));
+            *stderr_mutex.lock().await = Some(tokio::io::BufReader::new(stderr));
+            *child_mutex.lock().await = Some(child);
+
             Ok(())
         }).await
             .map_err(|e| SgfError::ParseError { message: format!("Task join error: {}", e) })?
@@ -1016,14 +1051,15 @@ impl AnalysisEngine {
 
     pub async fn analyze(&self, query_json: String) -> Result<(), SgfError> {
         self.add_internal_log(format!(">>> SEND QUERY: {}", query_json)).await;
-        let client_mutex = Arc::clone(&self.client);
+        let stdin_mutex = Arc::clone(&self.stdin);
         get_runtime().spawn(async move {
-            let mut lock = client_mutex.lock().await;
-            if let Some(client) = lock.as_mut() {
-                let query: engine::AnalysisQuery = serde_json::from_str(&query_json)
+            let mut lock = stdin_mutex.lock().await;
+            if let Some(stdin) = lock.as_mut() {
+                use tokio::io::AsyncWriteExt;
+                let line = format!("{}\n", query_json);
+                stdin.write_all(line.as_bytes()).await
                     .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
-
-                client.send_query(&query).await
+                stdin.flush().await
                     .map_err(|e| SgfError::ParseError { message: e.to_string() })
             } else {
                 Err(SgfError::ParseError { message: "Engine not started".into() })
@@ -1032,23 +1068,39 @@ impl AnalysisEngine {
             .map_err(|e| SgfError::ParseError { message: format!("Task join error: {}", e) })?
     }
 
+    pub async fn terminate_all(&self) -> Result<(), SgfError> {
+        self.add_internal_log(">>> SEND TERMINATE_ALL".to_string()).await;
+        let query = serde_json::json!({
+            "id": "terminate-all",
+            "action": "terminate_all"
+        });
+        self.analyze(query.to_string()).await
+    }
+
     pub async fn get_next_result(&self) -> Result<AnalysisResult, SgfError> {
-        let client_mutex = Arc::clone(&self.client);
+        let stdout_mutex = Arc::clone(&self.stdout);
         let internal_logs = Arc::clone(&self.internal_logs);
         get_runtime().spawn(async move {
-            let mut lock = client_mutex.lock().await;
-            let client = lock.as_mut().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
+            let mut lock = stdout_mutex.lock().await;
+            let stdout = lock.as_mut().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
 
+            use tokio::io::AsyncBufReadExt;
+            let mut line = String::new();
             // Use a longer timeout (2s) to wait for analysis results
-            let result = match tokio::time::timeout(std::time::Duration::from_secs(2), client.read_response()).await {
-                Ok(res) => res,
+            let n = match tokio::time::timeout(std::time::Duration::from_secs(2), stdout.read_line(&mut line)).await {
+                Ok(res) => res.map_err(|e| SgfError::ParseError { message: e.to_string() })?,
                 Err(_) => {
                     return Err(SgfError::ParseError { message: "Timeout".into() });
                 }
             };
 
-            let val = result.map_err(|e| SgfError::ParseError { message: e.to_string() })?;
-            
+            if n == 0 {
+                return Err(SgfError::ParseError { message: "Engine closed stdout".into() });
+            }
+
+            let val: serde_json::Value = serde_json::from_str(&line)
+                .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
+
             // Log the response (truncated if too long)
             let response_str = val.to_string();
             let log_str = if response_str.len() > 500 {
@@ -1056,7 +1108,7 @@ impl AnalysisEngine {
             } else {
                 format!("<<< RECV RESULT: {}", response_str)
             };
-            
+
             {
                 let mut logs = internal_logs.lock().await;
                 logs.push(log_str);
@@ -1121,11 +1173,11 @@ impl AnalysisEngine {
     }
 
     pub async fn get_logs(&self) -> Vec<String> {
-        let client_mutex = Arc::clone(&self.client);
+        let stderr_mutex = Arc::clone(&self.stderr);
         let internal_logs_mutex = Arc::clone(&self.internal_logs);
         get_runtime().spawn(async move {
             let mut logs = Vec::new();
-            
+
             // 1. Get internal logs
             {
                 let mut internal = internal_logs_mutex.lock().await;
@@ -1133,12 +1185,14 @@ impl AnalysisEngine {
             }
 
             // 2. Get stderr logs
-            let mut lock = client_mutex.lock().await;
-            if let Some(client) = lock.as_mut() {
+            let mut lock = stderr_mutex.lock().await;
+            if let Some(stderr) = lock.as_mut() {
+                use tokio::io::AsyncBufReadExt;
                 // Try to read multiple lines if available
                 for _ in 0..50 {
-                    match client.read_stderr_line().await {
-                        Ok(Some(line)) => logs.push(format!("[STDERR] {}", line)),
+                    let mut line = String::new();
+                    match tokio::time::timeout(std::time::Duration::from_millis(10), stderr.read_line(&mut line)).await {
+                        Ok(Ok(n)) if n > 0 => logs.push(format!("[STDERR] {}", line.trim())),
                         _ => break,
                     }
                 }
@@ -1149,11 +1203,15 @@ impl AnalysisEngine {
     }
 
     pub async fn stop(&self) -> Result<(), SgfError> {
-        let client_mutex = Arc::clone(&self.client);
+        let stdin_mutex = Arc::clone(&self.stdin);
+        let child_mutex = Arc::clone(&self.child);
         get_runtime().spawn(async move {
-            let mut lock = client_mutex.lock().await;
-            if let Some(client) = lock.take() {
-                let _ = client.stop().await;
+            let mut stdin_lock = stdin_mutex.lock().await;
+            *stdin_lock = None; // Drop stdin to signal engine to stop
+
+            let mut child_lock = child_mutex.lock().await;
+            if let Some(mut child) = child_lock.take() {
+                let _ = child.wait().await;
             }
             Ok(())
         }).await

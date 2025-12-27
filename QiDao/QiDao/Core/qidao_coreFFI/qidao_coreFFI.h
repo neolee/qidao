@@ -287,6 +287,11 @@ uint64_t uniffi_qidao_core_fn_method_analysisengine_get_logs(void*_Nonnull ptr
 uint64_t uniffi_qidao_core_fn_method_analysisengine_get_next_result(void*_Nonnull ptr
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_SET_LOGGING_ENABLED
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_SET_LOGGING_ENABLED
+uint64_t uniffi_qidao_core_fn_method_analysisengine_set_logging_enabled(void*_Nonnull ptr, int8_t enabled
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_START
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_START
 uint64_t uniffi_qidao_core_fn_method_analysisengine_start(void*_Nonnull ptr, RustBuffer executable, RustBuffer args
@@ -295,6 +300,11 @@ uint64_t uniffi_qidao_core_fn_method_analysisengine_start(void*_Nonnull ptr, Rus
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_STOP
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_STOP
 uint64_t uniffi_qidao_core_fn_method_analysisengine_stop(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE_ALL
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE_ALL
+uint64_t uniffi_qidao_core_fn_method_analysisengine_terminate_all(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_BOARD
@@ -864,6 +874,12 @@ uint16_t uniffi_qidao_core_checksum_method_analysisengine_get_next_result(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_SET_LOGGING_ENABLED
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_SET_LOGGING_ENABLED
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_set_logging_enabled(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_START
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_START
 uint16_t uniffi_qidao_core_checksum_method_analysisengine_start(void
@@ -873,6 +889,12 @@ uint16_t uniffi_qidao_core_checksum_method_analysisengine_start(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_STOP
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_STOP
 uint16_t uniffi_qidao_core_checksum_method_analysisengine_stop(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_TERMINATE_ALL
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_TERMINATE_ALL
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_terminate_all(void
     
 );
 #endif

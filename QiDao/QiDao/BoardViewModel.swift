@@ -128,7 +128,19 @@ class BoardViewModel: ObservableObject {
     @Published var engineMessage: String = "AI Not Started".localized
     @Published var analysisResult: AnalysisResult? = nil
     @Published var logEntries: [LogEntry] = []
-    @Published var showAllLogs: Bool = false
+    @Published var showAllLogs: Bool = false {
+        didSet {
+            Task {
+                await analysisEngine?.setLoggingEnabled(enabled: showAllLogs)
+            }
+            if !showAllLogs {
+                // Clean up existing communication logs when disabling
+                DispatchQueue.main.async {
+                    self.logEntries.removeAll { $0.isCommunication }
+                }
+            }
+        }
+    }
     @Published var winRateHistory: [Int: Double] = [:]
     @Published var scoreLeadHistory: [Int: Double] = [:]
     @Published var hoveredVariation: [String]? = nil
@@ -376,6 +388,7 @@ class BoardViewModel: ObservableObject {
         isAnalyzing = true
         isEngineReady = false
         engineMessage = "Starting AI...".localized
+        logEntries = [] // Clear logs for new session
 
         let profile = ConfigManager.shared.currentProfile
         let executable = profile.path
@@ -406,6 +419,7 @@ class BoardViewModel: ObservableObject {
         Task {
             do {
                 let engine = AnalysisEngine()
+                await engine.setLoggingEnabled(enabled: self.showAllLogs)
                 try await engine.start(executable: executable, args: args)
                 self.analysisEngine = engine
                 // engineMessage will be updated via logs
@@ -437,6 +451,9 @@ class BoardViewModel: ObservableObject {
         // Communication logs start with >>> or <<<
         let isComm = trimmed.hasPrefix(">>>") || trimmed.hasPrefix("<<<")
         
+        // If communication logging is disabled, skip adding to logEntries
+        if isComm && !showAllLogs { return }
+
         // Improved error detection for engine logs
         let lowerTrimmed = trimmed.lowercased()
         let containsErrorMarker = lowerTrimmed.contains("[error]") || 
@@ -451,8 +468,8 @@ class BoardViewModel: ObservableObject {
 
         DispatchQueue.main.async {
             self.logEntries.append(entry)
-            if self.logEntries.count > 500 {
-                self.logEntries.removeFirst(100)
+            if self.logEntries.count > 2000 {
+                self.logEntries.removeFirst(500)
             }
 
             // Update engine status message
@@ -528,6 +545,9 @@ class BoardViewModel: ObservableObject {
             do {
                 // Debounce: wait for 0.5 seconds before starting analysis (reduced from 1s)
                 try await Task.sleep(nanoseconds: 500_000_000)
+
+                // Terminate any previous queries to free up engine resources
+                try? await engine.terminateAll()
 
                 var query: [String: Any] = [
                     "id": "qidao-\(currentNodeId)",

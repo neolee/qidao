@@ -501,9 +501,13 @@ public protocol AnalysisEngineProtocol: AnyObject {
 
     func getNextResult() async throws -> AnalysisResult
 
+    func setLoggingEnabled(enabled: Bool) async
+
     func start(executable: String, args: [String]) async throws
 
     func stop() async throws
+
+    func terminateAll() async throws
 }
 
 open class AnalysisEngine:
@@ -628,6 +632,23 @@ open class AnalysisEngine:
             )
     }
 
+    open func setLoggingEnabled(enabled: Bool) async {
+        return
+            try! await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_qidao_core_fn_method_analysisengine_set_logging_enabled(
+                        self.uniffiClonePointer(),
+                        FfiConverterBool.lower(enabled)
+                    )
+                },
+                pollFunc: ffi_qidao_core_rust_future_poll_void,
+                completeFunc: ffi_qidao_core_rust_future_complete_void,
+                freeFunc: ffi_qidao_core_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: nil
+            )
+    }
+
     open func start(executable: String, args: [String]) async throws {
         return
             try await uniffiRustCallAsync(
@@ -650,6 +671,22 @@ open class AnalysisEngine:
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
                     uniffi_qidao_core_fn_method_analysisengine_stop(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_qidao_core_rust_future_poll_void,
+                completeFunc: ffi_qidao_core_rust_future_complete_void,
+                freeFunc: ffi_qidao_core_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeSgfError.lift
+            )
+    }
+
+    open func terminateAll() async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_qidao_core_fn_method_analysisengine_terminate_all(
                         self.uniffiClonePointer()
                     )
                 },
@@ -2467,10 +2504,16 @@ private var initializationResult: InitializationResult = {
     if uniffi_qidao_core_checksum_method_analysisengine_get_next_result() != 38822 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_qidao_core_checksum_method_analysisengine_set_logging_enabled() != 20868 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_qidao_core_checksum_method_analysisengine_start() != 33656 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_qidao_core_checksum_method_analysisengine_stop() != 64484 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_qidao_core_checksum_method_analysisengine_terminate_all() != 19481 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_qidao_core_checksum_method_board_get_size() != 42284 {

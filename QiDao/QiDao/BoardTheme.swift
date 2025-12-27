@@ -8,6 +8,10 @@ struct BoardTheme: Identifiable {
     let starPointColor: Color
     let nextMoveMarkerColor: Color
     let gridLineWidth: CGFloat
+    let aiBestMoveColor: Color
+    let aiGoodMoveColor: Color
+    let aiCandidateMoveColor: Color
+    let aiMarkerTextColor: Color
     let blackStoneStyle: StoneStyle
     let whiteStoneStyle: StoneStyle
 
@@ -29,6 +33,10 @@ struct BoardTheme: Identifiable {
         starPointColor: Color(red: 0.27, green: 0.20, blue: 0.13),
         nextMoveMarkerColor: Color.red,
         gridLineWidth: 0.6,
+        aiBestMoveColor: .blue,
+        aiGoodMoveColor: .green,
+        aiCandidateMoveColor: .orange,
+        aiMarkerTextColor: .white,
         blackStoneStyle: StoneStyle(
             fill: AnyShapeStyle(Color(white: 0.1)),
             textColor: .white.opacity(0.9),
@@ -57,6 +65,10 @@ struct BoardTheme: Identifiable {
         starPointColor: .black,
         nextMoveMarkerColor: .black.opacity(0.8),
         gridLineWidth: 0.4,
+        aiBestMoveColor: .blue,
+        aiGoodMoveColor: .green,
+        aiCandidateMoveColor: Color(white: 0.6),
+        aiMarkerTextColor: .white,
         blackStoneStyle: StoneStyle(
             fill: AnyShapeStyle(Color.black),
             textColor: .white,

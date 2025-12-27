@@ -109,12 +109,12 @@ struct GameBoardView: View {
                             )
                             
                             let markerColor: Color = {
-                                if index == 0 { return .blue }
+                                if index == 0 { return viewModel.theme.aiBestMoveColor }
                                 // Compare win rates in Black's perspective (both are normalized to Black)
                                 if abs(info.winrate - bestMoveWinRate) <= 0.01 {
-                                    return .green
+                                    return viewModel.theme.aiGoodMoveColor
                                 }
-                                return .orange
+                                return viewModel.theme.aiCandidateMoveColor
                             }()
                             
                             ZStack {
@@ -139,6 +139,7 @@ struct GameBoardView: View {
                                     visits: Int(info.visits),
                                     rank: index + 1,
                                     color: markerColor,
+                                    textColor: viewModel.theme.aiMarkerTextColor,
                                     size: spacing * 0.95
                                 )
                                 .opacity(viewModel.hoveredMoveStr == nil ? 1.0 : 0.0)
@@ -357,6 +358,7 @@ struct AIMoveMarker: View {
     let visits: Int
     let rank: Int
     let color: Color
+    let textColor: Color
     let size: CGFloat
 
     var body: some View {
@@ -370,7 +372,7 @@ struct AIMoveMarker: View {
                 // 1. Visits (Top, Small)
                 Text("\(visits)")
                     .font(.system(size: size * 0.22, weight: .medium))
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundColor(textColor.opacity(0.85))
 
                 // 2. Win Rate (Center, Large)
                 HStack(alignment: .firstTextBaseline, spacing: 0) {
@@ -379,25 +381,25 @@ struct AIMoveMarker: View {
                     Text("%")
                         .font(.system(size: size * 0.16, weight: .bold))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(textColor)
                 .padding(.vertical, -2)
 
                 // 3. Score Lead (Bottom, Small)
                 Text(String(format: "%+.1f", scoreLead))
                     .font(.system(size: size * 0.22, weight: .medium))
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundColor(textColor.opacity(0.85))
             }
 
             // Rank number at top-right
             if rank <= 9 {
                 Text("\(rank)")
                     .font(.system(size: size * 0.22, weight: .black))
-                    .foregroundColor(.white)
+                    .foregroundColor(textColor)
                     .frame(width: size * 0.3, height: size * 0.3)
                     .background(
                         RoundedRectangle(cornerRadius: size * 0.08)
                             .fill(Color.black.opacity(0.6))
-                            .overlay(RoundedRectangle(cornerRadius: size * 0.08).stroke(Color.white.opacity(0.5), lineWidth: 0.5))
+                            .overlay(RoundedRectangle(cornerRadius: size * 0.08).stroke(textColor.opacity(0.5), lineWidth: 0.5))
                     )
                     .offset(x: size * 0.4, y: -size * 0.4)
             }

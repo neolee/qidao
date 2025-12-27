@@ -8,10 +8,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(qidao_coreFFI)
-    import qidao_coreFFI
+import qidao_coreFFI
 #endif
 
-private extension RustBuffer {
+fileprivate extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -21,7 +21,7 @@ private extension RustBuffer {
     }
 
     static func empty() -> RustBuffer {
-        RustBuffer(capacity: 0, len: 0, data: nil)
+        RustBuffer(capacity: 0, len:0, data: nil)
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
@@ -35,7 +35,7 @@ private extension RustBuffer {
     }
 }
 
-private extension ForeignBytes {
+fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -48,7 +48,7 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
+fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
         self.init(
             bytesNoCopy: rustBuffer.data!,
@@ -72,15 +72,15 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -90,38 +90,38 @@ private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: 
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-    let range = reader.offset ..< (reader.offset + count)
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer { buffer in
+    value.withUnsafeMutableBufferPointer({ buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    }
+    })
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -129,11 +129,11 @@ private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
+fileprivate func createWriter() -> [UInt8] {
     return []
 }
 
-private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -141,22 +141,22 @@ private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Seque
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous to the Rust trait of the same name.
-private protocol FfiConverter {
+fileprivate protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -167,19 +167,19 @@ private protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ value: FfiType) throws -> SwiftType {
         return value
     }
 
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> FfiType {
         return value
     }
@@ -187,12 +187,12 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
         var reader = createReader(data: Data(rustBuffer: buf))
         let value = try read(from: &reader)
@@ -203,19 +203,18 @@ extension FfiConverterRustBuffer {
         return value
     }
 
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> RustBuffer {
-        var writer = createWriter()
-        write(value, into: &writer)
-        return RustBuffer(bytes: writer)
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
     }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
+fileprivate enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -226,7 +225,7 @@ private enum UniffiInternalError: LocalizedError {
     case unexpectedStaleHandle
     case rustPanic(_ message: String)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .bufferOverflow: return "Reading the requested value would read past the end of the buffer"
         case .incompleteData: return "The buffer still has data after lifting its containing value"
@@ -241,24 +240,24 @@ private enum UniffiInternalError: LocalizedError {
     }
 }
 
-private extension NSLock {
+fileprivate extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
-        lock()
+        self.lock()
         defer { self.unlock() }
         return try f()
     }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_UNEXPECTED_ERROR: Int8 = 2
-private let CALL_CANCELLED: Int8 = 3
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_UNEXPECTED_ERROR: Int8 = 2
+fileprivate let CALL_CANCELLED: Int8 = 3
 
-private extension RustCallStatus {
+fileprivate extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer(
+            errorBuf: RustBuffer.init(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -274,8 +273,7 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 
 private func rustCallWithError<T, E: Swift.Error>(
     _ errorHandler: @escaping (RustBuffer) throws -> E,
-    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
-) throws -> T {
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
     try makeRustCall(callback, errorHandler: errorHandler)
 }
 
@@ -283,8 +281,8 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureInitialized()
-    var callStatus = RustCallStatus()
+    uniffiEnsureQidaoCoreInitialized()
+    var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
     return returnedVal
@@ -295,44 +293,44 @@ private func uniffiCheckCallStatus<E: Swift.Error>(
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws {
     switch callStatus.code {
-    case CALL_SUCCESS:
-        return
+        case CALL_SUCCESS:
+            return
 
-    case CALL_ERROR:
-        if let errorHandler = errorHandler {
-            throw try errorHandler(callStatus.errorBuf)
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.unexpectedRustCallError
-        }
+        case CALL_ERROR:
+            if let errorHandler = errorHandler {
+                throw try errorHandler(callStatus.errorBuf)
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.unexpectedRustCallError
+            }
 
-    case CALL_UNEXPECTED_ERROR:
-        // When the rust code sees a panic, it tries to construct a RustBuffer
-        // with the message.  But if that code panics, then it just sends back
-        // an empty buffer.
-        if callStatus.errorBuf.len > 0 {
-            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.rustPanic("Rust panic")
-        }
+        case CALL_UNEXPECTED_ERROR:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
 
-    case CALL_CANCELLED:
-        fatalError("Cancellation not supported yet")
+        case CALL_CANCELLED:
+            fatalError("Cancellation not supported yet")
 
-    default:
-        throw UniffiInternalError.unexpectedRustCallStatusCode
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 private func uniffiTraitInterfaceCall<T>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void
+    writeReturn: (T) -> ()
 ) {
     do {
         try writeReturn(makeCall())
-    } catch {
+    } catch let error {
         callStatus.pointee.code = CALL_UNEXPECTED_ERROR
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
@@ -341,7 +339,7 @@ private func uniffiTraitInterfaceCall<T>(
 private func uniffiTraitInterfaceCallWithError<T, E>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void,
+    writeReturn: (T) -> (),
     lowerError: (E) -> RustBuffer
 ) {
     do {
@@ -354,27 +352,46 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
+// Initial value and increment amount for handles. 
+// These ensure that SWIFT handles always have the lowest bit set
+fileprivate let UNIFFI_HANDLEMAP_INITIAL: UInt64 = 1
+fileprivate let UNIFFI_HANDLEMAP_DELTA: UInt64 = 2
 
-private class UniffiHandleMap<T> {
-    private var map: [UInt64: T] = [:]
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
     private let lock = NSLock()
-    private var currentHandle: UInt64 = 1
+    private var map: [UInt64: T] = [:]
+    private var currentHandle: UInt64 = UNIFFI_HANDLEMAP_INITIAL
 
     func insert(obj: T) -> UInt64 {
         lock.withLock {
-            let handle = currentHandle
-            currentHandle += 1
-            map[handle] = obj
-            return handle
+            return doInsert(obj)
         }
     }
 
-    func get(handle: UInt64) throws -> T {
+    // Low-level insert function, this assumes `lock` is held.
+    private func doInsert(_ obj: T) -> UInt64 {
+        let handle = currentHandle
+        currentHandle += UNIFFI_HANDLEMAP_DELTA
+        map[handle] = obj
+        return handle
+    }
+
+     func get(handle: UInt64) throws -> T {
         try lock.withLock {
             guard let obj = map[handle] else {
                 throw UniffiInternalError.unexpectedStaleHandle
             }
             return obj
+        }
+    }
+
+     func clone(handle: UInt64) throws -> UInt64 {
+        try lock.withLock {
+            guard let obj = map[handle] else {
+                throw UniffiInternalError.unexpectedStaleHandle
+            }
+            return doInsert(obj)
         }
     }
 
@@ -389,76 +406,80 @@ private class UniffiHandleMap<T> {
     }
 
     var count: Int {
-        map.count
+        get {
+            map.count
+        }
     }
 }
 
+
 // Public interface members begin here.
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterUInt32: FfiConverterPrimitive {
+fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
     typealias FfiType = UInt32
     typealias SwiftType = UInt32
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
         return try lift(readInt(&buf))
     }
 
-    static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
         writeInt(&buf, lower(value))
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterDouble: FfiConverterPrimitive {
+fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
     typealias FfiType = Double
     typealias SwiftType = Double
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Double {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Double {
         return try lift(readDouble(&buf))
     }
 
-    static func write(_ value: Double, into buf: inout [UInt8]) {
+    public static func write(_ value: Double, into buf: inout [UInt8]) {
         writeDouble(&buf, lower(value))
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterBool: FfiConverter {
+fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
-    static func lift(_ value: Int8) throws -> Bool {
+    public static func lift(_ value: Int8) throws -> Bool {
         return value != 0
     }
 
-    static func lower(_ value: Bool) -> Int8 {
+    public static func lower(_ value: Bool) -> Int8 {
         return value ? 1 : 0
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
         return try lift(readInt(&buf))
     }
 
-    static func write(_ value: Bool, into buf: inout [UInt8]) {
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
         writeInt(&buf, lower(value))
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterString: FfiConverter {
+fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
-    static func lift(_ value: RustBuffer) throws -> String {
+    public static func lift(_ value: RustBuffer) throws -> String {
         defer {
             value.deallocate()
         }
@@ -469,7 +490,7 @@ private struct FfiConverterString: FfiConverter {
         return String(bytes: bytes, encoding: String.Encoding.utf8)!
     }
 
-    static func lower(_ value: String) -> RustBuffer {
+    public static func lower(_ value: String) -> RustBuffer {
         return value.utf8CString.withUnsafeBufferPointer { ptr in
             // The swift string gives us int8_t, we want uint8_t.
             ptr.withMemoryRebound(to: UInt8.self) { ptr in
@@ -480,1153 +501,1238 @@ private struct FfiConverterString: FfiConverter {
         }
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
-    static func write(_ value: String, into buf: inout [UInt8]) {
+    public static func write(_ value: String, into buf: inout [UInt8]) {
         let len = Int32(value.utf8.count)
         writeInt(&buf, len)
         writeBytes(&buf, value.utf8)
     }
 }
 
-public protocol AnalysisEngineProtocol: AnyObject {
-    func addInternalLog(msg: String) async
 
-    func analyze(queryJson: String) async throws
 
-    func getLogs() async -> [String]
 
-    func getNextResult() async throws -> AnalysisResult
-
-    func setLoggingEnabled(enabled: Bool) async
-
-    func start(executable: String, args: [String]) async throws
-
-    func stop() async throws
-
-    func terminate(id: String) async throws
-
-    func terminateAll() async throws
+public protocol AnalysisEngineProtocol: AnyObject, Sendable {
+    
+    func addInternalLog(msg: String) async 
+    
+    func analyze(queryJson: String) async throws 
+    
+    func getLogs() async  -> [String]
+    
+    func getNextResult() async throws  -> AnalysisResult
+    
+    func setLoggingEnabled(enabled: Bool) async 
+    
+    func start(executable: String, args: [String]) async throws 
+    
+    func stop() async throws 
+    
+    func terminate(id: String) async throws 
+    
+    func terminateAll() async throws 
+    
 }
+open class AnalysisEngine: AnalysisEngineProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
 
-open class AnalysisEngine:
-    AnalysisEngineProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
         public init() {}
     }
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
     }
 
     // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
     //
     // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
     }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_qidao_core_fn_clone_analysisengine(self.pointer, $0) }
-    }
-
-    public convenience init() {
-        let pointer =
-            try! rustCall {
-                uniffi_qidao_core_fn_constructor_analysisengine_new($0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_qidao_core_fn_free_analysisengine(pointer, $0) }
-    }
-
-    open func addInternalLog(msg: String) async {
-        return
-            try! await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_add_internal_log(
-                        self.uniffiClonePointer(),
-                        FfiConverterString.lower(msg)
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: nil
-            )
-    }
-
-    open func analyze(queryJson: String) async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_analyze(
-                        self.uniffiClonePointer(),
-                        FfiConverterString.lower(queryJson)
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-
-    open func getLogs() async -> [String] {
-        return
-            try! await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_get_logs(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_rust_buffer,
-                completeFunc: ffi_qidao_core_rust_future_complete_rust_buffer,
-                freeFunc: ffi_qidao_core_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterSequenceString.lift,
-                errorHandler: nil
-            )
-    }
-
-    open func getNextResult() async throws -> AnalysisResult {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_get_next_result(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_rust_buffer,
-                completeFunc: ffi_qidao_core_rust_future_complete_rust_buffer,
-                freeFunc: ffi_qidao_core_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterTypeAnalysisResult.lift,
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-
-    open func setLoggingEnabled(enabled: Bool) async {
-        return
-            try! await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_set_logging_enabled(
-                        self.uniffiClonePointer(),
-                        FfiConverterBool.lower(enabled)
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: nil
-            )
-    }
-
-    open func start(executable: String, args: [String]) async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_start(
-                        self.uniffiClonePointer(),
-                        FfiConverterString.lower(executable), FfiConverterSequenceString.lower(args)
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-
-    open func stop() async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_stop(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-
-    open func terminate(id: String) async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_terminate(
-                        self.uniffiClonePointer(),
-                        FfiConverterString.lower(id)
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-
-    open func terminateAll() async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_analysisengine_terminate_all(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-}
 
 #if swift(>=5.8)
     @_documentation(visibility: private)
 #endif
-public struct FfiConverterTypeAnalysisEngine: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = AnalysisEngine
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_qidao_core_fn_clone_analysisengine(self.handle, $0) }
+    }
+public convenience init() {
+    let handle =
+        try! rustCall() {
+    uniffi_qidao_core_fn_constructor_analysisengine_new($0
+    )
+}
+    self.init(unsafeFromHandle: handle)
+}
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> AnalysisEngine {
-        return AnalysisEngine(unsafeFromRawPointer: pointer)
+    deinit {
+        try! rustCall { uniffi_qidao_core_fn_free_analysisengine(handle, $0) }
     }
 
-    public static func lower(_ value: AnalysisEngine) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
+    
+
+    
+open func addInternalLog(msg: String)async   {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_add_internal_log(
+                    self.uniffiCloneHandle(),
+                    FfiConverterString.lower(msg)
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: nil
+            
+        )
+}
+    
+open func analyze(queryJson: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_analyze(
+                    self.uniffiCloneHandle(),
+                    FfiConverterString.lower(queryJson)
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+open func getLogs()async  -> [String]  {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_get_logs(
+                    self.uniffiCloneHandle()
+                    
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_rust_buffer,
+            completeFunc: ffi_qidao_core_rust_future_complete_rust_buffer,
+            freeFunc: ffi_qidao_core_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceString.lift,
+            errorHandler: nil
+            
+        )
+}
+    
+open func getNextResult()async throws  -> AnalysisResult  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_get_next_result(
+                    self.uniffiCloneHandle()
+                    
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_rust_buffer,
+            completeFunc: ffi_qidao_core_rust_future_complete_rust_buffer,
+            freeFunc: ffi_qidao_core_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeAnalysisResult_lift,
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+open func setLoggingEnabled(enabled: Bool)async   {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_set_logging_enabled(
+                    self.uniffiCloneHandle(),
+                    FfiConverterBool.lower(enabled)
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: nil
+            
+        )
+}
+    
+open func start(executable: String, args: [String])async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_start(
+                    self.uniffiCloneHandle(),
+                    FfiConverterString.lower(executable),FfiConverterSequenceString.lower(args)
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+open func stop()async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_stop(
+                    self.uniffiCloneHandle()
+                    
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+open func terminate(id: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_terminate(
+                    self.uniffiCloneHandle(),
+                    FfiConverterString.lower(id)
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+open func terminateAll()async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_analysisengine_terminate_all(
+                    self.uniffiCloneHandle()
+                    
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeAnalysisEngine: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = AnalysisEngine
+
+    public static func lift(_ handle: UInt64) throws -> AnalysisEngine {
+        return AnalysisEngine(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: AnalysisEngine) -> UInt64 {
+        return value.uniffiCloneHandle()
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AnalysisEngine {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
     }
 
     public static func write(_ value: AnalysisEngine, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, lower(value))
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeAnalysisEngine_lift(_ pointer: UnsafeMutableRawPointer) throws -> AnalysisEngine {
-    return try FfiConverterTypeAnalysisEngine.lift(pointer)
+public func FfiConverterTypeAnalysisEngine_lift(_ handle: UInt64) throws -> AnalysisEngine {
+    return try FfiConverterTypeAnalysisEngine.lift(handle)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeAnalysisEngine_lower(_ value: AnalysisEngine) -> UnsafeMutableRawPointer {
+public func FfiConverterTypeAnalysisEngine_lower(_ value: AnalysisEngine) -> UInt64 {
     return FfiConverterTypeAnalysisEngine.lower(value)
 }
 
-public protocol BoardProtocol: AnyObject {
-    func getSize() -> UInt32
 
-    func getStone(x: UInt32, y: UInt32) -> StoneColor?
 
+
+
+
+public protocol BoardProtocol: AnyObject, Sendable {
+    
+    func getSize()  -> UInt32
+    
+    func getStone(x: UInt32, y: UInt32)  -> StoneColor?
+    
     /**
      * Attempts to place a stone. Returns true if successful.
      */
-    func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws -> Board
-
+    func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws  -> Board
+    
     /**
      * Forcefully places a stone without checking rules (for setup stones).
      */
-    func withStone(x: UInt32, y: UInt32, color: StoneColor?) -> Board
+    func withStone(x: UInt32, y: UInt32, color: StoneColor?)  -> Board
+    
 }
+open class Board: BoardProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
 
-open class Board:
-    BoardProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
         public init() {}
     }
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
     }
 
     // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
     //
     // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
     }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_qidao_core_fn_clone_board(self.pointer, $0) }
-    }
-
-    public convenience init(size: UInt32) {
-        let pointer =
-            try! rustCall {
-                uniffi_qidao_core_fn_constructor_board_new(
-                    FfiConverterUInt32.lower(size), $0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_qidao_core_fn_free_board(pointer, $0) }
-    }
-
-    open func getSize() -> UInt32 {
-        return try! FfiConverterUInt32.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_board_get_size(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getStone(x: UInt32, y: UInt32) -> StoneColor? {
-        return try! FfiConverterOptionTypeStoneColor.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_board_get_stone(self.uniffiClonePointer(),
-                                                        FfiConverterUInt32.lower(x),
-                                                        FfiConverterUInt32.lower(y), $0)
-        })
-    }
-
-    /**
-     * Attempts to place a stone. Returns true if successful.
-     */
-    open func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws -> Board {
-        return try FfiConverterTypeBoard.lift(rustCallWithError(FfiConverterTypeSgfError.lift) {
-            uniffi_qidao_core_fn_method_board_place_stone(self.uniffiClonePointer(),
-                                                          FfiConverterUInt32.lower(x),
-                                                          FfiConverterUInt32.lower(y),
-                                                          FfiConverterTypeStoneColor.lower(color), $0)
-        })
-    }
-
-    /**
-     * Forcefully places a stone without checking rules (for setup stones).
-     */
-    open func withStone(x: UInt32, y: UInt32, color: StoneColor?) -> Board {
-        return try! FfiConverterTypeBoard.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_board_with_stone(self.uniffiClonePointer(),
-                                                         FfiConverterUInt32.lower(x),
-                                                         FfiConverterUInt32.lower(y),
-                                                         FfiConverterOptionTypeStoneColor.lower(color), $0)
-        })
-    }
-}
 
 #if swift(>=5.8)
     @_documentation(visibility: private)
 #endif
-public struct FfiConverterTypeBoard: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = Board
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_qidao_core_fn_clone_board(self.handle, $0) }
+    }
+public convenience init(size: UInt32) {
+    let handle =
+        try! rustCall() {
+    uniffi_qidao_core_fn_constructor_board_new(
+        FfiConverterUInt32.lower(size),$0
+    )
+}
+    self.init(unsafeFromHandle: handle)
+}
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Board {
-        return Board(unsafeFromRawPointer: pointer)
+    deinit {
+        try! rustCall { uniffi_qidao_core_fn_free_board(handle, $0) }
     }
 
-    public static func lower(_ value: Board) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
+    
+
+    
+open func getSize() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_board_get_size(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getStone(x: UInt32, y: UInt32) -> StoneColor?  {
+    return try!  FfiConverterOptionTypeStoneColor.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_board_get_stone(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),$0
+    )
+})
+}
+    
+    /**
+     * Attempts to place a stone. Returns true if successful.
+     */
+open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws  -> Board  {
+    return try  FfiConverterTypeBoard_lift(try rustCallWithError(FfiConverterTypeSgfError_lift) {
+    uniffi_qidao_core_fn_method_board_place_stone(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),
+        FfiConverterTypeStoneColor_lower(color),$0
+    )
+})
+}
+    
+    /**
+     * Forcefully places a stone without checking rules (for setup stones).
+     */
+open func withStone(x: UInt32, y: UInt32, color: StoneColor?) -> Board  {
+    return try!  FfiConverterTypeBoard_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_board_with_stone(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),
+        FfiConverterOptionTypeStoneColor.lower(color),$0
+    )
+})
+}
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBoard: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = Board
+
+    public static func lift(_ handle: UInt64) throws -> Board {
+        return Board(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: Board) -> UInt64 {
+        return value.uniffiCloneHandle()
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Board {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
     }
 
     public static func write(_ value: Board, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, lower(value))
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeBoard_lift(_ pointer: UnsafeMutableRawPointer) throws -> Board {
-    return try FfiConverterTypeBoard.lift(pointer)
+public func FfiConverterTypeBoard_lift(_ handle: UInt64) throws -> Board {
+    return try FfiConverterTypeBoard.lift(handle)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeBoard_lower(_ value: Board) -> UnsafeMutableRawPointer {
+public func FfiConverterTypeBoard_lower(_ value: Board) -> UInt64 {
     return FfiConverterTypeBoard.lower(value)
 }
 
-public protocol GameProtocol: AnyObject {
-    func canGoBack() -> Bool
 
-    func canGoForward() -> Bool
 
-    func getAnalysisMoves() -> [[String]]
 
-    func getBoard() -> Board
 
-    func getCurrentBoardStones() -> [[String]]
 
-    func getCurrentNode() -> SgfNode
-
-    func getCurrentPathMoves() -> [SgfProperty]
-
-    func getCurrentVariationIndex() -> UInt32
-
-    func getInitialStones() -> [[String]]
-
-    func getLastMove() -> SgfProperty?
-
-    func getMainLineMoves() -> [[String]]
-
-    func getMaxMoveCount() -> UInt32
-
-    func getMetadata() -> GameMetadata
-
-    func getMoveCount() -> UInt32
-
-    func getNextColor() -> StoneColor
-
-    func getRootNode() -> SgfNode
-
-    func getVariationCount() -> UInt32
-
-    func goBack() -> Bool
-
-    func goForward(index: UInt32) -> Bool
-
-    func jumpToMoveNumber(target: UInt32)
-
-    func jumpToNode(target: SgfNode)
-
-    func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws
-
-    func setMetadata(metadata: GameMetadata)
-
-    func toSgf() -> String
+public protocol GameProtocol: AnyObject, Sendable {
+    
+    func canGoBack()  -> Bool
+    
+    func canGoForward()  -> Bool
+    
+    func getAnalysisMoves()  -> [[String]]
+    
+    func getBoard()  -> Board
+    
+    func getCurrentBoardStones()  -> [[String]]
+    
+    func getCurrentNode()  -> SgfNode
+    
+    func getCurrentPathMoves()  -> [SgfProperty]
+    
+    func getCurrentVariationIndex()  -> UInt32
+    
+    func getInitialStones()  -> [[String]]
+    
+    func getLastMove()  -> SgfProperty?
+    
+    func getMainLineMoves()  -> [[String]]
+    
+    func getMaxMoveCount()  -> UInt32
+    
+    func getMetadata()  -> GameMetadata
+    
+    func getMoveCount()  -> UInt32
+    
+    func getNextColor()  -> StoneColor
+    
+    func getRootNode()  -> SgfNode
+    
+    func getVariationCount()  -> UInt32
+    
+    func goBack()  -> Bool
+    
+    func goForward(index: UInt32)  -> Bool
+    
+    func jumpToMoveNumber(target: UInt32) 
+    
+    func jumpToNode(target: SgfNode) 
+    
+    func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws 
+    
+    func setMetadata(metadata: GameMetadata) 
+    
+    func toSgf()  -> String
+    
 }
+open class Game: GameProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
 
-open class Game:
-    GameProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
         public init() {}
     }
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
     }
 
     // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
     //
     // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
     }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_qidao_core_fn_clone_game(self.pointer, $0) }
-    }
-
-    public convenience init(size: UInt32) {
-        let pointer =
-            try! rustCall {
-                uniffi_qidao_core_fn_constructor_game_new(
-                    FfiConverterUInt32.lower(size), $0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_qidao_core_fn_free_game(pointer, $0) }
-    }
-
-    public static func fromSgf(sgfContent: String) throws -> Game {
-        return try FfiConverterTypeGame.lift(rustCallWithError(FfiConverterTypeSgfError.lift) {
-            uniffi_qidao_core_fn_constructor_game_from_sgf(
-                FfiConverterString.lower(sgfContent), $0
-            )
-        })
-    }
-
-    open func canGoBack() -> Bool {
-        return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_can_go_back(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func canGoForward() -> Bool {
-        return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_can_go_forward(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getAnalysisMoves() -> [[String]] {
-        return try! FfiConverterSequenceSequenceString.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_analysis_moves(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getBoard() -> Board {
-        return try! FfiConverterTypeBoard.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_board(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getCurrentBoardStones() -> [[String]] {
-        return try! FfiConverterSequenceSequenceString.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_current_board_stones(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getCurrentNode() -> SgfNode {
-        return try! FfiConverterTypeSgfNode.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_current_node(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getCurrentPathMoves() -> [SgfProperty] {
-        return try! FfiConverterSequenceTypeSgfProperty.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_current_path_moves(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getCurrentVariationIndex() -> UInt32 {
-        return try! FfiConverterUInt32.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_current_variation_index(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getInitialStones() -> [[String]] {
-        return try! FfiConverterSequenceSequenceString.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_initial_stones(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getLastMove() -> SgfProperty? {
-        return try! FfiConverterOptionTypeSgfProperty.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_last_move(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getMainLineMoves() -> [[String]] {
-        return try! FfiConverterSequenceSequenceString.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_main_line_moves(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getMaxMoveCount() -> UInt32 {
-        return try! FfiConverterUInt32.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_max_move_count(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getMetadata() -> GameMetadata {
-        return try! FfiConverterTypeGameMetadata.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_metadata(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getMoveCount() -> UInt32 {
-        return try! FfiConverterUInt32.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_move_count(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getNextColor() -> StoneColor {
-        return try! FfiConverterTypeStoneColor.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_next_color(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getRootNode() -> SgfNode {
-        return try! FfiConverterTypeSgfNode.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_root_node(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getVariationCount() -> UInt32 {
-        return try! FfiConverterUInt32.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_get_variation_count(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func goBack() -> Bool {
-        return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_go_back(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func goForward(index: UInt32) -> Bool {
-        return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_go_forward(self.uniffiClonePointer(),
-                                                        FfiConverterUInt32.lower(index), $0)
-        })
-    }
-
-    open func jumpToMoveNumber(target: UInt32) { try! rustCall {
-        uniffi_qidao_core_fn_method_game_jump_to_move_number(self.uniffiClonePointer(),
-                                                             FfiConverterUInt32.lower(target), $0)
-    }
-    }
-
-    open func jumpToNode(target: SgfNode) { try! rustCall {
-        uniffi_qidao_core_fn_method_game_jump_to_node(self.uniffiClonePointer(),
-                                                      FfiConverterTypeSgfNode.lower(target), $0)
-    }
-    }
-
-    open func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws { try rustCallWithError(FfiConverterTypeSgfError.lift) {
-        uniffi_qidao_core_fn_method_game_place_stone(self.uniffiClonePointer(),
-                                                     FfiConverterUInt32.lower(x),
-                                                     FfiConverterUInt32.lower(y),
-                                                     FfiConverterTypeStoneColor.lower(color), $0)
-    }
-    }
-
-    open func setMetadata(metadata: GameMetadata) { try! rustCall {
-        uniffi_qidao_core_fn_method_game_set_metadata(self.uniffiClonePointer(),
-                                                      FfiConverterTypeGameMetadata.lower(metadata), $0)
-    }
-    }
-
-    open func toSgf() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_game_to_sgf(self.uniffiClonePointer(), $0)
-        })
-    }
-}
 
 #if swift(>=5.8)
     @_documentation(visibility: private)
 #endif
-public struct FfiConverterTypeGame: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = Game
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_qidao_core_fn_clone_game(self.handle, $0) }
+    }
+public convenience init(size: UInt32) {
+    let handle =
+        try! rustCall() {
+    uniffi_qidao_core_fn_constructor_game_new(
+        FfiConverterUInt32.lower(size),$0
+    )
+}
+    self.init(unsafeFromHandle: handle)
+}
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Game {
-        return Game(unsafeFromRawPointer: pointer)
+    deinit {
+        try! rustCall { uniffi_qidao_core_fn_free_game(handle, $0) }
     }
 
-    public static func lower(_ value: Game) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
+    
+public static func fromSgf(sgfContent: String)throws  -> Game  {
+    return try  FfiConverterTypeGame_lift(try rustCallWithError(FfiConverterTypeSgfError_lift) {
+    uniffi_qidao_core_fn_constructor_game_from_sgf(
+        FfiConverterString.lower(sgfContent),$0
+    )
+})
+}
+    
+
+    
+open func canGoBack() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_can_go_back(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func canGoForward() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_can_go_forward(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getAnalysisMoves() -> [[String]]  {
+    return try!  FfiConverterSequenceSequenceString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_analysis_moves(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getBoard() -> Board  {
+    return try!  FfiConverterTypeBoard_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_board(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getCurrentBoardStones() -> [[String]]  {
+    return try!  FfiConverterSequenceSequenceString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_current_board_stones(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getCurrentNode() -> SgfNode  {
+    return try!  FfiConverterTypeSgfNode_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_current_node(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getCurrentPathMoves() -> [SgfProperty]  {
+    return try!  FfiConverterSequenceTypeSgfProperty.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_current_path_moves(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getCurrentVariationIndex() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_current_variation_index(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getInitialStones() -> [[String]]  {
+    return try!  FfiConverterSequenceSequenceString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_initial_stones(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getLastMove() -> SgfProperty?  {
+    return try!  FfiConverterOptionTypeSgfProperty.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_last_move(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getMainLineMoves() -> [[String]]  {
+    return try!  FfiConverterSequenceSequenceString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_main_line_moves(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getMaxMoveCount() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_max_move_count(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getMetadata() -> GameMetadata  {
+    return try!  FfiConverterTypeGameMetadata_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_metadata(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getMoveCount() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_move_count(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getNextColor() -> StoneColor  {
+    return try!  FfiConverterTypeStoneColor_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_next_color(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getRootNode() -> SgfNode  {
+    return try!  FfiConverterTypeSgfNode_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_root_node(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getVariationCount() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_variation_count(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func goBack() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_go_back(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func goForward(index: UInt32) -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_go_forward(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(index),$0
+    )
+})
+}
+    
+open func jumpToMoveNumber(target: UInt32)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_jump_to_move_number(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(target),$0
+    )
+}
+}
+    
+open func jumpToNode(target: SgfNode)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_jump_to_node(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeSgfNode_lower(target),$0
+    )
+}
+}
+    
+open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws   {try rustCallWithError(FfiConverterTypeSgfError_lift) {
+    uniffi_qidao_core_fn_method_game_place_stone(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),
+        FfiConverterTypeStoneColor_lower(color),$0
+    )
+}
+}
+    
+open func setMetadata(metadata: GameMetadata)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_set_metadata(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeGameMetadata_lower(metadata),$0
+    )
+}
+}
+    
+open func toSgf() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_to_sgf(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGame: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = Game
+
+    public static func lift(_ handle: UInt64) throws -> Game {
+        return Game(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: Game) -> UInt64 {
+        return value.uniffiCloneHandle()
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Game {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
     }
 
     public static func write(_ value: Game, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, lower(value))
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeGame_lift(_ pointer: UnsafeMutableRawPointer) throws -> Game {
-    return try FfiConverterTypeGame.lift(pointer)
+public func FfiConverterTypeGame_lift(_ handle: UInt64) throws -> Game {
+    return try FfiConverterTypeGame.lift(handle)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeGame_lower(_ value: Game) -> UnsafeMutableRawPointer {
+public func FfiConverterTypeGame_lower(_ value: Game) -> UInt64 {
     return FfiConverterTypeGame.lower(value)
 }
 
-public protocol GtpEngineProtocol: AnyObject {
-    func sendCommand(cmd: String) async throws -> String
 
-    func start(executable: String, args: [String]) async throws
 
-    func stop() async throws
+
+
+
+public protocol GtpEngineProtocol: AnyObject, Sendable {
+    
+    func sendCommand(cmd: String) async throws  -> String
+    
+    func start(executable: String, args: [String]) async throws 
+    
+    func stop() async throws 
+    
 }
+open class GtpEngine: GtpEngineProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
 
-open class GtpEngine:
-    GtpEngineProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
         public init() {}
     }
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
     }
 
     // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
     //
     // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
     }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_qidao_core_fn_clone_gtpengine(self.pointer, $0) }
-    }
-
-    public convenience init() {
-        let pointer =
-            try! rustCall {
-                uniffi_qidao_core_fn_constructor_gtpengine_new($0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_qidao_core_fn_free_gtpengine(pointer, $0) }
-    }
-
-    open func sendCommand(cmd: String) async throws -> String {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_gtpengine_send_command(
-                        self.uniffiClonePointer(),
-                        FfiConverterString.lower(cmd)
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_rust_buffer,
-                completeFunc: ffi_qidao_core_rust_future_complete_rust_buffer,
-                freeFunc: ffi_qidao_core_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterString.lift,
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-
-    open func start(executable: String, args: [String]) async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_gtpengine_start(
-                        self.uniffiClonePointer(),
-                        FfiConverterString.lower(executable), FfiConverterSequenceString.lower(args)
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-
-    open func stop() async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_qidao_core_fn_method_gtpengine_stop(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_qidao_core_rust_future_poll_void,
-                completeFunc: ffi_qidao_core_rust_future_complete_void,
-                freeFunc: ffi_qidao_core_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeSgfError.lift
-            )
-    }
-}
 
 #if swift(>=5.8)
     @_documentation(visibility: private)
 #endif
-public struct FfiConverterTypeGtpEngine: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = GtpEngine
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_qidao_core_fn_clone_gtpengine(self.handle, $0) }
+    }
+public convenience init() {
+    let handle =
+        try! rustCall() {
+    uniffi_qidao_core_fn_constructor_gtpengine_new($0
+    )
+}
+    self.init(unsafeFromHandle: handle)
+}
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> GtpEngine {
-        return GtpEngine(unsafeFromRawPointer: pointer)
+    deinit {
+        try! rustCall { uniffi_qidao_core_fn_free_gtpengine(handle, $0) }
     }
 
-    public static func lower(_ value: GtpEngine) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
+    
+
+    
+open func sendCommand(cmd: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_gtpengine_send_command(
+                    self.uniffiCloneHandle(),
+                    FfiConverterString.lower(cmd)
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_rust_buffer,
+            completeFunc: ffi_qidao_core_rust_future_complete_rust_buffer,
+            freeFunc: ffi_qidao_core_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+open func start(executable: String, args: [String])async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_gtpengine_start(
+                    self.uniffiCloneHandle(),
+                    FfiConverterString.lower(executable),FfiConverterSequenceString.lower(args)
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+open func stop()async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_qidao_core_fn_method_gtpengine_stop(
+                    self.uniffiCloneHandle()
+                    
+                )
+            },
+            pollFunc: ffi_qidao_core_rust_future_poll_void,
+            completeFunc: ffi_qidao_core_rust_future_complete_void,
+            freeFunc: ffi_qidao_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeSgfError_lift
+        )
+}
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGtpEngine: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = GtpEngine
+
+    public static func lift(_ handle: UInt64) throws -> GtpEngine {
+        return GtpEngine(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: GtpEngine) -> UInt64 {
+        return value.uniffiCloneHandle()
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GtpEngine {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
     }
 
     public static func write(_ value: GtpEngine, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, lower(value))
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeGtpEngine_lift(_ pointer: UnsafeMutableRawPointer) throws -> GtpEngine {
-    return try FfiConverterTypeGtpEngine.lift(pointer)
+public func FfiConverterTypeGtpEngine_lift(_ handle: UInt64) throws -> GtpEngine {
+    return try FfiConverterTypeGtpEngine.lift(handle)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeGtpEngine_lower(_ value: GtpEngine) -> UnsafeMutableRawPointer {
+public func FfiConverterTypeGtpEngine_lower(_ value: GtpEngine) -> UInt64 {
     return FfiConverterTypeGtpEngine.lower(value)
 }
 
-public protocol SgfNodeProtocol: AnyObject {
-    func getChildren() -> [SgfNode]
 
-    func getId() -> String
 
-    func getProperties() -> [SgfProperty]
+
+
+
+public protocol SgfNodeProtocol: AnyObject, Sendable {
+    
+    func getChildren()  -> [SgfNode]
+    
+    func getId()  -> String
+    
+    func getProperties()  -> [SgfProperty]
+    
 }
+open class SgfNode: SgfNodeProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
 
-open class SgfNode:
-    SgfNodeProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
         public init() {}
     }
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
     }
 
     // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
     //
     // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
     }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_qidao_core_fn_clone_sgfnode(self.pointer, $0) }
-    }
-
-    // No primary constructor declared for this class.
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_qidao_core_fn_free_sgfnode(pointer, $0) }
-    }
-
-    open func getChildren() -> [SgfNode] {
-        return try! FfiConverterSequenceTypeSgfNode.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_sgfnode_get_children(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getId() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_sgfnode_get_id(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getProperties() -> [SgfProperty] {
-        return try! FfiConverterSequenceTypeSgfProperty.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_sgfnode_get_properties(self.uniffiClonePointer(), $0)
-        })
-    }
-}
 
 #if swift(>=5.8)
     @_documentation(visibility: private)
 #endif
-public struct FfiConverterTypeSgfNode: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = SgfNode
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_qidao_core_fn_clone_sgfnode(self.handle, $0) }
+    }
+    // No primary constructor declared for this class.
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SgfNode {
-        return SgfNode(unsafeFromRawPointer: pointer)
+    deinit {
+        try! rustCall { uniffi_qidao_core_fn_free_sgfnode(handle, $0) }
     }
 
-    public static func lower(_ value: SgfNode) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
+    
+
+    
+open func getChildren() -> [SgfNode]  {
+    return try!  FfiConverterSequenceTypeSgfNode.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_sgfnode_get_children(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getId() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_sgfnode_get_id(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getProperties() -> [SgfProperty]  {
+    return try!  FfiConverterSequenceTypeSgfProperty.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_sgfnode_get_properties(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+
+    
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSgfNode: FfiConverter {
+    typealias FfiType = UInt64
+    typealias SwiftType = SgfNode
+
+    public static func lift(_ handle: UInt64) throws -> SgfNode {
+        return SgfNode(unsafeFromHandle: handle)
+    }
+
+    public static func lower(_ value: SgfNode) -> UInt64 {
+        return value.uniffiCloneHandle()
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SgfNode {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
     }
 
     public static func write(_ value: SgfNode, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, lower(value))
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeSgfNode_lift(_ pointer: UnsafeMutableRawPointer) throws -> SgfNode {
-    return try FfiConverterTypeSgfNode.lift(pointer)
+public func FfiConverterTypeSgfNode_lift(_ handle: UInt64) throws -> SgfNode {
+    return try FfiConverterTypeSgfNode.lift(handle)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeSgfNode_lower(_ value: SgfNode) -> UnsafeMutableRawPointer {
+public func FfiConverterTypeSgfNode_lower(_ value: SgfNode) -> UInt64 {
     return FfiConverterTypeSgfNode.lower(value)
 }
 
-public protocol SgfTreeProtocol: AnyObject {
-    func root() -> SgfNode
+
+
+
+
+
+public protocol SgfTreeProtocol: AnyObject, Sendable {
+    
+    func root()  -> SgfNode
+    
 }
+open class SgfTree: SgfTreeProtocol, @unchecked Sendable {
+    fileprivate let handle: UInt64
 
-open class SgfTree:
-    SgfTreeProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoHandle {
         public init() {}
     }
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
     }
 
     // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
     //
     // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noHandle: NoHandle) {
+        self.handle = 0
     }
 
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_qidao_core_fn_clone_sgftree(self.pointer, $0) }
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_qidao_core_fn_clone_sgftree(self.handle, $0) }
     }
-
     // No primary constructor declared for this class.
 
     deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_qidao_core_fn_free_sgftree(pointer, $0) }
+        try! rustCall { uniffi_qidao_core_fn_free_sgftree(handle, $0) }
     }
 
-    open func root() -> SgfNode {
-        return try! FfiConverterTypeSgfNode.lift(try! rustCall {
-            uniffi_qidao_core_fn_method_sgftree_root(self.uniffiClonePointer(), $0)
-        })
-    }
+    
+
+    
+open func root() -> SgfNode  {
+    return try!  FfiConverterTypeSgfNode_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_sgftree_root(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+
+    
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeSgfTree: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
+    typealias FfiType = UInt64
     typealias SwiftType = SgfTree
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SgfTree {
-        return SgfTree(unsafeFromRawPointer: pointer)
+    public static func lift(_ handle: UInt64) throws -> SgfTree {
+        return SgfTree(unsafeFromHandle: handle)
     }
 
-    public static func lower(_ value: SgfTree) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
+    public static func lower(_ value: SgfTree) -> UInt64 {
+        return value.uniffiCloneHandle()
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SgfTree {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
     }
 
     public static func write(_ value: SgfTree, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, lower(value))
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeSgfTree_lift(_ pointer: UnsafeMutableRawPointer) throws -> SgfTree {
-    return try FfiConverterTypeSgfTree.lift(pointer)
+public func FfiConverterTypeSgfTree_lift(_ handle: UInt64) throws -> SgfTree {
+    return try FfiConverterTypeSgfTree.lift(handle)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-public func FfiConverterTypeSgfTree_lower(_ value: SgfTree) -> UnsafeMutableRawPointer {
+public func FfiConverterTypeSgfTree_lower(_ value: SgfTree) -> UInt64 {
     return FfiConverterTypeSgfTree.lower(value)
 }
 
-public struct AnalysisMoveInfo {
+
+
+
+public struct AnalysisMoveInfo: Equatable, Hashable {
     public var moveStr: String
     public var visits: UInt32
     public var winrate: Double
@@ -1642,50 +1748,27 @@ public struct AnalysisMoveInfo {
         self.scoreLead = scoreLead
         self.pv = pv
     }
+
+    
 }
 
-extension AnalysisMoveInfo: Equatable, Hashable {
-    public static func == (lhs: AnalysisMoveInfo, rhs: AnalysisMoveInfo) -> Bool {
-        if lhs.moveStr != rhs.moveStr {
-            return false
-        }
-        if lhs.visits != rhs.visits {
-            return false
-        }
-        if lhs.winrate != rhs.winrate {
-            return false
-        }
-        if lhs.scoreLead != rhs.scoreLead {
-            return false
-        }
-        if lhs.pv != rhs.pv {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(moveStr)
-        hasher.combine(visits)
-        hasher.combine(winrate)
-        hasher.combine(scoreLead)
-        hasher.combine(pv)
-    }
-}
+#if compiler(>=6)
+extension AnalysisMoveInfo: Sendable {}
+#endif
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeAnalysisMoveInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AnalysisMoveInfo {
         return
             try AnalysisMoveInfo(
-                moveStr: FfiConverterString.read(from: &buf),
-                visits: FfiConverterUInt32.read(from: &buf),
-                winrate: FfiConverterDouble.read(from: &buf),
-                scoreLead: FfiConverterDouble.read(from: &buf),
+                moveStr: FfiConverterString.read(from: &buf), 
+                visits: FfiConverterUInt32.read(from: &buf), 
+                winrate: FfiConverterDouble.read(from: &buf), 
+                scoreLead: FfiConverterDouble.read(from: &buf), 
                 pv: FfiConverterSequenceString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: AnalysisMoveInfo, into buf: inout [UInt8]) {
@@ -1697,21 +1780,23 @@ public struct FfiConverterTypeAnalysisMoveInfo: FfiConverterRustBuffer {
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeAnalysisMoveInfo_lift(_ buf: RustBuffer) throws -> AnalysisMoveInfo {
     return try FfiConverterTypeAnalysisMoveInfo.lift(buf)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeAnalysisMoveInfo_lower(_ value: AnalysisMoveInfo) -> RustBuffer {
     return FfiConverterTypeAnalysisMoveInfo.lower(value)
 }
 
-public struct AnalysisResult {
+
+public struct AnalysisResult: Equatable, Hashable {
     public var id: String
     public var turnNumber: UInt32
     public var isDuringSearch: Bool
@@ -1731,60 +1816,29 @@ public struct AnalysisResult {
         self.moveInfos = moveInfos
         self.ownership = ownership
     }
+
+    
 }
 
-extension AnalysisResult: Equatable, Hashable {
-    public static func == (lhs: AnalysisResult, rhs: AnalysisResult) -> Bool {
-        if lhs.id != rhs.id {
-            return false
-        }
-        if lhs.turnNumber != rhs.turnNumber {
-            return false
-        }
-        if lhs.isDuringSearch != rhs.isDuringSearch {
-            return false
-        }
-        if lhs.noResults != rhs.noResults {
-            return false
-        }
-        if lhs.rootInfo != rhs.rootInfo {
-            return false
-        }
-        if lhs.moveInfos != rhs.moveInfos {
-            return false
-        }
-        if lhs.ownership != rhs.ownership {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(turnNumber)
-        hasher.combine(isDuringSearch)
-        hasher.combine(noResults)
-        hasher.combine(rootInfo)
-        hasher.combine(moveInfos)
-        hasher.combine(ownership)
-    }
-}
+#if compiler(>=6)
+extension AnalysisResult: Sendable {}
+#endif
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeAnalysisResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AnalysisResult {
         return
             try AnalysisResult(
-                id: FfiConverterString.read(from: &buf),
-                turnNumber: FfiConverterUInt32.read(from: &buf),
-                isDuringSearch: FfiConverterBool.read(from: &buf),
-                noResults: FfiConverterBool.read(from: &buf),
-                rootInfo: FfiConverterTypeAnalysisRootInfo.read(from: &buf),
-                moveInfos: FfiConverterSequenceTypeAnalysisMoveInfo.read(from: &buf),
+                id: FfiConverterString.read(from: &buf), 
+                turnNumber: FfiConverterUInt32.read(from: &buf), 
+                isDuringSearch: FfiConverterBool.read(from: &buf), 
+                noResults: FfiConverterBool.read(from: &buf), 
+                rootInfo: FfiConverterTypeAnalysisRootInfo.read(from: &buf), 
+                moveInfos: FfiConverterSequenceTypeAnalysisMoveInfo.read(from: &buf), 
                 ownership: FfiConverterOptionSequenceDouble.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: AnalysisResult, into buf: inout [UInt8]) {
@@ -1798,21 +1852,23 @@ public struct FfiConverterTypeAnalysisResult: FfiConverterRustBuffer {
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeAnalysisResult_lift(_ buf: RustBuffer) throws -> AnalysisResult {
     return try FfiConverterTypeAnalysisResult.lift(buf)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeAnalysisResult_lower(_ value: AnalysisResult) -> RustBuffer {
     return FfiConverterTypeAnalysisResult.lower(value)
 }
 
-public struct AnalysisRootInfo {
+
+public struct AnalysisRootInfo: Equatable, Hashable {
     public var winrate: Double
     public var scoreLead: Double
     public var visits: UInt32
@@ -1824,40 +1880,25 @@ public struct AnalysisRootInfo {
         self.scoreLead = scoreLead
         self.visits = visits
     }
+
+    
 }
 
-extension AnalysisRootInfo: Equatable, Hashable {
-    public static func == (lhs: AnalysisRootInfo, rhs: AnalysisRootInfo) -> Bool {
-        if lhs.winrate != rhs.winrate {
-            return false
-        }
-        if lhs.scoreLead != rhs.scoreLead {
-            return false
-        }
-        if lhs.visits != rhs.visits {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(winrate)
-        hasher.combine(scoreLead)
-        hasher.combine(visits)
-    }
-}
+#if compiler(>=6)
+extension AnalysisRootInfo: Sendable {}
+#endif
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeAnalysisRootInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AnalysisRootInfo {
         return
             try AnalysisRootInfo(
-                winrate: FfiConverterDouble.read(from: &buf),
-                scoreLead: FfiConverterDouble.read(from: &buf),
+                winrate: FfiConverterDouble.read(from: &buf), 
+                scoreLead: FfiConverterDouble.read(from: &buf), 
                 visits: FfiConverterUInt32.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: AnalysisRootInfo, into buf: inout [UInt8]) {
@@ -1867,21 +1908,23 @@ public struct FfiConverterTypeAnalysisRootInfo: FfiConverterRustBuffer {
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeAnalysisRootInfo_lift(_ buf: RustBuffer) throws -> AnalysisRootInfo {
     return try FfiConverterTypeAnalysisRootInfo.lift(buf)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeAnalysisRootInfo_lower(_ value: AnalysisRootInfo) -> RustBuffer {
     return FfiConverterTypeAnalysisRootInfo.lower(value)
 }
 
-public struct GameMetadata {
+
+public struct GameMetadata: Equatable, Hashable {
     public var blackName: String
     public var blackRank: String
     public var whiteName: String
@@ -1909,80 +1952,33 @@ public struct GameMetadata {
         self.place = place
         self.size = size
     }
+
+    
 }
 
-extension GameMetadata: Equatable, Hashable {
-    public static func == (lhs: GameMetadata, rhs: GameMetadata) -> Bool {
-        if lhs.blackName != rhs.blackName {
-            return false
-        }
-        if lhs.blackRank != rhs.blackRank {
-            return false
-        }
-        if lhs.whiteName != rhs.whiteName {
-            return false
-        }
-        if lhs.whiteRank != rhs.whiteRank {
-            return false
-        }
-        if lhs.komi != rhs.komi {
-            return false
-        }
-        if lhs.result != rhs.result {
-            return false
-        }
-        if lhs.date != rhs.date {
-            return false
-        }
-        if lhs.event != rhs.event {
-            return false
-        }
-        if lhs.gameName != rhs.gameName {
-            return false
-        }
-        if lhs.place != rhs.place {
-            return false
-        }
-        if lhs.size != rhs.size {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(blackName)
-        hasher.combine(blackRank)
-        hasher.combine(whiteName)
-        hasher.combine(whiteRank)
-        hasher.combine(komi)
-        hasher.combine(result)
-        hasher.combine(date)
-        hasher.combine(event)
-        hasher.combine(gameName)
-        hasher.combine(place)
-        hasher.combine(size)
-    }
-}
+#if compiler(>=6)
+extension GameMetadata: Sendable {}
+#endif
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeGameMetadata: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GameMetadata {
         return
             try GameMetadata(
-                blackName: FfiConverterString.read(from: &buf),
-                blackRank: FfiConverterString.read(from: &buf),
-                whiteName: FfiConverterString.read(from: &buf),
-                whiteRank: FfiConverterString.read(from: &buf),
-                komi: FfiConverterDouble.read(from: &buf),
-                result: FfiConverterString.read(from: &buf),
-                date: FfiConverterString.read(from: &buf),
-                event: FfiConverterString.read(from: &buf),
-                gameName: FfiConverterString.read(from: &buf),
-                place: FfiConverterString.read(from: &buf),
+                blackName: FfiConverterString.read(from: &buf), 
+                blackRank: FfiConverterString.read(from: &buf), 
+                whiteName: FfiConverterString.read(from: &buf), 
+                whiteRank: FfiConverterString.read(from: &buf), 
+                komi: FfiConverterDouble.read(from: &buf), 
+                result: FfiConverterString.read(from: &buf), 
+                date: FfiConverterString.read(from: &buf), 
+                event: FfiConverterString.read(from: &buf), 
+                gameName: FfiConverterString.read(from: &buf), 
+                place: FfiConverterString.read(from: &buf), 
                 size: FfiConverterUInt32.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: GameMetadata, into buf: inout [UInt8]) {
@@ -2000,21 +1996,23 @@ public struct FfiConverterTypeGameMetadata: FfiConverterRustBuffer {
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeGameMetadata_lift(_ buf: RustBuffer) throws -> GameMetadata {
     return try FfiConverterTypeGameMetadata.lift(buf)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeGameMetadata_lower(_ value: GameMetadata) -> RustBuffer {
     return FfiConverterTypeGameMetadata.lower(value)
 }
 
-public struct GtpResponse {
+
+public struct GtpResponse: Equatable, Hashable {
     public var success: Bool
     public var text: String
 
@@ -2024,35 +2022,24 @@ public struct GtpResponse {
         self.success = success
         self.text = text
     }
+
+    
 }
 
-extension GtpResponse: Equatable, Hashable {
-    public static func == (lhs: GtpResponse, rhs: GtpResponse) -> Bool {
-        if lhs.success != rhs.success {
-            return false
-        }
-        if lhs.text != rhs.text {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(success)
-        hasher.combine(text)
-    }
-}
+#if compiler(>=6)
+extension GtpResponse: Sendable {}
+#endif
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeGtpResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GtpResponse {
         return
             try GtpResponse(
-                success: FfiConverterBool.read(from: &buf),
+                success: FfiConverterBool.read(from: &buf), 
                 text: FfiConverterString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: GtpResponse, into buf: inout [UInt8]) {
@@ -2061,21 +2048,23 @@ public struct FfiConverterTypeGtpResponse: FfiConverterRustBuffer {
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeGtpResponse_lift(_ buf: RustBuffer) throws -> GtpResponse {
     return try FfiConverterTypeGtpResponse.lift(buf)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeGtpResponse_lower(_ value: GtpResponse) -> RustBuffer {
     return FfiConverterTypeGtpResponse.lower(value)
 }
 
-public struct SgfProperty {
+
+public struct SgfProperty: Equatable, Hashable {
     public var identifier: String
     public var values: [String]
 
@@ -2085,35 +2074,24 @@ public struct SgfProperty {
         self.identifier = identifier
         self.values = values
     }
+
+    
 }
 
-extension SgfProperty: Equatable, Hashable {
-    public static func == (lhs: SgfProperty, rhs: SgfProperty) -> Bool {
-        if lhs.identifier != rhs.identifier {
-            return false
-        }
-        if lhs.values != rhs.values {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(identifier)
-        hasher.combine(values)
-    }
-}
+#if compiler(>=6)
+extension SgfProperty: Sendable {}
+#endif
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeSgfProperty: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SgfProperty {
         return
             try SgfProperty(
-                identifier: FfiConverterString.read(from: &buf),
+                identifier: FfiConverterString.read(from: &buf), 
                 values: FfiConverterSequenceString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: SgfProperty, into buf: inout [UInt8]) {
@@ -2122,27 +2100,44 @@ public struct FfiConverterTypeSgfProperty: FfiConverterRustBuffer {
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeSgfProperty_lift(_ buf: RustBuffer) throws -> SgfProperty {
     return try FfiConverterTypeSgfProperty.lift(buf)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeSgfProperty_lower(_ value: SgfProperty) -> RustBuffer {
     return FfiConverterTypeSgfProperty.lower(value)
 }
 
-public enum SgfError {
+
+public enum SgfError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
+
+    
+    
     case ParseError(message: String
     )
+
+    
+
+    
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+    
 }
 
+#if compiler(>=6)
+extension SgfError: Sendable {}
+#endif
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
     typealias SwiftType = SgfError
@@ -2150,41 +2145,66 @@ public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SgfError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .ParseError(
-                message: FfiConverterString.read(from: &buf)
+
+        
+
+        
+        case 1: return .ParseError(
+            message: try FfiConverterString.read(from: &buf)
             )
 
-        default: throw UniffiInternalError.unexpectedEnumCase
+         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SgfError, into buf: inout [UInt8]) {
         switch value {
+
+        
+
+        
+        
         case let .ParseError(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
+            
         }
     }
 }
 
-extension SgfError: Equatable, Hashable {}
 
-extension SgfError: Foundation.LocalizedError {
-    public var errorDescription: String? {
-        String(reflecting: self)
-    }
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSgfError_lift(_ buf: RustBuffer) throws -> SgfError {
+    return try FfiConverterTypeSgfError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSgfError_lower(_ value: SgfError) -> RustBuffer {
+    return FfiConverterTypeSgfError.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
-public enum StoneColor {
+public enum StoneColor: Equatable, Hashable {
+    
     case black
     case white
+
+
+
 }
 
+#if compiler(>=6)
+extension StoneColor: Sendable {}
+#endif
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeStoneColor: FfiConverterRustBuffer {
     typealias SwiftType = StoneColor
@@ -2192,48 +2212,53 @@ public struct FfiConverterTypeStoneColor: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StoneColor {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .black
-
+        
         case 2: return .white
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: StoneColor, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .black:
             writeInt(&buf, Int32(1))
-
+        
+        
         case .white:
             writeInt(&buf, Int32(2))
+        
         }
     }
 }
 
+
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeStoneColor_lift(_ buf: RustBuffer) throws -> StoneColor {
     return try FfiConverterTypeStoneColor.lift(buf)
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeStoneColor_lower(_ value: StoneColor) -> RustBuffer {
     return FfiConverterTypeStoneColor.lower(value)
 }
 
-extension StoneColor: Equatable, Hashable {}
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterOptionTypeSgfProperty: FfiConverterRustBuffer {
+fileprivate struct FfiConverterOptionTypeSgfProperty: FfiConverterRustBuffer {
     typealias SwiftType = SgfProperty?
 
-    static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
         guard let value = value else {
             writeInt(&buf, Int8(0))
             return
@@ -2242,7 +2267,7 @@ private struct FfiConverterOptionTypeSgfProperty: FfiConverterRustBuffer {
         FfiConverterTypeSgfProperty.write(value, into: &buf)
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeSgfProperty.read(from: &buf)
@@ -2252,12 +2277,12 @@ private struct FfiConverterOptionTypeSgfProperty: FfiConverterRustBuffer {
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterOptionTypeStoneColor: FfiConverterRustBuffer {
+fileprivate struct FfiConverterOptionTypeStoneColor: FfiConverterRustBuffer {
     typealias SwiftType = StoneColor?
 
-    static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
         guard let value = value else {
             writeInt(&buf, Int8(0))
             return
@@ -2266,7 +2291,7 @@ private struct FfiConverterOptionTypeStoneColor: FfiConverterRustBuffer {
         FfiConverterTypeStoneColor.write(value, into: &buf)
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeStoneColor.read(from: &buf)
@@ -2276,12 +2301,12 @@ private struct FfiConverterOptionTypeStoneColor: FfiConverterRustBuffer {
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterOptionSequenceDouble: FfiConverterRustBuffer {
+fileprivate struct FfiConverterOptionSequenceDouble: FfiConverterRustBuffer {
     typealias SwiftType = [Double]?
 
-    static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
         guard let value = value else {
             writeInt(&buf, Int8(0))
             return
@@ -2290,7 +2315,7 @@ private struct FfiConverterOptionSequenceDouble: FfiConverterRustBuffer {
         FfiConverterSequenceDouble.write(value, into: &buf)
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterSequenceDouble.read(from: &buf)
@@ -2300,12 +2325,12 @@ private struct FfiConverterOptionSequenceDouble: FfiConverterRustBuffer {
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceDouble: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceDouble: FfiConverterRustBuffer {
     typealias SwiftType = [Double]
 
-    static func write(_ value: [Double], into buf: inout [UInt8]) {
+    public static func write(_ value: [Double], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
@@ -2313,24 +2338,24 @@ private struct FfiConverterSequenceDouble: FfiConverterRustBuffer {
         }
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Double] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Double] {
         let len: Int32 = try readInt(&buf)
         var seq = [Double]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterDouble.read(from: &buf))
+            seq.append(try FfiConverterDouble.read(from: &buf))
         }
         return seq
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceString: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
-    static func write(_ value: [String], into buf: inout [UInt8]) {
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
@@ -2338,24 +2363,24 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         }
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
         let len: Int32 = try readInt(&buf)
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterString.read(from: &buf))
+            seq.append(try FfiConverterString.read(from: &buf))
         }
         return seq
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceTypeSgfNode: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceTypeSgfNode: FfiConverterRustBuffer {
     typealias SwiftType = [SgfNode]
 
-    static func write(_ value: [SgfNode], into buf: inout [UInt8]) {
+    public static func write(_ value: [SgfNode], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
@@ -2363,24 +2388,24 @@ private struct FfiConverterSequenceTypeSgfNode: FfiConverterRustBuffer {
         }
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SgfNode] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SgfNode] {
         let len: Int32 = try readInt(&buf)
         var seq = [SgfNode]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeSgfNode.read(from: &buf))
+            seq.append(try FfiConverterTypeSgfNode.read(from: &buf))
         }
         return seq
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceTypeAnalysisMoveInfo: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceTypeAnalysisMoveInfo: FfiConverterRustBuffer {
     typealias SwiftType = [AnalysisMoveInfo]
 
-    static func write(_ value: [AnalysisMoveInfo], into buf: inout [UInt8]) {
+    public static func write(_ value: [AnalysisMoveInfo], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
@@ -2388,24 +2413,24 @@ private struct FfiConverterSequenceTypeAnalysisMoveInfo: FfiConverterRustBuffer 
         }
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [AnalysisMoveInfo] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [AnalysisMoveInfo] {
         let len: Int32 = try readInt(&buf)
         var seq = [AnalysisMoveInfo]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeAnalysisMoveInfo.read(from: &buf))
+            seq.append(try FfiConverterTypeAnalysisMoveInfo.read(from: &buf))
         }
         return seq
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceTypeSgfProperty: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceTypeSgfProperty: FfiConverterRustBuffer {
     typealias SwiftType = [SgfProperty]
 
-    static func write(_ value: [SgfProperty], into buf: inout [UInt8]) {
+    public static func write(_ value: [SgfProperty], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
@@ -2413,24 +2438,24 @@ private struct FfiConverterSequenceTypeSgfProperty: FfiConverterRustBuffer {
         }
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SgfProperty] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SgfProperty] {
         let len: Int32 = try readInt(&buf)
         var seq = [SgfProperty]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeSgfProperty.read(from: &buf))
+            seq.append(try FfiConverterTypeSgfProperty.read(from: &buf))
         }
         return seq
     }
 }
 
 #if swift(>=5.8)
-    @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceSequenceString: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [[String]]
 
-    static func write(_ value: [[String]], into buf: inout [UInt8]) {
+    public static func write(_ value: [[String]], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
@@ -2438,43 +2463,44 @@ private struct FfiConverterSequenceSequenceString: FfiConverterRustBuffer {
         }
     }
 
-    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [[String]] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [[String]] {
         let len: Int32 = try readInt(&buf)
         var seq = [[String]]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterSequenceString.read(from: &buf))
+            seq.append(try FfiConverterSequenceString.read(from: &buf))
         }
         return seq
     }
 }
-
 private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
-private let UNIFFI_RUST_FUTURE_POLL_MAYBE_READY: Int8 = 1
+private let UNIFFI_RUST_FUTURE_POLL_WAKE: Int8 = 1
 
-private let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
+fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
 
-private func uniffiRustCallAsync<F, T>(
+fileprivate func uniffiRustCallAsync<F, T>(
     rustFutureFunc: () -> UInt64,
-    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> Void,
+    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> (),
     completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
-    freeFunc: (UInt64) -> Void,
+    freeFunc: (UInt64) -> (),
     liftFunc: (F) throws -> T,
     errorHandler: ((RustBuffer) throws -> Swift.Error)?
 ) async throws -> T {
-    // Make sure to call uniffiEnsureInitialized() since future creation doesn't have a
+    // Make sure to call the ensure init function since future creation doesn't have a
     // RustCallStatus param, so doesn't use makeRustCall()
-    uniffiEnsureInitialized()
+    uniffiEnsureQidaoCoreInitialized()
     let rustFuture = rustFutureFunc()
     defer {
         freeFunc(rustFuture)
     }
-    var pollResult: Int8
+    var pollResult: Int8;
     repeat {
         pollResult = await withUnsafeContinuation {
             pollFunc(
                 rustFuture,
-                uniffiFutureContinuationCallback,
+                { handle, pollResult in
+                    uniffiFutureContinuationCallback(handle: handle, pollResult: pollResult)
+                },
                 uniffiContinuationHandleMap.insert(obj: $0)
             )
         }
@@ -2488,29 +2514,27 @@ private func uniffiRustCallAsync<F, T>(
 
 // Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
 // lift the return value or error and resume the suspended function.
-private func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
+fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
     if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
         continuation.resume(returning: pollResult)
     } else {
         print("uniffiFutureContinuationCallback invalid handle")
     }
 }
-
-public func add(a: UInt32, b: UInt32) -> UInt32 {
-    return try! FfiConverterUInt32.lift(try! rustCall {
-        uniffi_qidao_core_fn_func_add(
-            FfiConverterUInt32.lower(a),
-            FfiConverterUInt32.lower(b), $0
-        )
-    })
+public func add(a: UInt32, b: UInt32) -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_qidao_core_fn_func_add(
+        FfiConverterUInt32.lower(a),
+        FfiConverterUInt32.lower(b),$0
+    )
+})
 }
-
-public func parseSgf(sgfContent: String) throws -> SgfTree {
-    return try FfiConverterTypeSgfTree.lift(rustCallWithError(FfiConverterTypeSgfError.lift) {
-        uniffi_qidao_core_fn_func_parse_sgf(
-            FfiConverterString.lower(sgfContent), $0
-        )
-    })
+public func parseSgf(sgfContent: String)throws  -> SgfTree  {
+    return try  FfiConverterTypeSgfTree_lift(try rustCallWithError(FfiConverterTypeSgfError_lift) {
+    uniffi_qidao_core_fn_func_parse_sgf(
+        FfiConverterString.lower(sgfContent),$0
+    )
+})
 }
 
 private enum InitializationResult {
@@ -2518,175 +2542,176 @@ private enum InitializationResult {
     case contractVersionMismatch
     case apiChecksumMismatch
 }
-
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private var initializationResult: InitializationResult = {
+private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 26
+    let bindings_contract_version = 30
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_qidao_core_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_qidao_core_checksum_func_add() != 3207 {
+    if (uniffi_qidao_core_checksum_func_add() != 3207) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_func_parse_sgf() != 27662 {
+    if (uniffi_qidao_core_checksum_func_parse_sgf() != 27662) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_add_internal_log() != 36426 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_add_internal_log() != 36426) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_analyze() != 52960 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_analyze() != 52960) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_get_logs() != 39263 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_get_logs() != 39263) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_get_next_result() != 38822 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_get_next_result() != 38822) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_set_logging_enabled() != 20868 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_set_logging_enabled() != 20868) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_start() != 33656 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_start() != 33656) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_stop() != 64484 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_stop() != 64484) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_terminate() != 48581 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_terminate() != 48581) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_analysisengine_terminate_all() != 19481 {
+    if (uniffi_qidao_core_checksum_method_analysisengine_terminate_all() != 19481) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_board_get_size() != 42284 {
+    if (uniffi_qidao_core_checksum_method_board_get_size() != 42284) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_board_get_stone() != 54210 {
+    if (uniffi_qidao_core_checksum_method_board_get_stone() != 54210) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_board_place_stone() != 53205 {
+    if (uniffi_qidao_core_checksum_method_board_place_stone() != 53205) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_board_with_stone() != 42743 {
+    if (uniffi_qidao_core_checksum_method_board_with_stone() != 42743) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_can_go_back() != 61635 {
+    if (uniffi_qidao_core_checksum_method_game_can_go_back() != 61635) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_can_go_forward() != 40449 {
+    if (uniffi_qidao_core_checksum_method_game_can_go_forward() != 40449) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_analysis_moves() != 24472 {
+    if (uniffi_qidao_core_checksum_method_game_get_analysis_moves() != 24472) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_board() != 38261 {
+    if (uniffi_qidao_core_checksum_method_game_get_board() != 38261) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_current_board_stones() != 43448 {
+    if (uniffi_qidao_core_checksum_method_game_get_current_board_stones() != 43448) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_current_node() != 11635 {
+    if (uniffi_qidao_core_checksum_method_game_get_current_node() != 11635) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_current_path_moves() != 52188 {
+    if (uniffi_qidao_core_checksum_method_game_get_current_path_moves() != 52188) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_current_variation_index() != 3639 {
+    if (uniffi_qidao_core_checksum_method_game_get_current_variation_index() != 3639) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_initial_stones() != 28328 {
+    if (uniffi_qidao_core_checksum_method_game_get_initial_stones() != 28328) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_last_move() != 39187 {
+    if (uniffi_qidao_core_checksum_method_game_get_last_move() != 39187) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_main_line_moves() != 36304 {
+    if (uniffi_qidao_core_checksum_method_game_get_main_line_moves() != 36304) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_max_move_count() != 20201 {
+    if (uniffi_qidao_core_checksum_method_game_get_max_move_count() != 20201) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_metadata() != 39160 {
+    if (uniffi_qidao_core_checksum_method_game_get_metadata() != 39160) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_move_count() != 34766 {
+    if (uniffi_qidao_core_checksum_method_game_get_move_count() != 34766) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_next_color() != 59788 {
+    if (uniffi_qidao_core_checksum_method_game_get_next_color() != 59788) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_root_node() != 23784 {
+    if (uniffi_qidao_core_checksum_method_game_get_root_node() != 23784) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_get_variation_count() != 32672 {
+    if (uniffi_qidao_core_checksum_method_game_get_variation_count() != 32672) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_go_back() != 63939 {
+    if (uniffi_qidao_core_checksum_method_game_go_back() != 63939) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_go_forward() != 27437 {
+    if (uniffi_qidao_core_checksum_method_game_go_forward() != 27437) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_jump_to_move_number() != 51090 {
+    if (uniffi_qidao_core_checksum_method_game_jump_to_move_number() != 51090) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_jump_to_node() != 53846 {
+    if (uniffi_qidao_core_checksum_method_game_jump_to_node() != 53846) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_place_stone() != 19675 {
+    if (uniffi_qidao_core_checksum_method_game_place_stone() != 19675) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_set_metadata() != 11810 {
+    if (uniffi_qidao_core_checksum_method_game_set_metadata() != 11810) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_game_to_sgf() != 50649 {
+    if (uniffi_qidao_core_checksum_method_game_to_sgf() != 50649) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_gtpengine_send_command() != 5407 {
+    if (uniffi_qidao_core_checksum_method_gtpengine_send_command() != 5407) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_gtpengine_start() != 18533 {
+    if (uniffi_qidao_core_checksum_method_gtpengine_start() != 18533) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_gtpengine_stop() != 50356 {
+    if (uniffi_qidao_core_checksum_method_gtpengine_stop() != 50356) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_sgfnode_get_children() != 34594 {
+    if (uniffi_qidao_core_checksum_method_sgfnode_get_children() != 34594) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_sgfnode_get_id() != 55131 {
+    if (uniffi_qidao_core_checksum_method_sgfnode_get_id() != 55131) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_sgfnode_get_properties() != 16786 {
+    if (uniffi_qidao_core_checksum_method_sgfnode_get_properties() != 16786) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_method_sgftree_root() != 50046 {
+    if (uniffi_qidao_core_checksum_method_sgftree_root() != 50046) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_constructor_analysisengine_new() != 18407 {
+    if (uniffi_qidao_core_checksum_constructor_analysisengine_new() != 18407) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_constructor_board_new() != 44876 {
+    if (uniffi_qidao_core_checksum_constructor_board_new() != 44876) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_constructor_game_from_sgf() != 52989 {
+    if (uniffi_qidao_core_checksum_constructor_game_from_sgf() != 52989) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_constructor_game_new() != 12242 {
+    if (uniffi_qidao_core_checksum_constructor_game_new() != 12242) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_qidao_core_checksum_constructor_gtpengine_new() != 56626 {
+    if (uniffi_qidao_core_checksum_constructor_gtpengine_new() != 56626) {
         return InitializationResult.apiChecksumMismatch
     }
 
     return InitializationResult.ok
 }()
 
-private func uniffiEnsureInitialized() {
+// Make the ensure init function public so that other modules which have external type references to
+// our types can call it.
+public func uniffiEnsureQidaoCoreInitialized() {
     switch initializationResult {
     case .ok:
         break

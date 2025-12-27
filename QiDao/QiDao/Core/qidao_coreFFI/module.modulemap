@@ -1,4 +1,7 @@
 module qidao_coreFFI {
     header "qidao_coreFFI.h"
     export *
+    use "Darwin"
+    use "_Builtin_stdbool"
+    use "_Builtin_stdint"
 }

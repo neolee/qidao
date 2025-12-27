@@ -50,9 +50,9 @@ typedef void (*UniffiRustFutureContinuationCallback)(uint64_t, int8_t
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
-typedef void (*UniffiForeignFutureFree)(uint64_t
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_DROPPED_CALLBACK
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_DROPPED_CALLBACK
+typedef void (*UniffiForeignFutureDroppedCallback)(uint64_t
     );
 
 #endif
@@ -62,500 +62,492 @@ typedef void (*UniffiCallbackInterfaceFree)(uint64_t
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE
-typedef struct UniffiForeignFuture {
-    uint64_t handle;
-    UniffiForeignFutureFree _Nonnull free;
-} UniffiForeignFuture;
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CLONE
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CLONE
+typedef uint64_t (*UniffiCallbackInterfaceClone)(uint64_t
+    );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
-typedef struct UniffiForeignFutureStructU8 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_DROPPED_CALLBACK_STRUCT
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_DROPPED_CALLBACK_STRUCT
+typedef struct UniffiForeignFutureDroppedCallbackStruct {
+    uint64_t handle;
+    UniffiForeignFutureDroppedCallback _Nonnull free;
+} UniffiForeignFutureDroppedCallbackStruct;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U8
+typedef struct UniffiForeignFutureResultU8 {
     uint8_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructU8;
+} UniffiForeignFutureResultU8;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
-typedef void (*UniffiForeignFutureCompleteU8)(uint64_t, UniffiForeignFutureStructU8
+typedef void (*UniffiForeignFutureCompleteU8)(uint64_t, UniffiForeignFutureResultU8
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
-typedef struct UniffiForeignFutureStructI8 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I8
+typedef struct UniffiForeignFutureResultI8 {
     int8_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructI8;
+} UniffiForeignFutureResultI8;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
-typedef void (*UniffiForeignFutureCompleteI8)(uint64_t, UniffiForeignFutureStructI8
+typedef void (*UniffiForeignFutureCompleteI8)(uint64_t, UniffiForeignFutureResultI8
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
-typedef struct UniffiForeignFutureStructU16 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U16
+typedef struct UniffiForeignFutureResultU16 {
     uint16_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructU16;
+} UniffiForeignFutureResultU16;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
-typedef void (*UniffiForeignFutureCompleteU16)(uint64_t, UniffiForeignFutureStructU16
+typedef void (*UniffiForeignFutureCompleteU16)(uint64_t, UniffiForeignFutureResultU16
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
-typedef struct UniffiForeignFutureStructI16 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I16
+typedef struct UniffiForeignFutureResultI16 {
     int16_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructI16;
+} UniffiForeignFutureResultI16;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
-typedef void (*UniffiForeignFutureCompleteI16)(uint64_t, UniffiForeignFutureStructI16
+typedef void (*UniffiForeignFutureCompleteI16)(uint64_t, UniffiForeignFutureResultI16
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
-typedef struct UniffiForeignFutureStructU32 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U32
+typedef struct UniffiForeignFutureResultU32 {
     uint32_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructU32;
+} UniffiForeignFutureResultU32;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
-typedef void (*UniffiForeignFutureCompleteU32)(uint64_t, UniffiForeignFutureStructU32
+typedef void (*UniffiForeignFutureCompleteU32)(uint64_t, UniffiForeignFutureResultU32
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
-typedef struct UniffiForeignFutureStructI32 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I32
+typedef struct UniffiForeignFutureResultI32 {
     int32_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructI32;
+} UniffiForeignFutureResultI32;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
-typedef void (*UniffiForeignFutureCompleteI32)(uint64_t, UniffiForeignFutureStructI32
+typedef void (*UniffiForeignFutureCompleteI32)(uint64_t, UniffiForeignFutureResultI32
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
-typedef struct UniffiForeignFutureStructU64 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_U64
+typedef struct UniffiForeignFutureResultU64 {
     uint64_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructU64;
+} UniffiForeignFutureResultU64;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
-typedef void (*UniffiForeignFutureCompleteU64)(uint64_t, UniffiForeignFutureStructU64
+typedef void (*UniffiForeignFutureCompleteU64)(uint64_t, UniffiForeignFutureResultU64
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
-typedef struct UniffiForeignFutureStructI64 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_I64
+typedef struct UniffiForeignFutureResultI64 {
     int64_t returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructI64;
+} UniffiForeignFutureResultI64;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
-typedef void (*UniffiForeignFutureCompleteI64)(uint64_t, UniffiForeignFutureStructI64
+typedef void (*UniffiForeignFutureCompleteI64)(uint64_t, UniffiForeignFutureResultI64
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
-typedef struct UniffiForeignFutureStructF32 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_F32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_F32
+typedef struct UniffiForeignFutureResultF32 {
     float returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructF32;
+} UniffiForeignFutureResultF32;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
-typedef void (*UniffiForeignFutureCompleteF32)(uint64_t, UniffiForeignFutureStructF32
+typedef void (*UniffiForeignFutureCompleteF32)(uint64_t, UniffiForeignFutureResultF32
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
-typedef struct UniffiForeignFutureStructF64 {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_F64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_F64
+typedef struct UniffiForeignFutureResultF64 {
     double returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructF64;
+} UniffiForeignFutureResultF64;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
-typedef void (*UniffiForeignFutureCompleteF64)(uint64_t, UniffiForeignFutureStructF64
+typedef void (*UniffiForeignFutureCompleteF64)(uint64_t, UniffiForeignFutureResultF64
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
-typedef struct UniffiForeignFutureStructPointer {
-    void*_Nonnull returnValue;
-    RustCallStatus callStatus;
-} UniffiForeignFutureStructPointer;
-
-#endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
-typedef void (*UniffiForeignFutureCompletePointer)(uint64_t, UniffiForeignFutureStructPointer
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
-typedef struct UniffiForeignFutureStructRustBuffer {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_RUST_BUFFER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_RUST_BUFFER
+typedef struct UniffiForeignFutureResultRustBuffer {
     RustBuffer returnValue;
     RustCallStatus callStatus;
-} UniffiForeignFutureStructRustBuffer;
+} UniffiForeignFutureResultRustBuffer;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
-typedef void (*UniffiForeignFutureCompleteRustBuffer)(uint64_t, UniffiForeignFutureStructRustBuffer
+typedef void (*UniffiForeignFutureCompleteRustBuffer)(uint64_t, UniffiForeignFutureResultRustBuffer
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
-#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
-typedef struct UniffiForeignFutureStructVoid {
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_VOID
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_RESULT_VOID
+typedef struct UniffiForeignFutureResultVoid {
     RustCallStatus callStatus;
-} UniffiForeignFutureStructVoid;
+} UniffiForeignFutureResultVoid;
 
 #endif
 #ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
 #define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
-typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStructVoid
+typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureResultVoid
     );
 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_ANALYSISENGINE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_ANALYSISENGINE
-void*_Nonnull uniffi_qidao_core_fn_clone_analysisengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_clone_analysisengine(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_ANALYSISENGINE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_ANALYSISENGINE
-void uniffi_qidao_core_fn_free_analysisengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_free_analysisengine(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_ANALYSISENGINE_NEW
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_ANALYSISENGINE_NEW
-void*_Nonnull uniffi_qidao_core_fn_constructor_analysisengine_new(RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_constructor_analysisengine_new(RustCallStatus *_Nonnull out_status
     
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_ADD_INTERNAL_LOG
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_ADD_INTERNAL_LOG
-uint64_t uniffi_qidao_core_fn_method_analysisengine_add_internal_log(void*_Nonnull ptr, RustBuffer msg
+uint64_t uniffi_qidao_core_fn_method_analysisengine_add_internal_log(uint64_t ptr, RustBuffer msg
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_ANALYZE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_ANALYZE
-uint64_t uniffi_qidao_core_fn_method_analysisengine_analyze(void*_Nonnull ptr, RustBuffer query_json
+uint64_t uniffi_qidao_core_fn_method_analysisengine_analyze(uint64_t ptr, RustBuffer query_json
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_LOGS
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_LOGS
-uint64_t uniffi_qidao_core_fn_method_analysisengine_get_logs(void*_Nonnull ptr
+uint64_t uniffi_qidao_core_fn_method_analysisengine_get_logs(uint64_t ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_GET_NEXT_RESULT
-uint64_t uniffi_qidao_core_fn_method_analysisengine_get_next_result(void*_Nonnull ptr
+uint64_t uniffi_qidao_core_fn_method_analysisengine_get_next_result(uint64_t ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_SET_LOGGING_ENABLED
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_SET_LOGGING_ENABLED
-uint64_t uniffi_qidao_core_fn_method_analysisengine_set_logging_enabled(void*_Nonnull ptr, int8_t enabled
+uint64_t uniffi_qidao_core_fn_method_analysisengine_set_logging_enabled(uint64_t ptr, int8_t enabled
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_START
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_START
-uint64_t uniffi_qidao_core_fn_method_analysisengine_start(void*_Nonnull ptr, RustBuffer executable, RustBuffer args
+uint64_t uniffi_qidao_core_fn_method_analysisengine_start(uint64_t ptr, RustBuffer executable, RustBuffer args
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_STOP
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_STOP
-uint64_t uniffi_qidao_core_fn_method_analysisengine_stop(void*_Nonnull ptr
+uint64_t uniffi_qidao_core_fn_method_analysisengine_stop(uint64_t ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE
-uint64_t uniffi_qidao_core_fn_method_analysisengine_terminate(void*_Nonnull ptr, RustBuffer id
+uint64_t uniffi_qidao_core_fn_method_analysisengine_terminate(uint64_t ptr, RustBuffer id
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE_ALL
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE_ALL
-uint64_t uniffi_qidao_core_fn_method_analysisengine_terminate_all(void*_Nonnull ptr
+uint64_t uniffi_qidao_core_fn_method_analysisengine_terminate_all(uint64_t ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_BOARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_BOARD
-void*_Nonnull uniffi_qidao_core_fn_clone_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_clone_board(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_BOARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_BOARD
-void uniffi_qidao_core_fn_free_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_free_board(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_BOARD_NEW
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_BOARD_NEW
-void*_Nonnull uniffi_qidao_core_fn_constructor_board_new(uint32_t size, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_constructor_board_new(uint32_t size, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_SIZE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_SIZE
-uint32_t uniffi_qidao_core_fn_method_board_get_size(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint32_t uniffi_qidao_core_fn_method_board_get_size(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_GET_STONE
-RustBuffer uniffi_qidao_core_fn_method_board_get_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_board_get_stone(uint64_t ptr, uint32_t x, uint32_t y, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_PLACE_STONE
-void*_Nonnull uniffi_qidao_core_fn_method_board_place_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_method_board_place_stone(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_WITH_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_BOARD_WITH_STONE
-void*_Nonnull uniffi_qidao_core_fn_method_board_with_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_method_board_with_stone(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GAME
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GAME
-void*_Nonnull uniffi_qidao_core_fn_clone_game(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_clone_game(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_GAME
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_GAME
-void uniffi_qidao_core_fn_free_game(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_free_game(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GAME_FROM_SGF
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GAME_FROM_SGF
-void*_Nonnull uniffi_qidao_core_fn_constructor_game_from_sgf(RustBuffer sgf_content, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_constructor_game_from_sgf(RustBuffer sgf_content, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GAME_NEW
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GAME_NEW
-void*_Nonnull uniffi_qidao_core_fn_constructor_game_new(uint32_t size, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_constructor_game_new(uint32_t size, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_BACK
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_BACK
-int8_t uniffi_qidao_core_fn_method_game_can_go_back(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+int8_t uniffi_qidao_core_fn_method_game_can_go_back(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_FORWARD
-int8_t uniffi_qidao_core_fn_method_game_can_go_forward(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+int8_t uniffi_qidao_core_fn_method_game_can_go_forward(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ANALYSIS_MOVES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ANALYSIS_MOVES
-RustBuffer uniffi_qidao_core_fn_method_game_get_analysis_moves(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_analysis_moves(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_BOARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_BOARD
-void*_Nonnull uniffi_qidao_core_fn_method_game_get_board(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_method_game_get_board(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_BOARD_STONES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_BOARD_STONES
-RustBuffer uniffi_qidao_core_fn_method_game_get_current_board_stones(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_current_board_stones(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_NODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_NODE
-void*_Nonnull uniffi_qidao_core_fn_method_game_get_current_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_method_game_get_current_node(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_PATH_MOVES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_PATH_MOVES
-RustBuffer uniffi_qidao_core_fn_method_game_get_current_path_moves(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_current_path_moves(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
-uint32_t uniffi_qidao_core_fn_method_game_get_current_variation_index(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint32_t uniffi_qidao_core_fn_method_game_get_current_variation_index(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_STONES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_STONES
-RustBuffer uniffi_qidao_core_fn_method_game_get_initial_stones(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_initial_stones(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_LAST_MOVE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_LAST_MOVE
-RustBuffer uniffi_qidao_core_fn_method_game_get_last_move(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_last_move(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAIN_LINE_MOVES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAIN_LINE_MOVES
-RustBuffer uniffi_qidao_core_fn_method_game_get_main_line_moves(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_main_line_moves(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAX_MOVE_COUNT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAX_MOVE_COUNT
-uint32_t uniffi_qidao_core_fn_method_game_get_max_move_count(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint32_t uniffi_qidao_core_fn_method_game_get_max_move_count(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_METADATA
-RustBuffer uniffi_qidao_core_fn_method_game_get_metadata(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_metadata(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MOVE_COUNT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MOVE_COUNT
-uint32_t uniffi_qidao_core_fn_method_game_get_move_count(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint32_t uniffi_qidao_core_fn_method_game_get_move_count(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_NEXT_COLOR
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_NEXT_COLOR
-RustBuffer uniffi_qidao_core_fn_method_game_get_next_color(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_get_next_color(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ROOT_NODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ROOT_NODE
-void*_Nonnull uniffi_qidao_core_fn_method_game_get_root_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_method_game_get_root_node(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_VARIATION_COUNT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_VARIATION_COUNT
-uint32_t uniffi_qidao_core_fn_method_game_get_variation_count(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint32_t uniffi_qidao_core_fn_method_game_get_variation_count(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_BACK
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_BACK
-int8_t uniffi_qidao_core_fn_method_game_go_back(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+int8_t uniffi_qidao_core_fn_method_game_go_back(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GO_FORWARD
-int8_t uniffi_qidao_core_fn_method_game_go_forward(void*_Nonnull ptr, uint32_t index, RustCallStatus *_Nonnull out_status
+int8_t uniffi_qidao_core_fn_method_game_go_forward(uint64_t ptr, uint32_t index, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_MOVE_NUMBER
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_MOVE_NUMBER
-void uniffi_qidao_core_fn_method_game_jump_to_move_number(void*_Nonnull ptr, uint32_t target, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_method_game_jump_to_move_number(uint64_t ptr, uint32_t target, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_NODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_JUMP_TO_NODE
-void uniffi_qidao_core_fn_method_game_jump_to_node(void*_Nonnull ptr, void*_Nonnull target, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_method_game_jump_to_node(uint64_t ptr, uint64_t target, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
-void uniffi_qidao_core_fn_method_game_place_stone(void*_Nonnull ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_method_game_place_stone(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_METADATA
-void uniffi_qidao_core_fn_method_game_set_metadata(void*_Nonnull ptr, RustBuffer metadata, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_method_game_set_metadata(uint64_t ptr, RustBuffer metadata, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_TO_SGF
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_TO_SGF
-RustBuffer uniffi_qidao_core_fn_method_game_to_sgf(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_game_to_sgf(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GTPENGINE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_GTPENGINE
-void*_Nonnull uniffi_qidao_core_fn_clone_gtpengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_clone_gtpengine(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_GTPENGINE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_GTPENGINE
-void uniffi_qidao_core_fn_free_gtpengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_free_gtpengine(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GTPENGINE_NEW
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CONSTRUCTOR_GTPENGINE_NEW
-void*_Nonnull uniffi_qidao_core_fn_constructor_gtpengine_new(RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_constructor_gtpengine_new(RustCallStatus *_Nonnull out_status
     
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_SEND_COMMAND
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_SEND_COMMAND
-uint64_t uniffi_qidao_core_fn_method_gtpengine_send_command(void*_Nonnull ptr, RustBuffer cmd
+uint64_t uniffi_qidao_core_fn_method_gtpengine_send_command(uint64_t ptr, RustBuffer cmd
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_START
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_START
-uint64_t uniffi_qidao_core_fn_method_gtpengine_start(void*_Nonnull ptr, RustBuffer executable, RustBuffer args
+uint64_t uniffi_qidao_core_fn_method_gtpengine_start(uint64_t ptr, RustBuffer executable, RustBuffer args
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_STOP
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GTPENGINE_STOP
-uint64_t uniffi_qidao_core_fn_method_gtpengine_stop(void*_Nonnull ptr
+uint64_t uniffi_qidao_core_fn_method_gtpengine_stop(uint64_t ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFNODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFNODE
-void*_Nonnull uniffi_qidao_core_fn_clone_sgfnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_clone_sgfnode(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFNODE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFNODE
-void uniffi_qidao_core_fn_free_sgfnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_free_sgfnode(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_CHILDREN
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_CHILDREN
-RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_children(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_children(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_ID
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_ID
-RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_id(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_PROPERTIES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFNODE_GET_PROPERTIES
-RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_properties(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_qidao_core_fn_method_sgfnode_get_properties(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFTREE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_CLONE_SGFTREE
-void*_Nonnull uniffi_qidao_core_fn_clone_sgftree(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_clone_sgftree(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFTREE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FREE_SGFTREE
-void uniffi_qidao_core_fn_free_sgftree(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_qidao_core_fn_free_sgftree(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFTREE_ROOT
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_SGFTREE_ROOT
-void*_Nonnull uniffi_qidao_core_fn_method_sgftree_root(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_method_sgftree_root(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_ADD
@@ -565,7 +557,7 @@ uint32_t uniffi_qidao_core_fn_func_add(uint32_t a, uint32_t b, RustCallStatus *_
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_PARSE_SGF
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_FUNC_PARSE_SGF
-void*_Nonnull uniffi_qidao_core_fn_func_parse_sgf(RustBuffer sgf_content, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_qidao_core_fn_func_parse_sgf(RustBuffer sgf_content, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUSTBUFFER_ALLOC
@@ -786,26 +778,6 @@ void ffi_qidao_core_rust_future_free_f64(uint64_t handle
 #ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_COMPLETE_F64
 #define UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_COMPLETE_F64
 double ffi_qidao_core_rust_future_complete_f64(uint64_t handle, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_POLL_POINTER
-#define UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_POLL_POINTER
-void ffi_qidao_core_rust_future_poll_pointer(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
-);
-#endif
-#ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_CANCEL_POINTER
-#define UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_CANCEL_POINTER
-void ffi_qidao_core_rust_future_cancel_pointer(uint64_t handle
-);
-#endif
-#ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_FREE_POINTER
-#define UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_FREE_POINTER
-void ffi_qidao_core_rust_future_free_pointer(uint64_t handle
-);
-#endif
-#ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_COMPLETE_POINTER
-#define UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_COMPLETE_POINTER
-void*_Nonnull ffi_qidao_core_rust_future_complete_pointer(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_QIDAO_CORE_RUST_FUTURE_POLL_RUST_BUFFER

@@ -7,13 +7,13 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-uniffi = { version = "0.28", features = ["cli"] }
+uniffi = { version = "0.30", features = ["cli"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
 anyhow = "1"
-sgf-parse = "4.2"
+sgf-parse = "4"
 
 [build-dependencies]
-uniffi = { version = "0.28", features = ["build"] }
+uniffi = { version = "0.30", features = ["build"] }

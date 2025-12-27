@@ -130,6 +130,9 @@
 "Analysis" = "分析设置";
 "Display" = "界面设置";
 
+/* Updates */
+"Check for Updates..." = "检查更新...";
+
 /* Errors */
 "Failed to decode SGF file" = "无法解码 SGF 文件";
 "Error: Config file is required for analysis mode" = "错误：分析模式需要配置文件";

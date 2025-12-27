@@ -74,8 +74,9 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - **Logging Optimization**: Communication logs (`>>>`/`<<<`) are truncated to 500 chars in the core and completely skipped (including string formatting/serialization) when `logging_enabled` is false.
 
 ## 8. Immediate TODOs
-1. **Deployment**: Implement automatic CI/CD pipelines and auto-update mechanism for macOS.
-2. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
+1. **Fundamental Enhancements**: 13x13 and 9x9 board support and so on.
+2. **Edit Mode**: add/remove stones and notations, export to SGF string (compatible with `sbs-ext`), etc..
+3. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
 
 ## 9. Implementation Plan (Dec 26, 2025)
 
@@ -115,4 +116,4 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - [x] **Phase 6: AI UI Refinement & Visualization**: Refined AI move markers with transparency and rank styling. Implemented dynamic Win Rate Graph with history persistence. Added PV preview on hover and stabilized sidebar layouts to prevent flickering. Optimized variation marker visibility.
 - [x] **Phase 7: Core Optimization & Evaluation Board**: Refactored Rust engine locks for zero-latency navigation. Implemented "Evaluation Board" (mini-board) with grayscale ownership map and PV sequence. Added centralized logging control and buffer draining to prevent CPU spikes.
 - [x] **Phase 8: Branch Management & UX Refinement**: Implemented "Delete Current Branch" with confirmation dialog. Optimized file dialogs to be non-blocking and path-aware. Synchronized and cleaned up localization files. Refined keyboard focus and shortcut handling using `.onDeleteCommand`.
-
+- [x] **Phase 9: Sparkle Integration & CI/CD**: Integrated Sparkle framework for auto-updates. Configured GitHub Actions for automated release creation, DMG packaging, and appcast generation. Added "Check for Updates" menu item and configured `Info.plist` keys.

@@ -105,7 +105,7 @@ struct EngineConfigView: View {
                     HStack {
                         TextField("Executable Path".localized, text: $localConfig.profiles[index].path)
                         Button("Browse...".localized) {
-                            selectFile(canChooseDirectories: false) { url in
+                            selectFile(canChooseDirectories: false, initialPath: localConfig.profiles[index].path) { url in
                                 localConfig.profiles[index].path = url.path
                             }
                         }
@@ -114,7 +114,7 @@ struct EngineConfigView: View {
                     HStack {
                         TextField("Model Path".localized, text: $localConfig.profiles[index].model)
                         Button("Browse...".localized) {
-                            selectFile(canChooseDirectories: false) { url in
+                            selectFile(canChooseDirectories: false, initialPath: localConfig.profiles[index].model) { url in
                                 localConfig.profiles[index].model = url.path
                             }
                         }
@@ -123,7 +123,7 @@ struct EngineConfigView: View {
                     HStack {
                         TextField("Config Path".localized, text: $localConfig.profiles[index].config)
                         Button("Browse...".localized) {
-                            selectFile(canChooseDirectories: false) { url in
+                            selectFile(canChooseDirectories: false, initialPath: localConfig.profiles[index].config) { url in
                                 localConfig.profiles[index].config = url.path
                             }
                         }
@@ -289,11 +289,22 @@ struct EngineConfigView: View {
         .formStyle(.grouped)
     }
 
-    private func selectFile(canChooseDirectories: Bool, completion: @escaping (URL) -> Void) {
+    private func selectFile(canChooseDirectories: Bool, initialPath: String? = nil, completion: @escaping (URL) -> Void) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = canChooseDirectories
         panel.canChooseFiles = !canChooseDirectories
+        
+        if let path = initialPath, !path.isEmpty {
+            let url = URL(fileURLWithPath: path)
+            // If it's a file path, open the parent directory
+            if !canChooseDirectories {
+                panel.directoryURL = url.deletingLastPathComponent()
+            } else {
+                panel.directoryURL = url
+            }
+        }
+        
         panel.begin { response in
             if response == .OK, let url = panel.url {
                 completion(url)

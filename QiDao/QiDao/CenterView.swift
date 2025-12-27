@@ -113,33 +113,17 @@ struct CenterView: View {
                             .multilineTextAlignment(.center)
                             .focused($isJumpFieldFocused)
                             .onSubmit {
-                                let targetMove = Int(jumpToMoveInput)
-                                isJumpFieldFocused = false
-                                if let move = targetMove {
+                                if let move = Int(jumpToMoveInput) {
                                     viewModel.jumpToMove(move)
                                 }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                    isBoardFocused = true
-                                }
-                            }
-                            .onExitCommand {
-                                isJumpFieldFocused = false
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                    isBoardFocused = true
-                                }
-                            }
-                            .onChange(of: isJumpFieldFocused) { old, new in
-                                if !new {
-                                    isEditingMoveNumber = false
-                                }
+                                isEditingMoveNumber = false
+                                isBoardFocused = true
                             }
                     } else {
                         Button(action: {
                             jumpToMoveInput = ""
                             isEditingMoveNumber = true
-                            DispatchQueue.main.async {
-                                isJumpFieldFocused = true
-                            }
+                            isJumpFieldFocused = true
                         }) {
                             Text("Move".localized + " \(viewModel.moveCount)")
                                 .font(.headline)
@@ -203,13 +187,14 @@ struct CenterView: View {
         panel.canChooseDirectories = false
         panel.allowedContentTypes = [.init(filenameExtension: "sgf")!]
 
-        if panel.runModal() == .OK {
-            if let url = panel.url {
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
                 viewModel.loadSgf(url: url)
             }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            isBoardFocused = true
+            // 确保在对话框关闭后恢复焦点
+            DispatchQueue.main.async {
+                isBoardFocused = true
+            }
         }
     }
 
@@ -218,13 +203,14 @@ struct CenterView: View {
         panel.allowedContentTypes = [.init(filenameExtension: "sgf")!]
         panel.nameFieldStringValue = "game.sgf"
 
-        if panel.runModal() == .OK {
-            if let url = panel.url {
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
                 viewModel.saveSgf(url: url)
             }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            isBoardFocused = true
+            // 确保在对话框关闭后恢复焦点
+            DispatchQueue.main.async {
+                isBoardFocused = true
+            }
         }
     }
 }

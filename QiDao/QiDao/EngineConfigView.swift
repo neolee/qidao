@@ -294,8 +294,8 @@ struct EngineConfigView: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = canChooseDirectories
         panel.canChooseFiles = !canChooseDirectories
-        if panel.runModal() == .OK {
-            if let url = panel.url {
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
                 completion(url)
             }
         }

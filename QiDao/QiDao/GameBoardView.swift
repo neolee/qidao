@@ -395,9 +395,9 @@ struct AIMoveMarker: View {
                     .foregroundColor(.white)
                     .frame(width: size * 0.3, height: size * 0.3)
                     .background(
-                        Circle()
+                        RoundedRectangle(cornerRadius: size * 0.08)
                             .fill(Color.black.opacity(0.6))
-                            .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 0.5))
+                            .overlay(RoundedRectangle(cornerRadius: size * 0.08).stroke(Color.white.opacity(0.5), lineWidth: 0.5))
                     )
                     .offset(x: size * 0.4, y: -size * 0.4)
             }

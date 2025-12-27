@@ -47,7 +47,8 @@
 "Game Name" = "Game Name";
 "vs" = "vs";
 "Blunder" = "Blunder";
-"Mistake" = "Mistake";
+"Move %d" = "Move %d";
+"Move_Header" = "Move";
 
 /* Game Results */
 "Black wins by resignation" = "Black wins by resignation";
@@ -77,6 +78,7 @@
 "Start AI" = "Start AI";
 "Stop AI" = "Stop AI";
 "AI Engine" = "AI Engine";
+"Blunder Threshold" = "Blunder Threshold";
 "Score Lead" = "Score Lead";
 "Win %" = "Win %";
 "Lead" = "Lead";

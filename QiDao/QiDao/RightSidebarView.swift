@@ -17,7 +17,7 @@ struct RightSidebarView: View {
                         if let result = viewModel.analysisResult {
                             // Header
                             HStack {
-                                Text("Move".localized).frame(width: 45, alignment: .leading)
+                                Text("Move_Header".localized).frame(width: 45, alignment: .leading)
                                 Text("Win %".localized).frame(maxWidth: .infinity, alignment: .trailing)
                                 Text("Lead".localized).frame(maxWidth: .infinity, alignment: .trailing)
                                 Text("Visits".localized).frame(maxWidth: .infinity, alignment: .trailing)

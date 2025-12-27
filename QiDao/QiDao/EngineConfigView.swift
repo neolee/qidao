@@ -154,7 +154,6 @@ struct EngineConfigView: View {
                     OptionalNumberField(value: $localConfig.analysis.maxTime, placeholder: "Default".localized)
                         .frame(width: 100)
                 }
-
                 Toggle("Iterative Deepening".localized, isOn: $localConfig.analysis.iterativeDeepening)
 
                 HStack {
@@ -258,6 +257,20 @@ struct EngineConfigView: View {
 
                 Toggle("Show Ownership Map".localized, isOn: $localConfig.display.showOwnership)
                 Toggle("Show Win Rate Graph".localized, isOn: $localConfig.display.showWinRateGraph)
+
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("Blunder Threshold".localized)
+                        Spacer()
+                        Text(String(format: "%.0f%%", localConfig.display.blunderThreshold * 100))
+                            .foregroundColor(.secondary)
+                    }
+                    Slider(value: Binding(
+                        get: { localConfig.display.blunderThreshold },
+                        set: { localConfig.display.blunderThreshold = ($0 * 100).rounded() / 100 }
+                    ), in: 0.05...0.50)
+                }
+                .padding(.vertical, 4)
 
                 HStack {
                     Text("Overlay Win Rate".localized)

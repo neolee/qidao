@@ -46,8 +46,9 @@
 "Edit Game Info" = "编辑对局信息";
 "Game Name" = "棋局名称";
 "vs" = "对阵";
-"Blunder" = "大漏勺";
-"Mistake" = "失误";
+"Blunder" = "失误";
+"Move %d" = "第 %d 手";
+"Move_Header" = "着法";
 
 /* Game Results */
 "Black wins by resignation" = "黑中盘胜";
@@ -77,6 +78,7 @@
 "Start AI" = "启动 AI";
 "Stop AI" = "停止 AI";
 "AI Engine" = "AI 引擎";
+"Blunder Threshold" = "失误阈值";
 "Score Lead" = "目数领先";
 "Win %" = "胜率%";
 "Lead" = "目数";

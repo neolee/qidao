@@ -124,7 +124,6 @@ class BoardViewModel: ObservableObject {
     }
 
     enum BlunderType: String {
-        case mistake // > 5% drop
         case blunder // > 15% drop
     }
 
@@ -639,11 +638,10 @@ class BoardViewModel: ObservableObject {
 
         let diff = currentWR - prevWR
         let absDiff = abs(diff)
+        let threshold = config.display.blunderThreshold
 
-        if absDiff >= 0.15 {
+        if absDiff >= threshold {
             blunders[turn] = .blunder
-        } else if absDiff >= 0.05 {
-            blunders[turn] = .mistake
         } else {
             blunders.removeValue(forKey: turn)
         }

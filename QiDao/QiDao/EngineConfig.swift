@@ -49,6 +49,7 @@ struct DisplaySettings: Codable, Equatable {
     var maxCandidates: Int = 20
     var showOwnership: Bool = true
     var showWinRateGraph: Bool = true
+    var blunderThreshold: Double = 0.15
     var overlayWinRatePerspective: WinRatePerspective = .current
 }
 

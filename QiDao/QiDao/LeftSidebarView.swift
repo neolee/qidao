@@ -281,9 +281,9 @@ struct WinRateGraph: View {
 
                 // Blunder markers
                 ForEach(blunders.keys.sorted(), id: \.self) { turn in
-                    if let rate = history[turn], let type = blunders[turn] {
+                    if let rate = history[turn] {
                         Circle()
-                            .fill(type == .blunder ? Color.red : Color.orange)
+                            .fill(Color.red)
                             .frame(width: 4, height: 4)
                             .position(x: CGFloat(turn) * step, y: geo.size.height * CGFloat(1.0 - rate))
                     }
@@ -312,12 +312,16 @@ struct WinRateGraph: View {
                     // Win rate tooltip
                     if let rate = history[clampedTurn] {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(String(format: "Move %d: %.1f%%", clampedTurn, rate * 100))
+                            Text(String(format: "Move %d".localized, clampedTurn))
                                 .font(.system(size: 9, weight: .bold))
-                            if let type = blunders[clampedTurn] {
-                                Text(type == .blunder ? "Blunder".localized : "Mistake".localized)
-                                    .font(.system(size: 8, weight: .bold))
-                                    .foregroundColor(type == .blunder ? .red : .orange)
+                            HStack(spacing: 4) {
+                                Text(String(format: "%.1f%%", rate * 100))
+                                    .font(.system(size: 9))
+                                if blunders[clampedTurn] != nil {
+                                    Text("Blunder".localized)
+                                        .font(.system(size: 8, weight: .bold))
+                                        .foregroundColor(.red)
+                                }
                             }
                         }
                         .padding(.horizontal, 4)

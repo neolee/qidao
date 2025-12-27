@@ -181,6 +181,7 @@ struct StoneView: View {
     let size: CGFloat
     let moveNumber: Int?
     let markerType: MarkerType?
+    var fontSize: CGFloat? = nil
 
     var body: some View {
         let style = (color == .black) ? theme.blackStoneStyle : theme.whiteStoneStyle
@@ -225,7 +226,7 @@ struct StoneView: View {
             // 5. Move Number or Marker
             if let num = moveNumber {
                 Text("\(num)")
-                    .font(.system(size: size * 0.4, weight: .bold))
+                    .font(.system(size: fontSize ?? (size * 0.4), weight: .bold))
                     .foregroundColor(style.textColor)
             } else if let marker = markerType {
                 switch marker {

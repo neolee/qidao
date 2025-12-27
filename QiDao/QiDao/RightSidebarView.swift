@@ -87,35 +87,19 @@ struct RightSidebarView: View {
             }
 
             GroupBox(label: Label("Evaluation".localized, systemImage: "eye")) {
-                VStack(spacing: 15) {
+                VStack(spacing: 10) {
                     if viewModel.isAnalyzing {
                         if let result = viewModel.analysisResult {
-                            HStack {
-                                Text("Score Lead".localized)
-                                Spacer()
-                                Text(String(format: "%+.1f", result.rootInfo.scoreLead))
-                                    .bold()
-                            }
-                            .font(.subheadline)
-
-                            // Ownership Map
-                            if viewModel.config.display.showOwnership {
-                                if let ownership = result.ownership {
-                                    OwnershipMapView(ownership: ownership, size: Int(viewModel.board.getSize()))
-                                        .aspectRatio(1.0, contentMode: .fit)
-                                        .frame(maxWidth: .infinity)
-                                        .cornerRadius(4)
-                                } else {
-                                    VStack {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                        Text("Calculating Ownership...".localized)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                }
-                            }
+                            // Mini Board for Evaluation
+                            EvaluationBoardView(
+                                viewModel: viewModel,
+                                ownership: result.ownership,
+                                pv: result.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv
+                            )
+                            .aspectRatio(1.0, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                            .background(viewModel.theme.boardColor)
+                            .cornerRadius(4)
                         } else {
                             VStack {
                                 CustomSpinner()
@@ -133,7 +117,7 @@ struct RightSidebarView: View {
                     }
                 }
                 .padding(.vertical, 5)
-                .frame(height: 220) // Fixed height for Evaluation section
+                .frame(height: 260) // Increased height for the mini board
             }
         }
         .padding()
@@ -141,37 +125,94 @@ struct RightSidebarView: View {
     }
 }
 
-struct OwnershipMapView: View {
-    let ownership: [Double]
-    let size: Int
+struct EvaluationBoardView: View {
+    @ObservedObject var viewModel: BoardViewModel
+    let ownership: [Double]?
+    let pv: [String]?
+    let gridSize: Int = 19
 
     var body: some View {
-        Canvas { context, geoSize in
-            let cellSize = geoSize.width / CGFloat(size)
+        GeometryReader { geometry in
+            let size = min(geometry.size.width, geometry.size.height)
+            let spacing = size / CGFloat(gridSize + 1)
 
-            for y in 0..<size {
-                for x in 0..<size {
-                    let idx = y * size + x
-                    if idx < ownership.count {
-                        let val = ownership[idx] // -1.0 to 1.0
-                        let color: Color
-                        if val > 0 {
-                            color = Color.black.opacity(val * 0.8)
-                        } else {
-                            color = Color.white.opacity(-val * 0.8)
+            ZStack {
+                // 1. Ownership Map (Grayscale)
+                if let ownership = ownership {
+                    Canvas { context, geoSize in
+                        let cellSize = geoSize.width / CGFloat(gridSize + 1)
+                        let d = cellSize * 0.5
+                        for y in 0..<gridSize {
+                            for x in 0..<gridSize {
+                                let idx = y * gridSize + x
+                                if idx < ownership.count {
+                                    let val = ownership[idx] // -1.0 to 1.0
+                                    let probBlack = (val + 1.0) / 2.0
+                                    let color = Color(white: 1.0 - probBlack)
+
+                                    let rect = CGRect(
+                                        x: CGFloat(x + 1) * cellSize - d/2,
+                                        y: CGFloat(y + 1) * cellSize - d/2,
+                                        width: d,
+                                        height: d
+                                    )
+                                    context.fill(Path(rect), with: .color(color))
+                                }
+                            }
                         }
+                    }
+                }
 
-                        let rect = CGRect(
-                            x: CGFloat(x) * cellSize,
-                            y: CGFloat(y) * cellSize,
-                            width: cellSize,
-                            height: cellSize
-                        )
-                        context.fill(Path(rect), with: .color(color))
+                // 2. Grid & Star Points
+                BoardGrid(gridSize: gridSize)
+                    .stroke(viewModel.theme.lineColor.opacity(0.4), lineWidth: 0.5)
+
+                StarPoints(gridSize: gridSize)
+                    .fill(viewModel.theme.starPointColor.opacity(0.4))
+
+                // 3. Current Stones
+                ForEach(0..<gridSize, id: \.self) { y in
+                    ForEach(0..<gridSize, id: \.self) { x in
+                        if let color = viewModel.board.getStone(x: UInt32(x), y: UInt32(y)) {
+                            StoneView(
+                                color: color,
+                                theme: viewModel.theme,
+                                size: spacing * 0.85,
+                                moveNumber: nil,
+                                markerType: nil
+                            )
+                            .position(
+                                x: CGFloat(x + 1) * spacing,
+                                y: CGFloat(y + 1) * spacing
+                            )
+                        }
+                    }
+                }
+
+                // 4. PV Sequence
+                if let pv = pv {
+                    let nextColor = viewModel.nextColor
+                    ForEach(Array(pv.enumerated()), id: \.offset) { index, moveStr in
+                        if let pos = viewModel.decodeKataGoMove(moveStr) {
+                            let stoneColor: StoneColor = (index % 2 == 0) ? nextColor : (nextColor == .black ? .white : .black)
+                            StoneView(
+                                color: stoneColor,
+                                theme: viewModel.theme,
+                                size: spacing * 0.85,
+                                moveNumber: index + 1,
+                                markerType: nil,
+                                fontSize: spacing * 0.6 // Larger font ratio for mini board
+                            )
+                            .position(
+                                x: CGFloat(pos.x + 1) * spacing,
+                                y: CGFloat(pos.y + 1) * spacing
+                            )
+                        }
                     }
                 }
             }
+            .frame(width: size, height: size)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
         }
-        .background(Color.gray.opacity(0.2))
     }
 }

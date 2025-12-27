@@ -20,10 +20,10 @@ struct EngineProfile: Identifiable, Codable, Equatable {
 
     static var `default`: EngineProfile {
         EngineProfile(
-            name: "Default KataGo",
+            name: "KataGo",
             path: "/opt/homebrew/bin/katago",
-            model: "",
-            config: "",
+            model: "/opt/homebrew/share/go-engines/kata1-b28c512nbt-s9435149568-d4923088660.bin.gz",
+            config: "/opt/homebrew/share/go-engines/analysis.cfg",
             extraArgs: ""
         )
     }
@@ -31,7 +31,7 @@ struct EngineProfile: Identifiable, Codable, Equatable {
 
 struct AnalysisSettings: Codable, Equatable {
     var maxVisits: Int? = 1000
-    var maxTime: Double? = 10.0
+    var maxTime: Double? = nil
     var iterativeDeepening: Bool = true
     var reportDuringSearchEvery: Double? = 0.5
     var includePolicy: Bool = true
@@ -46,7 +46,7 @@ enum WinRatePerspective: String, Codable, CaseIterable {
 }
 
 struct DisplaySettings: Codable, Equatable {
-    var maxCandidates: Int = 5
+    var maxCandidates: Int = 20
     var showOwnership: Bool = true
     var showWinRateGraph: Bool = true
     var overlayWinRatePerspective: WinRatePerspective = .current

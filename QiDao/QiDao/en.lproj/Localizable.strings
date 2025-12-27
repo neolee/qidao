@@ -90,6 +90,7 @@
 "Ownership Map" = "Ownership Map";
 "Show Ownership Map" = "Show Ownership Map";
 "Show Win Rate Graph" = "Show Win Rate Graph";
+"Waiting for AI..." = "Waiting for AI...";
 
 /* Engine Configuration */
 "Select Profile" = "Select Profile";
@@ -98,6 +99,10 @@
 "Delete Profile" = "Delete Profile";
 "Profile Details" = "Profile Details";
 "New Profile" = "New Profile";
+"Delete Branch" = "Delete Branch";
+"Delete" = "Delete";
+"Delete current move and subsequent branches?" = "Delete current move and subsequent branches?";
+"0-%d" = "0-%d";
 "Default" = "Default";
 "Name" = "Name";
 "Executable Path" = "Executable Path";
@@ -128,4 +133,3 @@
 /* Errors */
 "Failed to decode SGF file" = "Failed to decode SGF file";
 "Error: Config file is required for analysis mode" = "Error: Config file is required for analysis mode";
-

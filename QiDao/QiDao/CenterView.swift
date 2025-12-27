@@ -9,6 +9,7 @@ struct CenterView: View {
     @FocusState private var isJumpFieldFocused: Bool
     @State private var isEditingMoveNumber = false
     @State private var jumpToMoveInput = ""
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -107,7 +108,7 @@ struct CenterView: View {
 
                 ZStack {
                     if isEditingMoveNumber {
-                        TextField("0-\(viewModel.maxMoveCount)", text: $jumpToMoveInput)
+                        TextField(String(format: "0-%d".localized, viewModel.maxMoveCount), text: $jumpToMoveInput)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
                             .multilineTextAlignment(.center)
@@ -178,6 +179,22 @@ struct CenterView: View {
         .onKeyPress(.rightArrow) {
             viewModel.nextVariation()
             return .handled
+        }
+        .onDeleteCommand {
+            if viewModel.moveCount > 0 {
+                showDeleteConfirmation = true
+            }
+        }
+        .alert("Delete Branch".localized, isPresented: $showDeleteConfirmation) {
+            Button("Delete".localized, role: .destructive) {
+                viewModel.deleteCurrentBranch()
+                isBoardFocused = true
+            }
+            Button("Cancel".localized, role: .cancel) {
+                isBoardFocused = true
+            }
+        } message: {
+            Text("Delete current move and subsequent branches?".localized)
         }
     }
 

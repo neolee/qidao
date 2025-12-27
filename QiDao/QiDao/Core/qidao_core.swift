@@ -973,6 +973,8 @@ public protocol GameProtocol: AnyObject, Sendable {
     
     func canGoForward()  -> Bool
     
+    func deleteCurrentBranch()  -> Bool
+    
     func getAnalysisMoves()  -> [[String]]
     
     func getBoard()  -> Board
@@ -1093,6 +1095,14 @@ open func canGoBack() -> Bool  {
 open func canGoForward() -> Bool  {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_can_go_forward(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func deleteCurrentBranch() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_delete_current_branch(
             self.uniffiCloneHandle(),$0
     )
 })
@@ -2601,6 +2611,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_can_go_forward() != 40449) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_delete_current_branch() != 43989) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_get_analysis_moves() != 24472) {

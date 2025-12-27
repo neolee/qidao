@@ -369,6 +369,11 @@ int8_t uniffi_qidao_core_fn_method_game_can_go_back(uint64_t ptr, RustCallStatus
 int8_t uniffi_qidao_core_fn_method_game_can_go_forward(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_DELETE_CURRENT_BRANCH
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_DELETE_CURRENT_BRANCH
+int8_t uniffi_qidao_core_fn_method_game_delete_current_branch(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ANALYSIS_MOVES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ANALYSIS_MOVES
 RustBuffer uniffi_qidao_core_fn_method_game_get_analysis_moves(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -919,6 +924,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_can_go_back(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_FORWARD
 uint16_t uniffi_qidao_core_checksum_method_game_can_go_forward(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_DELETE_CURRENT_BRANCH
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_DELETE_CURRENT_BRANCH
+uint16_t uniffi_qidao_core_checksum_method_game_delete_current_branch(void
     
 );
 #endif

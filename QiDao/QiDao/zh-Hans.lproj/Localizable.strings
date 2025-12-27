@@ -90,6 +90,7 @@
 "Ownership Map" = "形势分布图";
 "Show Ownership Map" = "显示形势分布图 (领地图)";
 "Show Win Rate Graph" = "显示胜率走势图";
+"Waiting for AI..." = "正在等待 AI...";
 
 /* Engine Configuration */
 "Select Profile" = "选择方案";
@@ -98,6 +99,10 @@
 "Delete Profile" = "删除方案";
 "Profile Details" = "方案详情";
 "New Profile" = "新方案";
+"Delete Branch" = "删除分支";
+"Delete" = "删除";
+"Delete current move and subsequent branches?" = "是否删除当前着法及后续的分支？";
+"0-%d" = "0-%d";
 "Default" = "默认";
 "Name" = "名称";
 "Executable Path" = "引擎路径";
@@ -128,4 +133,3 @@
 /* Errors */
 "Failed to decode SGF file" = "无法解码 SGF 文件";
 "Error: Config file is required for analysis mode" = "错误：分析模式需要配置文件";
-

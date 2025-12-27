@@ -815,6 +815,34 @@ impl Game {
         }
     }
 
+    pub fn delete_current_branch(&self) -> bool {
+        let mut state = self.state.lock().unwrap();
+
+        // Cannot delete the root node
+        if state.history.is_empty() {
+            return false;
+        }
+
+        let current_node = state.current_node.clone();
+        let parent_node = state.history.pop().expect("History should not be empty");
+
+        // Remove current_node from parent's children
+        {
+            let mut children = parent_node.children.lock().unwrap();
+            children.retain(|c| !Arc::ptr_eq(c, &current_node));
+        }
+
+        // Move current_node back to parent
+        state.current_node = parent_node;
+
+        // Note: We don't explicitly clear board_cache for the deleted branch
+        // as it's a HashMap and will just keep those entries until the Game is dropped.
+        // In a very large SGF with many deletions, this might be a small leak,
+        // but for now it's safe and simple.
+
+        true
+    }
+
     pub fn place_stone(&self, x: u32, y: u32, color: StoneColor) -> Result<(), SgfError> {
         let mut state = self.state.lock().unwrap();
 

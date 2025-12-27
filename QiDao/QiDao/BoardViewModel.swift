@@ -382,6 +382,13 @@ class BoardViewModel: ObservableObject {
         }
     }
 
+    func deleteCurrentBranch() {
+        if game.deleteCurrentBranch() {
+            SoundManager.shared.play(name: "stone") // Play a sound for feedback
+            syncStateWithGame(rebuildTree: true)
+        }
+    }
+
     // MARK: - AI Analysis
 
     func toggleAnalysis() {

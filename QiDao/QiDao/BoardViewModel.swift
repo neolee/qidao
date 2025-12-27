@@ -637,8 +637,12 @@ class BoardViewModel: ObservableObject {
 
                             // If we reached max visits, we can stop polling for this turn
                             if let maxVisits = analysisSettings.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
+                                try? await engine.terminateAll()
                                 break
                             }
+                        } else {
+                            // If the result is for an old query, don't spin too fast
+                            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
                         }
                     } catch {
                         let errorMsg = "\(error)"

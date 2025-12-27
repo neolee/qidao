@@ -66,6 +66,12 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - **Global Shortcuts**: Keyboard listeners (`.onKeyPress`) are attached to the root `HSplitView` to ensure they capture events regardless of which sub-view is active.
 - **Focus Restoration**: SwiftUI focus can be lost when a focused element (like an inline `TextField`) is removed from the hierarchy. We use `@FocusState` combined with `DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)` to explicitly restore focus to the main container after operations like "Jump to Move" or closing dialogs.
 
+### AI Engine Performance & Stability
+- **Concurrency Model**: Rust core uses independent `Arc<Mutex<Option<...>>>` for `stdin`, `stdout`, and `stderr`. This prevents `get_next_result` (reading) from blocking `analyze` (writing), eliminating deadlocks during high-frequency navigation.
+- **Buffer Management**: The `analyze` method in Rust automatically drains the `stdout` buffer before sending a new query. This prevents "Backlog Spin" where the GUI wastes CPU parsing thousands of obsolete JSON results from previous board states.
+- **Lifecycle Control**: The GUI explicitly sends `terminate_all` when reaching `maxVisits` or switching moves. This forces KataGo to drop pending GPU batches and clear its internal queue immediately.
+- **Logging Optimization**: Communication logs (`>>>`/`<<<`) are truncated to 500 chars in the core and completely skipped (including string formatting/serialization) when `logging_enabled` is false.
+
 ## 8. Immediate TODOs
 1. **UI**: Fix SwiftUI `ProgressView` layout warning in `RightSidebarView`.
 2. **UI**: Move Win Rate bar/graph to `LeftSidebarView`.
@@ -109,4 +115,5 @@ To avoid concurrency warnings (e.g., "call to main actor-isolated static method 
 - [x] **Bug Fix: AI Engine Stability**: Resolved KataGo startup issues (missing model path, log directory permissions) and coordinate format errors (SGF vs GTP). Fixed SwiftUI `ProgressView` layout crashes by using custom drawing.
 - [x] **Bug Fix: Tokio Runtime Integration**: Resolved "no reactor running" and "future not Send" errors by implementing a global Tokio runtime and using `spawn` to ensure async operations run in the correct context.
 - [x] **Phase 6: AI UI Refinement & Visualization**: Refined AI move markers with transparency and rank styling. Implemented dynamic Win Rate Graph with history persistence. Added PV preview on hover and stabilized sidebar layouts to prevent flickering. Optimized variation marker visibility.
+- [x] **Phase 7: Core Optimization & Evaluation Board**: Refactored Rust engine locks for zero-latency navigation. Implemented "Evaluation Board" (mini-board) with grayscale ownership map and PV sequence. Added centralized logging control and buffer draining to prevent CPU spikes.
 

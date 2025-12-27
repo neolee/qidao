@@ -33,7 +33,7 @@ struct AnalysisSettings: Codable, Equatable {
     var maxVisits: Int? = 1000
     var maxTime: Double? = nil
     var iterativeDeepening: Bool = true
-    var reportDuringSearchEvery: Double? = 0.5
+    var reportDuringSearchEvery: Double? = 1.0
     var includePolicy: Bool = true
     var advancedParams: [String: String] = [:]
 }

@@ -1001,8 +1001,8 @@ impl AnalysisEngine {
     }
 
     async fn add_internal_log(&self, msg: String) {
-        // If it's a communication log, check if logging is enabled
-        if msg.starts_with(">>>") || msg.starts_with("<<<") {
+        let is_comm = msg.starts_with(">>>") || msg.starts_with("<<<");
+        if is_comm {
             let enabled = self.logging_enabled.lock().await;
             if !*enabled {
                 return;
@@ -1050,9 +1050,34 @@ impl AnalysisEngine {
     }
 
     pub async fn analyze(&self, query_json: String) -> Result<(), SgfError> {
-        self.add_internal_log(format!(">>> SEND QUERY: {}", query_json)).await;
+        let log_msg = if query_json.len() > 500 {
+            format!(">>> SEND QUERY (truncated): {}...", &query_json[..500])
+        } else {
+            format!(">>> SEND QUERY: {}", query_json)
+        };
+        self.add_internal_log(log_msg).await;
+
         let stdin_mutex = Arc::clone(&self.stdin);
+        let stdout_mutex = Arc::clone(&self.stdout);
+
         get_runtime().spawn(async move {
+            // 1. Clear any pending results from stdout before sending a new query
+            {
+                let mut lock = stdout_mutex.lock().await;
+                if let Some(stdout) = lock.as_mut() {
+                    use tokio::io::AsyncBufReadExt;
+                    // Drain the buffer
+                    loop {
+                        let mut line = String::new();
+                        match tokio::time::timeout(std::time::Duration::from_millis(1), stdout.read_line(&mut line)).await {
+                            Ok(Ok(n)) if n > 0 => continue,
+                            _ => break,
+                        }
+                    }
+                }
+            }
+
+            // 2. Send the query
             let mut lock = stdin_mutex.lock().await;
             if let Some(stdin) = lock.as_mut() {
                 use tokio::io::AsyncWriteExt;
@@ -1079,7 +1104,9 @@ impl AnalysisEngine {
 
     pub async fn get_next_result(&self) -> Result<AnalysisResult, SgfError> {
         let stdout_mutex = Arc::clone(&self.stdout);
-        let internal_logs = Arc::clone(&self.internal_logs);
+        let internal_logs_mutex = Arc::clone(&self.internal_logs);
+        let logging_enabled_mutex = Arc::clone(&self.logging_enabled);
+
         get_runtime().spawn(async move {
             let mut lock = stdout_mutex.lock().await;
             let stdout = lock.as_mut().ok_or_else(|| SgfError::ParseError { message: "Engine not started".into() })?;
@@ -1101,18 +1128,24 @@ impl AnalysisEngine {
             let val: serde_json::Value = serde_json::from_str(&line)
                 .map_err(|e| SgfError::ParseError { message: e.to_string() })?;
 
-            // Log the response (truncated if too long)
-            let response_str = val.to_string();
-            let log_str = if response_str.len() > 500 {
-                format!("<<< RECV RESULT (truncated): {}...", &response_str[..500])
-            } else {
-                format!("<<< RECV RESULT: {}", response_str)
+            // Log the response if enabled
+            let logging_enabled = {
+                let lock = logging_enabled_mutex.lock().await;
+                *lock
             };
 
-            {
-                let mut logs = internal_logs.lock().await;
+            if logging_enabled {
+                let log_str = if line.len() > 500 {
+                    format!("<<< RECV RESULT (truncated): {}...", &line[..500])
+                } else {
+                    format!("<<< RECV RESULT: {}", line.trim())
+                };
+
+                let mut logs = internal_logs_mutex.lock().await;
                 logs.push(log_str);
-                if logs.len() > 100 { logs.remove(0); }
+                if logs.len() > 100 {
+                    logs.remove(0);
+                }
             }
 
             // Check for errors in the response

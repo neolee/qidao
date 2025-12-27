@@ -147,6 +147,10 @@ struct EvaluationBoardView: View {
                                 let idx = y * gridSize + x
                                 if idx < ownership.count {
                                     let val = ownership[idx] // -1.0 to 1.0
+
+                                    // Skip drawing if the value is near zero (neutral or no data)
+                                    if abs(val) < 0.01 { continue }
+
                                     let probBlack = (val + 1.0) / 2.0
                                     let color = Color(white: 1.0 - probBlack)
 

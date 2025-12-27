@@ -162,16 +162,16 @@ struct VariationMarker: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(Color.gray.opacity(0.5))
-                .frame(width: size * 0.5, height: size * 0.5)
+                .fill(Color.black.opacity(0.4))
+                .frame(width: size * 0.6, height: size * 0.6)
                 .overlay(
                     Circle()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
                 )
-                .shadow(color: .black.opacity(0.1), radius: 1)
+                .shadow(color: .black.opacity(0.2), radius: 2)
 
             Text(label)
-                .font(.system(size: size * 0.3, weight: .bold))
+                .font(.system(size: size * 0.35, weight: .black))
                 .foregroundColor(.white)
         }
     }

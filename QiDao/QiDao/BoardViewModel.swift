@@ -129,8 +129,8 @@ class BoardViewModel: ObservableObject {
     @Published var analysisResult: AnalysisResult? = nil
     @Published var logEntries: [LogEntry] = []
     @Published var showAllLogs: Bool = false
-    @Published var winRateHistory: [Double] = []
-    @Published var scoreLeadHistory: [Double] = []
+    @Published var winRateHistory: [Int: Double] = [:]
+    @Published var scoreLeadHistory: [Int: Double] = [:]
     @Published var hoveredVariation: [String]? = nil
     @Published var config = ConfigManager.shared.config
 
@@ -491,6 +491,8 @@ class BoardViewModel: ObservableObject {
         isAnalyzing = false
         isEngineReady = false
         analysisResult = nil
+        winRateHistory = [:]
+        scoreLeadHistory = [:]
         analysisTask?.cancel()
         analysisTask = nil
         logTask?.cancel()
@@ -609,17 +611,8 @@ class BoardViewModel: ObservableObject {
 
                             // Update history for the current turn
                             let turn = self.moveCount
-                            if self.winRateHistory.count > turn {
-                                self.winRateHistory[turn] = normalizedWinRate
-                                self.scoreLeadHistory[turn] = normalizedScoreLead
-                            } else {
-                                while self.winRateHistory.count < turn {
-                                    self.winRateHistory.append(0.5)
-                                    self.scoreLeadHistory.append(0.0)
-                                }
-                                self.winRateHistory.append(normalizedWinRate)
-                                self.scoreLeadHistory.append(normalizedScoreLead)
-                            }
+                            self.winRateHistory[turn] = normalizedWinRate
+                            self.scoreLeadHistory[turn] = normalizedScoreLead
 
                             // If we reached max visits, we can stop polling for this turn
                             if let maxVisits = analysisSettings.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
@@ -694,7 +687,6 @@ class BoardViewModel: ObservableObject {
     private func syncStateWithGame(rebuildTree: Bool = false) {
         // Ensure updates happen on main thread and outside immediate view update cycle
         DispatchQueue.main.async {
-            self.analysisResult = nil // Clear AI overlay immediately on move
             self.board = self.game.getBoard()
             self.nextColor = self.game.getNextColor()
             self.moveCount = Int(self.game.getMoveCount())
@@ -779,6 +771,9 @@ class BoardViewModel: ObservableObject {
 
     func resetBoard() {
         self.game = Game(size: 19)
+        self.winRateHistory = [:]
+        self.scoreLeadHistory = [:]
+        self.analysisResult = nil
         syncStateWithGame(rebuildTree: true)
         self.message = "Board Reset".localized
     }
@@ -818,6 +813,9 @@ class BoardViewModel: ObservableObject {
             }
 
             self.game = try Game.fromSgf(sgfContent: sgfContent)
+            self.winRateHistory = [:]
+            self.scoreLeadHistory = [:]
+            self.analysisResult = nil
             syncStateWithGame(rebuildTree: true)
             self.message = "\("Loaded".localized): \(url.lastPathComponent)"
         } catch {

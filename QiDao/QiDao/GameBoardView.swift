@@ -51,19 +51,21 @@ struct GameBoardView: View {
                 }
 
                 // 6. Variation Markers
-                ForEach(viewModel.variations, id: \.id) { variation in
-                    if let vx = variation.x, let vy = variation.y {
-                        VariationMarker(
-                            label: variation.label,
-                            theme: viewModel.theme,
-                            size: spacing * 0.8
-                        )
-                        .position(
-                            x: CGFloat(vx + 1) * spacing,
-                            y: CGFloat(vy + 1) * spacing
-                        )
-                        .onTapGesture {
-                            viewModel.selectVariation(variation.id)
+                if viewModel.variations.count > 1 {
+                    ForEach(viewModel.variations, id: \.id) { variation in
+                        if let vx = variation.x, let vy = variation.y {
+                            VariationMarker(
+                                label: variation.label,
+                                theme: viewModel.theme,
+                                size: spacing * 0.8
+                            )
+                            .position(
+                                x: CGFloat(vx + 1) * spacing,
+                                y: CGFloat(vy + 1) * spacing
+                            )
+                            .onTapGesture {
+                                viewModel.selectVariation(variation.id)
+                            }
                         }
                     }
                 }
@@ -136,16 +138,18 @@ struct GameBoardView: View {
 
                 // 9. Hovered Variation Preview
                 if let pv = viewModel.hoveredVariation {
+                    let nextColor = viewModel.nextColor
                     ForEach(Array(pv.enumerated()), id: \.offset) { index, moveStr in
                         if let pos = viewModel.decodeKataGoMove(moveStr) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.blue.opacity(0.3))
-                                Text("\(index + 1)")
-                                    .font(.system(size: spacing * 0.4, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-                            .frame(width: spacing * 0.8, height: spacing * 0.8)
+                            let stoneColor: StoneColor = (index % 2 == 0) ? nextColor : (nextColor == .black ? .white : .black)
+                            StoneView(
+                                color: stoneColor,
+                                theme: viewModel.theme,
+                                size: spacing * 0.8,
+                                moveNumber: index + 1,
+                                markerType: nil
+                            )
+                            .opacity(0.6)
                             .position(
                                 x: CGFloat(pos.x + 1) * spacing,
                                 y: CGFloat(pos.y + 1) * spacing
@@ -337,39 +341,43 @@ struct AIMoveMarker: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(color.opacity(0.8))
+                .fill(color.opacity(0.7))
                 .frame(width: size, height: size)
-                .shadow(radius: 2)
+                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
 
-            VStack(spacing: 0.2) {
-                // 1. Visits (Smaller, Not Bold)
+            VStack(spacing: -0.2) {
+                // 1. Visits (Top, Small)
                 Text("\(visits)")
-                    .font(.system(size: size * 0.25, weight: .regular))
-                    .foregroundColor(.white.opacity(0.9))
+                    .font(.system(size: size * 0.22, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
 
-                // 2. Win Rate (Largest, Bold)
+                // 2. Win Rate (Center, Large)
                 HStack(alignment: .firstTextBaseline, spacing: 0) {
                     Text(String(format: "%.1f", winRate * 100))
-                        .font(.system(size: size * 0.30, weight: .bold))
+                        .font(.system(size: size * 0.32, weight: .bold))
                     Text("%")
-                        .font(.system(size: size * 0.15, weight: .bold))
+                        .font(.system(size: size * 0.16, weight: .bold))
                 }
                 .foregroundColor(.white)
+                .padding(.vertical, -2)
 
-                // 3. Score Lead (Smaller, Not Bold)
+                // 3. Score Lead (Bottom, Small)
                 Text(String(format: "%+.1f", scoreLead))
-                    .font(.system(size: size * 0.2, weight: .regular))
-                    .foregroundColor(.white.opacity(0.9))
+                    .font(.system(size: size * 0.22, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
             }
 
             // Rank number at top-right
             if rank <= 9 {
                 Text("\(rank)")
-                    .font(.system(size: size * 0.20, weight: .black))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 2)
-                    .padding(.vertical, 2)
-                    .background(RoundedRectangle(cornerRadius: 2).fill(Color(white: 0.8).opacity(0.7)))
+                    .font(.system(size: size * 0.22, weight: .black))
+                    .foregroundColor(.white)
+                    .frame(width: size * 0.3, height: size * 0.3)
+                    .background(
+                        Circle()
+                            .fill(Color.black.opacity(0.6))
+                            .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 0.5))
+                    )
                     .offset(x: size * 0.4, y: -size * 0.4)
             }
         }

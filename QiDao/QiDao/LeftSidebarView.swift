@@ -106,12 +106,14 @@ struct LeftSidebarView: View {
 
                     // Win Rate Graph
                     if viewModel.config.display.showWinRateGraph {
-                        if !viewModel.winRateHistory.isEmpty {
-                            WinRateGraph(history: viewModel.winRateHistory, currentTurn: viewModel.moveCount)
+                        if viewModel.isAnalyzing {
+                            let maxCount = viewModel.maxMoveCount
+                            let totalMoves = maxCount <= 100 ? 100 : ((maxCount + 49) / 50) * 50
+                            WinRateGraph(history: viewModel.winRateHistory, currentTurn: viewModel.moveCount, totalMoves: totalMoves)
                                 .frame(height: 80)
                                 .padding(.top, 5)
                         } else {
-                            Text("No analysis data".localized)
+                            Text("AI Analysis Inactive".localized)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .frame(height: 80)
@@ -225,13 +227,14 @@ struct InfoRow: View {
 }
 
 struct WinRateGraph: View {
-    let history: [Double]
+    let history: [Int: Double]
     let currentTurn: Int
+    let totalMoves: Int
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // Background grid
+                // Background grid (Horizontal center line)
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: geo.size.height / 2))
                     path.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height / 2))
@@ -240,30 +243,35 @@ struct WinRateGraph: View {
 
                 // Win rate line
                 Path { path in
-                    guard history.count > 1 else { return }
-                    let step = geo.size.width / CGFloat(max(history.count - 1, 1))
+                    let sortedKeys = history.keys.sorted()
+                    guard !sortedKeys.isEmpty else { return }
+                    
+                    let step = geo.size.width / CGFloat(max(totalMoves, 1))
 
-                    for (i, rate) in history.enumerated() {
-                        let x = CGFloat(i) * step
-                        let y = geo.size.height * CGFloat(1.0 - rate)
-                        if i == 0 {
-                            path.move(to: CGPoint(x: x, y: y))
-                        } else {
-                            path.addLine(to: CGPoint(x: x, y: y))
+                    var first = true
+                    for turn in sortedKeys {
+                        if let rate = history[turn] {
+                            let x = CGFloat(turn) * step
+                            let y = geo.size.height * CGFloat(1.0 - rate)
+                            if first {
+                                path.move(to: CGPoint(x: x, y: y))
+                                first = false
+                            } else {
+                                path.addLine(to: CGPoint(x: x, y: y))
+                            }
                         }
                     }
                 }
-                .stroke(Color.blue, lineWidth: 2)
+                .stroke(Color.blue, lineWidth: 1.5)
 
                 // Current turn indicator
-                if currentTurn < history.count {
-                    let step = geo.size.width / CGFloat(max(history.count - 1, 1))
-                    let x = CGFloat(currentTurn) * step
-                    Rectangle()
-                        .fill(Color.red)
-                        .frame(width: 1)
-                        .offset(x: x - geo.size.width / 2)
-                }
+                let step = geo.size.width / CGFloat(max(totalMoves, 1))
+                let currentX = CGFloat(currentTurn) * step
+                
+                Rectangle()
+                    .fill(Color.red.opacity(0.5))
+                    .frame(width: 1)
+                    .position(x: currentX, y: geo.size.height / 2)
             }
             .background(Color.black.opacity(0.05))
             .cornerRadius(4)

@@ -302,6 +302,11 @@ uint64_t uniffi_qidao_core_fn_method_analysisengine_start(void*_Nonnull ptr, Rus
 uint64_t uniffi_qidao_core_fn_method_analysisengine_stop(void*_Nonnull ptr
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE
+uint64_t uniffi_qidao_core_fn_method_analysisengine_terminate(void*_Nonnull ptr, RustBuffer id
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE_ALL
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_ANALYSISENGINE_TERMINATE_ALL
 uint64_t uniffi_qidao_core_fn_method_analysisengine_terminate_all(void*_Nonnull ptr
@@ -410,6 +415,11 @@ RustBuffer uniffi_qidao_core_fn_method_game_get_initial_stones(void*_Nonnull ptr
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_LAST_MOVE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_LAST_MOVE
 RustBuffer uniffi_qidao_core_fn_method_game_get_last_move(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAIN_LINE_MOVES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAIN_LINE_MOVES
+RustBuffer uniffi_qidao_core_fn_method_game_get_main_line_moves(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_MAX_MOVE_COUNT
@@ -892,6 +902,12 @@ uint16_t uniffi_qidao_core_checksum_method_analysisengine_stop(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_TERMINATE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_TERMINATE
+uint16_t uniffi_qidao_core_checksum_method_analysisengine_terminate(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_TERMINATE_ALL
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_ANALYSISENGINE_TERMINATE_ALL
 uint16_t uniffi_qidao_core_checksum_method_analysisengine_terminate_all(void
@@ -979,6 +995,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_initial_stones(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_LAST_MOVE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_LAST_MOVE
 uint16_t uniffi_qidao_core_checksum_method_game_get_last_move(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_MAIN_LINE_MOVES
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_MAIN_LINE_MOVES
+uint16_t uniffi_qidao_core_checksum_method_game_get_main_line_moves(void
     
 );
 #endif

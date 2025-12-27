@@ -755,6 +755,32 @@ impl Game {
         stones
     }
 
+    pub fn get_main_line_moves(&self) -> Vec<Vec<String>> {
+        let state = self.state.lock().unwrap();
+        let mut moves = Vec::new();
+        let mut current = state.root.clone();
+        let size = state.size;
+
+        loop {
+            let children = current.get_children();
+            if children.is_empty() {
+                break;
+            }
+            // Always follow the first child for the main line
+            let next = children[0].clone();
+            let props = next.get_properties();
+            if let Some(move_prop) = props.iter().find(|p| p.identifier == "B" || p.identifier == "W") {
+                if let Some(coords) = move_prop.values.first() {
+                    let color = move_prop.identifier.clone();
+                    let gtp_move = sgf_to_gtp(coords, size);
+                    moves.push(vec![color, gtp_move]);
+                }
+            }
+            current = next;
+        }
+        moves
+    }
+
     pub fn can_go_back(&self) -> bool {
         !self.state.lock().unwrap().history.is_empty()
     }
@@ -966,6 +992,8 @@ pub struct AnalysisRootInfo {
 pub struct AnalysisResult {
     pub id: String,
     pub turn_number: u32,
+    pub is_during_search: bool,
+    pub no_results: bool,
     pub root_info: AnalysisRootInfo,
     pub move_infos: Vec<AnalysisMoveInfo>,
     pub ownership: Option<Vec<f64>>,
@@ -1102,6 +1130,16 @@ impl AnalysisEngine {
         self.analyze(query.to_string()).await
     }
 
+    pub async fn terminate(&self, id: String) -> Result<(), SgfError> {
+        self.add_internal_log(format!(">>> SEND TERMINATE id={}", id)).await;
+        let query = serde_json::json!({
+            "id": format!("terminate-{}", id),
+            "action": "terminate",
+            "terminateId": id
+        });
+        self.analyze(query.to_string()).await
+    }
+
     pub async fn get_next_result(&self) -> Result<AnalysisResult, SgfError> {
         let stdout_mutex = Arc::clone(&self.stdout);
         let internal_logs_mutex = Arc::clone(&self.internal_logs);
@@ -1156,6 +1194,8 @@ impl AnalysisEngine {
             // Parse the complex KataGo JSON into our simpler Record
             let id = val["id"].as_str().unwrap_or("").to_string();
             let turn_number = val["turnNumber"].as_u64().unwrap_or(0) as u32;
+            let is_during_search = val["isDuringSearch"].as_bool().unwrap_or(false);
+            let no_results = val["noResults"].as_bool().unwrap_or(false);
 
             let root_info_val = &val["rootInfo"];
             let root_info = AnalysisRootInfo {
@@ -1197,6 +1237,8 @@ impl AnalysisEngine {
             Ok(AnalysisResult {
                 id,
                 turn_number,
+                is_during_search,
+                no_results,
                 root_info,
                 move_infos,
                 ownership,

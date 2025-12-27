@@ -145,9 +145,14 @@ class BoardViewModel: ObservableObject {
     @Published var scoreLeadHistory: [Int: Double] = [:]
     @Published var hoveredMoveStr: String? = nil
     @Published var config = ConfigManager.shared.config
+    @Published var isFullGameScanning: Bool = false
+    private var fullGameScanTask: Task<Void, Never>? = nil
+    private var mainLineColors: [Int: String] = [:]
+    private var currentAnalysisId: String? = nil
 
     private var analysisEngine: AnalysisEngine? = nil
     private var analysisTask: Task<Void, Never>? = nil
+    private var resultTask: Task<Void, Never>? = nil
     private var logTask: Task<Void, Never>? = nil
     private var isEngineReady: Bool = false
 
@@ -424,7 +429,13 @@ class BoardViewModel: ObservableObject {
                 self.analysisEngine = engine
                 // engineMessage will be updated via logs
                 self.startLogPolling()
+                self.startResultPolling()
                 updateAnalysis()
+
+                // If we have a game loaded, start a full game scan in the background
+                if self.game.getMaxMoveCount() > 0 {
+                    self.startFullGameAnalysis()
+                }
             } catch {
                 self.isAnalyzing = false
                 self.engineMessage = "AI Error: \(error)".localized
@@ -447,20 +458,20 @@ class BoardViewModel: ObservableObject {
 
         let trimmed = displayMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return }
-        
+
         // Communication logs start with >>> or <<<
         let isComm = trimmed.hasPrefix(">>>") || trimmed.hasPrefix("<<<")
-        
+
         // If communication logging is disabled, skip adding to logEntries
         if isComm && !showAllLogs { return }
 
         // Improved error detection for engine logs
         let lowerTrimmed = trimmed.lowercased()
-        let containsErrorMarker = lowerTrimmed.contains("[error]") || 
-                                 lowerTrimmed.contains("fatal error") || 
+        let containsErrorMarker = lowerTrimmed.contains("[error]") ||
+                                 lowerTrimmed.contains("fatal error") ||
                                  lowerTrimmed.hasPrefix("error:") ||
                                  lowerTrimmed.contains(" error: ")
-        
+
         // If it's from stderr, we only treat it as an error if it has a strong error marker.
         let finalIsError = isError || containsErrorMarker
 
@@ -504,6 +515,114 @@ class BoardViewModel: ObservableObject {
         }
     }
 
+    private func startResultPolling() {
+        resultTask?.cancel()
+        resultTask = Task {
+            while !Task.isCancelled {
+                guard let engine = analysisEngine else {
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    continue
+                }
+
+                do {
+                    let result = try await engine.getNextResult()
+                    if Task.isCancelled { break }
+
+                    self.handleAnalysisResult(result)
+                } catch {
+                    // Timeout or error, just continue
+                    try? await Task.sleep(nanoseconds: 10_000_000)
+                }
+            }
+        }
+    }
+
+    private func handleAnalysisResult(_ result: AnalysisResult) {
+        if result.noResults {
+            return
+        }
+
+        if result.id == "qidao-\(currentNodeId)" {
+            let analyzingWhiteToMove = nextColor == .white
+
+            // Normalize to Black's perspective for history and sidebar displays
+            // We force the engine to return Black's perspective via overrideSettings.
+            let normalizedWinRate = WinRateConverter.convertWinRate(
+                result.rootInfo.winrate,
+                reportedAs: .black,
+                target: .black,
+                isWhiteTurn: analyzingWhiteToMove
+            )
+            let normalizedScoreLead = WinRateConverter.convertScoreLead(
+                result.rootInfo.scoreLead,
+                reportedAs: .black,
+                target: .black,
+                isWhiteTurn: analyzingWhiteToMove
+            )
+
+            let normalizedResult = AnalysisResult(
+                id: result.id,
+                turnNumber: result.turnNumber,
+                isDuringSearch: result.isDuringSearch,
+                noResults: result.noResults,
+                rootInfo: AnalysisRootInfo(
+                    winrate: normalizedWinRate,
+                    scoreLead: normalizedScoreLead,
+                    visits: result.rootInfo.visits
+                ),
+                moveInfos: result.moveInfos,
+                ownership: result.ownership
+            )
+
+            self.analysisResult = normalizedResult
+
+            // Update history for the current turn
+            let turn = self.moveCount
+            self.winRateHistory[turn] = normalizedWinRate
+            self.scoreLeadHistory[turn] = normalizedScoreLead
+
+            // If we reached max visits, we can stop polling for this turn
+            if let maxVisits = config.analysis.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
+                Task {
+                    try? await analysisEngine?.terminate(id: result.id)
+                }
+            }
+        } else if result.id == "full-game-scan" {
+            // Background scan results
+            // Only update history if it's a final result for that turn (not during search)
+            if !result.isDuringSearch {
+                let turn = Int(result.turnNumber)
+
+                // Use mainLineColors to determine if it's White's turn at this turn number
+                let isWhiteAtTurn: Bool
+                if turn == 0 {
+                    isWhiteAtTurn = false // Initial position, Black to move
+                } else {
+                    let lastMoveColor = self.mainLineColors[turn]
+                    isWhiteAtTurn = (lastMoveColor == "B")
+                }
+
+                let normalizedWinRate = WinRateConverter.convertWinRate(
+                    result.rootInfo.winrate,
+                    reportedAs: .black,
+                    target: .black,
+                    isWhiteTurn: isWhiteAtTurn
+                )
+                let normalizedScoreLead = WinRateConverter.convertScoreLead(
+                    result.rootInfo.scoreLead,
+                    reportedAs: .black,
+                    target: .black,
+                    isWhiteTurn: isWhiteAtTurn
+                )
+
+                self.winRateHistory[turn] = normalizedWinRate
+                self.scoreLeadHistory[turn] = normalizedScoreLead
+            }
+        } else if result.id.hasPrefix("terminate-") {
+            // Ignore termination acknowledgments
+        }
+    }
+
     func stopAnalysis() {
         isAnalyzing = false
         isEngineReady = false
@@ -512,6 +631,10 @@ class BoardViewModel: ObservableObject {
         scoreLeadHistory = [:]
         analysisTask?.cancel()
         analysisTask = nil
+        fullGameScanTask?.cancel()
+        fullGameScanTask = nil
+        resultTask?.cancel()
+        resultTask = nil
         logTask?.cancel()
         logTask = nil
         if let engine = analysisEngine {
@@ -540,18 +663,22 @@ class BoardViewModel: ObservableObject {
         let analysisSettings = config.analysis
         let displaySettings = config.display
         let metadataSnapshot = metadata
-        let analyzingWhiteToMove = nextColor == .white
 
         analysisTask = Task {
             do {
                 // Debounce: wait for 0.5 seconds before starting analysis (reduced from 1s)
                 try await Task.sleep(nanoseconds: 500_000_000)
 
-                // Terminate any previous queries to free up engine resources
-                try? await engine.terminateAll()
+                // Terminate previous move analysis to free up engine resources
+                if let oldId = self.currentAnalysisId {
+                    try? await engine.terminate(id: oldId)
+                }
+
+                let newId = "qidao-\(currentNodeId)"
+                self.currentAnalysisId = newId
 
                 var query: [String: Any] = [
-                    "id": "qidao-\(currentNodeId)",
+                    "id": newId,
                     "moves": [] as [Any],
                     "initialStones": initialStones,
                     "initialPlayer": nextPlayer,
@@ -560,6 +687,7 @@ class BoardViewModel: ObservableObject {
                     "boardXSize": metadataSnapshot.size,
                     "boardYSize": metadataSnapshot.size,
                     "analyzeTurns": [0],
+                    "priority": 10, // High priority for current move
                     "includeOwnership": displaySettings.showOwnership,
                     "includePolicy": analysisSettings.includePolicy
                 ]
@@ -572,7 +700,9 @@ class BoardViewModel: ObservableObject {
                     query["maxVisits"] = maxVisits
                 }
 
-                var overrideSettings: [String: Any] = [:]
+                var overrideSettings: [String: Any] = [
+                    "reportAnalysisWinratesAs": "BLACK"
+                ]
                 if let maxTime = analysisSettings.maxTime {
                     overrideSettings["maxTime"] = maxTime
                 }
@@ -596,65 +726,6 @@ class BoardViewModel: ObservableObject {
                 let jsonString = String(data: jsonData, encoding: .utf8)!
 
                 try await engine.analyze(queryJson: jsonString)
-
-                // Continuous update loop
-                while !Task.isCancelled {
-                    do {
-                        let result = try await engine.getNextResult()
-                        if !Task.isCancelled && result.id == "qidao-\(currentNodeId)" {
-                            // Normalize to Black's perspective for history and sidebar displays
-                            let normalizedWinRate = WinRateConverter.convertWinRate(
-                                result.rootInfo.winrate,
-                                reportedAs: .black,
-                                target: .black,
-                                isWhiteTurn: analyzingWhiteToMove
-                            )
-                            let normalizedScoreLead = WinRateConverter.convertScoreLead(
-                                result.rootInfo.scoreLead,
-                                reportedAs: .black,
-                                target: .black,
-                                isWhiteTurn: analyzingWhiteToMove
-                            )
-
-                            let normalizedResult = AnalysisResult(
-                                id: result.id,
-                                turnNumber: result.turnNumber,
-                                rootInfo: AnalysisRootInfo(
-                                    winrate: normalizedWinRate,
-                                    scoreLead: normalizedScoreLead,
-                                    visits: result.rootInfo.visits
-                                ),
-                                moveInfos: result.moveInfos,
-                                ownership: result.ownership
-                            )
-
-                            self.analysisResult = normalizedResult
-
-                            // Update history for the current turn
-                            let turn = self.moveCount
-                            self.winRateHistory[turn] = normalizedWinRate
-                            self.scoreLeadHistory[turn] = normalizedScoreLead
-
-                            // If we reached max visits, we can stop polling for this turn
-                            if let maxVisits = analysisSettings.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
-                                try? await engine.terminateAll()
-                                break
-                            }
-                        } else {
-                            // If the result is for an old query, don't spin too fast
-                            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-                        }
-                    } catch {
-                        let errorMsg = "\(error)"
-                        if !errorMsg.contains("Timeout") {
-                            self.addLog("[ERROR] \(errorMsg)", isError: true)
-                        }
-                        
-                        // If no result yet or timeout, wait a bit
-                        if Task.isCancelled { break }
-                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
-                    }
-                }
             } catch is CancellationError {
                 // Task was cancelled, ignore
             } catch {
@@ -795,6 +866,8 @@ class BoardViewModel: ObservableObject {
     }
 
     func resetBoard() {
+        fullGameScanTask?.cancel()
+        fullGameScanTask = nil
         self.game = Game(size: 19)
         self.winRateHistory = [:]
         self.scoreLeadHistory = [:]
@@ -841,10 +914,96 @@ class BoardViewModel: ObservableObject {
             self.winRateHistory = [:]
             self.scoreLeadHistory = [:]
             self.analysisResult = nil
+
+            // Update main line colors for win rate normalization
+            let mainLine = game.getMainLineMoves()
+            self.mainLineColors = [:]
+            for (i, m) in mainLine.enumerated() {
+                if m.count >= 1 {
+                    self.mainLineColors[i + 1] = m[0] // 1-indexed turn number
+                }
+            }
+
             syncStateWithGame(rebuildTree: true)
             self.message = "\("Loaded".localized): \(url.lastPathComponent)"
+
+            // Start background fast analysis for the whole game if AI is active
+            if isAnalyzing {
+                self.startFullGameAnalysis()
+            }
         } catch {
             self.message = "\("Load Failed".localized): \(error.localizedDescription)"
+        }
+    }
+
+    private func startFullGameAnalysis() {
+        guard isAnalyzing, let engine = analysisEngine else { return }
+
+        let mainLineMoves = game.getMainLineMoves()
+        let initialStones = game.getInitialStones()
+        if mainLineMoves.isEmpty && initialStones.isEmpty { return }
+
+        // Update main line colors for win rate normalization
+        self.mainLineColors = [:]
+        for (i, m) in mainLineMoves.enumerated() {
+            if m.count >= 1 {
+                self.mainLineColors[i + 1] = m[0] // 1-indexed turn number
+            }
+        }
+
+        let metadataSnapshot = metadata
+        let initialPlayer = "B"
+
+        fullGameScanTask?.cancel()
+        isFullGameScanning = true
+
+        fullGameScanTask = Task {
+            do {
+                // Terminate any previous background scan on the engine side
+                try? await engine.terminate(id: "full-game-scan")
+
+                // To avoid blocking the main analysis, we analyze in small batches
+                // and use a lower priority.
+                let totalTurns = mainLineMoves.count
+                let batchSize = 10 // Increased batch size for faster throughput
+
+                for startTurn in stride(from: 0, through: totalTurns, by: batchSize) {
+                    if Task.isCancelled { break }
+
+                    let endTurn = min(startTurn + batchSize - 1, totalTurns)
+                    let analyzeTurns = Array(startTurn...endTurn)
+
+                    let query: [String: Any] = [
+                        "id": "full-game-scan",
+                        "initialStones": initialStones,
+                        "moves": mainLineMoves,
+                        "initialPlayer": initialPlayer,
+                        "rules": "chinese",
+                        "komi": metadataSnapshot.komi,
+                        "boardXSize": metadataSnapshot.size,
+                        "boardYSize": metadataSnapshot.size,
+                        "analyzeTurns": analyzeTurns,
+                        "maxVisits": 40, // Reduced visits for much faster rough scan
+                        "priority": -10, // Low priority for background scan
+                        "includeOwnership": false,
+                        "includePolicy": false,
+                        "overrideSettings": [
+                            "reportAnalysisWinratesAs": "BLACK"
+                        ]
+                    ]
+
+                    let jsonData = try JSONSerialization.data(withJSONObject: query)
+                    let jsonString = String(data: jsonData, encoding: .utf8)!
+
+                    try await engine.analyze(queryJson: jsonString)
+
+                    // Wait a bit between batches to let the engine breathe
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                }
+            } catch {
+                print("Full game analysis failed: \(error)")
+            }
+            isFullGameScanning = false
         }
     }
 

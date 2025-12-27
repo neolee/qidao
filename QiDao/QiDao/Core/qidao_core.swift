@@ -507,6 +507,8 @@ public protocol AnalysisEngineProtocol: AnyObject {
 
     func stop() async throws
 
+    func terminate(id: String) async throws
+
     func terminateAll() async throws
 }
 
@@ -672,6 +674,23 @@ open class AnalysisEngine:
                 rustFutureFunc: {
                     uniffi_qidao_core_fn_method_analysisengine_stop(
                         self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_qidao_core_rust_future_poll_void,
+                completeFunc: ffi_qidao_core_rust_future_complete_void,
+                freeFunc: ffi_qidao_core_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeSgfError.lift
+            )
+    }
+
+    open func terminate(id: String) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_qidao_core_fn_method_analysisengine_terminate(
+                        self.uniffiClonePointer(),
+                        FfiConverterString.lower(id)
                     )
                 },
                 pollFunc: ffi_qidao_core_rust_future_poll_void,
@@ -926,6 +945,8 @@ public protocol GameProtocol: AnyObject {
 
     func getLastMove() -> SgfProperty?
 
+    func getMainLineMoves() -> [[String]]
+
     func getMaxMoveCount() -> UInt32
 
     func getMetadata() -> GameMetadata
@@ -1075,6 +1096,12 @@ open class Game:
     open func getLastMove() -> SgfProperty? {
         return try! FfiConverterOptionTypeSgfProperty.lift(try! rustCall {
             uniffi_qidao_core_fn_method_game_get_last_move(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    open func getMainLineMoves() -> [[String]] {
+        return try! FfiConverterSequenceSequenceString.lift(try! rustCall {
+            uniffi_qidao_core_fn_method_game_get_main_line_moves(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1687,15 +1714,19 @@ public func FfiConverterTypeAnalysisMoveInfo_lower(_ value: AnalysisMoveInfo) ->
 public struct AnalysisResult {
     public var id: String
     public var turnNumber: UInt32
+    public var isDuringSearch: Bool
+    public var noResults: Bool
     public var rootInfo: AnalysisRootInfo
     public var moveInfos: [AnalysisMoveInfo]
     public var ownership: [Double]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: String, turnNumber: UInt32, rootInfo: AnalysisRootInfo, moveInfos: [AnalysisMoveInfo], ownership: [Double]?) {
+    public init(id: String, turnNumber: UInt32, isDuringSearch: Bool, noResults: Bool, rootInfo: AnalysisRootInfo, moveInfos: [AnalysisMoveInfo], ownership: [Double]?) {
         self.id = id
         self.turnNumber = turnNumber
+        self.isDuringSearch = isDuringSearch
+        self.noResults = noResults
         self.rootInfo = rootInfo
         self.moveInfos = moveInfos
         self.ownership = ownership
@@ -1708,6 +1739,12 @@ extension AnalysisResult: Equatable, Hashable {
             return false
         }
         if lhs.turnNumber != rhs.turnNumber {
+            return false
+        }
+        if lhs.isDuringSearch != rhs.isDuringSearch {
+            return false
+        }
+        if lhs.noResults != rhs.noResults {
             return false
         }
         if lhs.rootInfo != rhs.rootInfo {
@@ -1725,6 +1762,8 @@ extension AnalysisResult: Equatable, Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(turnNumber)
+        hasher.combine(isDuringSearch)
+        hasher.combine(noResults)
         hasher.combine(rootInfo)
         hasher.combine(moveInfos)
         hasher.combine(ownership)
@@ -1740,6 +1779,8 @@ public struct FfiConverterTypeAnalysisResult: FfiConverterRustBuffer {
             try AnalysisResult(
                 id: FfiConverterString.read(from: &buf),
                 turnNumber: FfiConverterUInt32.read(from: &buf),
+                isDuringSearch: FfiConverterBool.read(from: &buf),
+                noResults: FfiConverterBool.read(from: &buf),
                 rootInfo: FfiConverterTypeAnalysisRootInfo.read(from: &buf),
                 moveInfos: FfiConverterSequenceTypeAnalysisMoveInfo.read(from: &buf),
                 ownership: FfiConverterOptionSequenceDouble.read(from: &buf)
@@ -1749,6 +1790,8 @@ public struct FfiConverterTypeAnalysisResult: FfiConverterRustBuffer {
     public static func write(_ value: AnalysisResult, into buf: inout [UInt8]) {
         FfiConverterString.write(value.id, into: &buf)
         FfiConverterUInt32.write(value.turnNumber, into: &buf)
+        FfiConverterBool.write(value.isDuringSearch, into: &buf)
+        FfiConverterBool.write(value.noResults, into: &buf)
         FfiConverterTypeAnalysisRootInfo.write(value.rootInfo, into: &buf)
         FfiConverterSequenceTypeAnalysisMoveInfo.write(value.moveInfos, into: &buf)
         FfiConverterOptionSequenceDouble.write(value.ownership, into: &buf)
@@ -2513,6 +2556,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_qidao_core_checksum_method_analysisengine_stop() != 64484 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_qidao_core_checksum_method_analysisengine_terminate() != 48581 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_qidao_core_checksum_method_analysisengine_terminate_all() != 19481 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2556,6 +2602,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_qidao_core_checksum_method_game_get_last_move() != 39187 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_qidao_core_checksum_method_game_get_main_line_moves() != 36304 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_qidao_core_checksum_method_game_get_max_move_count() != 20201 {

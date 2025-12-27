@@ -109,7 +109,7 @@ struct LeftSidebarView: View {
                         if viewModel.isAnalyzing {
                             let maxCount = viewModel.maxMoveCount
                             let totalMoves = maxCount <= 100 ? 100 : ((maxCount + 49) / 50) * 50
-                            WinRateGraph(history: viewModel.winRateHistory, currentTurn: viewModel.moveCount, totalMoves: totalMoves) { turn in
+                            WinRateGraph(history: viewModel.winRateHistory, blunders: viewModel.blunders, currentTurn: viewModel.moveCount, totalMoves: totalMoves) { turn in
                                 viewModel.jumpToMove(min(turn, viewModel.maxMoveCount))
                             }
                                 .frame(height: 80)
@@ -230,6 +230,7 @@ struct InfoRow: View {
 
 struct WinRateGraph: View {
     let history: [Int: Double]
+    let blunders: [Int: BoardViewModel.BlunderType]
     let currentTurn: Int
     let totalMoves: Int
     var onTap: ((Int) -> Void)? = nil
@@ -278,6 +279,16 @@ struct WinRateGraph: View {
                 }
                 .stroke(Color.blue, lineWidth: 1.5)
 
+                // Blunder markers
+                ForEach(blunders.keys.sorted(), id: \.self) { turn in
+                    if let rate = history[turn], let type = blunders[turn] {
+                        Circle()
+                            .fill(type == .blunder ? Color.red : Color.orange)
+                            .frame(width: 4, height: 4)
+                            .position(x: CGFloat(turn) * step, y: geo.size.height * CGFloat(1.0 - rate))
+                    }
+                }
+
                 // Current turn indicator
                 let currentX = CGFloat(currentTurn) * step
                 Rectangle()
@@ -300,20 +311,27 @@ struct WinRateGraph: View {
 
                     // Win rate tooltip
                     if let rate = history[clampedTurn] {
-                        Text(String(format: "%.1f%%", rate * 100))
-                            .font(.system(size: 10, weight: .bold))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .background(Color.black.opacity(0.7))
-                            .foregroundColor(.white)
-                            .cornerRadius(4)
-                            .position(x: hoverX, y: 12) // Move inside the graph area to avoid clipping
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(String(format: "Move %d: %.1f%%", clampedTurn, rate * 100))
+                                .font(.system(size: 9, weight: .bold))
+                            if let type = blunders[clampedTurn] {
+                                Text(type == .blunder ? "Blunder".localized : "Mistake".localized)
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundColor(type == .blunder ? .red : .orange)
+                            }
+                        }
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.black.opacity(0.7))
+                        .foregroundColor(.white)
+                        .cornerRadius(4)
+                        .position(x: hoverX, y: 15)
                     }
                 }
             }
             .background(Color.black.opacity(0.05))
             .contentShape(Rectangle())
-            .clipped() // Ensure nothing spills out, but tooltip is now inside
+            .clipped()
             .onTapGesture { location in
                 let turn = Int(round(location.x / step))
                 onTap?(max(0, min(turn, totalMoves)))

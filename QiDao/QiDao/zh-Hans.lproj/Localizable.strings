@@ -46,6 +46,8 @@
 "Edit Game Info" = "编辑对局信息";
 "Game Name" = "棋局名称";
 "vs" = "对阵";
+"Blunder" = "大漏勺";
+"Mistake" = "失误";
 
 /* Game Results */
 "Black wins by resignation" = "黑中盘胜";

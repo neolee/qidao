@@ -46,6 +46,8 @@
 "Edit Game Info" = "Edit Game Info";
 "Game Name" = "Game Name";
 "vs" = "vs";
+"Blunder" = "Blunder";
+"Mistake" = "Mistake";
 
 /* Game Results */
 "Black wins by resignation" = "Black wins by resignation";

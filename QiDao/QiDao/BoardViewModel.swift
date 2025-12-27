@@ -123,6 +123,11 @@ class BoardViewModel: ObservableObject {
         let isCommunication: Bool
     }
 
+    enum BlunderType: String {
+        case mistake // > 5% drop
+        case blunder // > 15% drop
+    }
+
     // AI Analysis
     @Published var isAnalyzing: Bool = false
     @Published var engineMessage: String = "AI Not Started".localized
@@ -143,6 +148,7 @@ class BoardViewModel: ObservableObject {
     }
     @Published var winRateHistory: [Int: Double] = [:]
     @Published var scoreLeadHistory: [Int: Double] = [:]
+    @Published var blunders: [Int: BlunderType] = [:]
     @Published var hoveredMoveStr: String? = nil
     @Published var config = ConfigManager.shared.config
     @Published var isFullGameScanning: Bool = false
@@ -580,6 +586,7 @@ class BoardViewModel: ObservableObject {
             let turn = self.moveCount
             self.winRateHistory[turn] = normalizedWinRate
             self.scoreLeadHistory[turn] = normalizedScoreLead
+            detectBlunder(at: turn)
 
             // If we reached max visits, we can stop polling for this turn
             if let maxVisits = config.analysis.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
@@ -617,9 +624,28 @@ class BoardViewModel: ObservableObject {
 
                 self.winRateHistory[turn] = normalizedWinRate
                 self.scoreLeadHistory[turn] = normalizedScoreLead
+
+                detectBlunder(at: turn)
             }
         } else if result.id.hasPrefix("terminate-") {
             // Ignore termination acknowledgments
+        }
+    }
+
+    private func detectBlunder(at turn: Int) {
+        guard turn > 0,
+              let currentWR = winRateHistory[turn],
+              let prevWR = winRateHistory[turn - 1] else { return }
+
+        let diff = currentWR - prevWR
+        let absDiff = abs(diff)
+
+        if absDiff >= 0.15 {
+            blunders[turn] = .blunder
+        } else if absDiff >= 0.05 {
+            blunders[turn] = .mistake
+        } else {
+            blunders.removeValue(forKey: turn)
         }
     }
 
@@ -629,6 +655,7 @@ class BoardViewModel: ObservableObject {
         analysisResult = nil
         winRateHistory = [:]
         scoreLeadHistory = [:]
+        blunders = [:]
         analysisTask?.cancel()
         analysisTask = nil
         fullGameScanTask?.cancel()
@@ -871,6 +898,7 @@ class BoardViewModel: ObservableObject {
         self.game = Game(size: 19)
         self.winRateHistory = [:]
         self.scoreLeadHistory = [:]
+        self.blunders = [:]
         self.analysisResult = nil
         syncStateWithGame(rebuildTree: true)
         self.message = "Board Reset".localized
@@ -913,6 +941,7 @@ class BoardViewModel: ObservableObject {
             self.game = try Game.fromSgf(sgfContent: sgfContent)
             self.winRateHistory = [:]
             self.scoreLeadHistory = [:]
+            self.blunders = [:]
             self.analysisResult = nil
 
             // Update main line colors for win rate normalization

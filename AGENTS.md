@@ -75,36 +75,45 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - **Logging Optimization**: Communication logs (`>>>`/`<<<`) are truncated to 500 chars in the core and completely skipped (including string formatting/serialization) when `logging_enabled` is false.
 
 ## 8. Immediate TODOs
-1. **Fundamental Enhancements**: 13x13 and 9x9 board support and so on.
-2. **Edit Mode**: add/remove stones and notations, export to SGF string (compatible with `sbs-ext`), etc..
+
+1. **Multi-Mode Support**: Implement `AppMode` (Analysis, Edit, Play) with dynamic sidebars.
+2. **Edit Mode**: Add/remove stones and notations (Triangle, Circle, Square, Cross, Label), export to SGF.
 3. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
+4. **SGF Comments**: Display and edit node comments in the sidebar.
 
-## 9. Implementation Plan (Dec 26, 2025)
+## 9. Implementation Plan (Dec 29, 2025)
 
-### Phase 1: UI Layout & Basic Optimization
-- **Left Sidebar**: Merge AI Analysis and Engine Logs into "AI Engine" section. Add start/stop and config buttons. Add status icon and selectable message area.
-- **Right Sidebar**: Refactor "Move Evaluation" into a 4-5 column table (Move, Win Rate, Score Lead, Visits).
-- **Board Toolbar**: Replace "Show Move Numbers" checkbox with a Picker (All, Last 10, 5, 1, None).
-- **Overlay Logic**: Ensure AI overlays are cleared immediately upon move placement to avoid visual lag.
+### Phase 12: View Improvement
+- Separate `AIEngineLogView` from `AIEngineView`.
+- Add a `GameCommentView` to display/edit SGF comments for the current node.
+- Mix `AIEngineLogView` and `GameCommentView` into a tabbed view (or switch by a segmented picker) in the bottom of left sidebar in Analysis Mode.
+- `GameCommentView` can be reused in other modes.
 
-### Phase 2: AI Configuration & Communication
-- **Config Sheet**: Implement a detailed settings UI with a three-layer structure:
-  - **Engine Profiles**: Manage multiple engine presets (executable path, model, config, extra args).
-  - **Analysis Settings**:
-    - Prominent controls for frequently adjusted parameters (Max Visits, Max Time).
-    - A collapsible "Advanced Settings" table for key-value pairs (e.g., `reportDuringSearchEvery`, `includePolicy`).
-  - **Display Settings**: Global UI preferences (Max Candidates, Show Ownership, Theme).
-- **Engine Logs**: Capture and display raw GTP/Analysis API logs in the UI with auto-scroll.
+### Phase 13: Multi-Mode Support
+- **AppMode State**: Define `AppMode` enum in `BoardViewModel` and implement a `Segmented Picker` in the top toolbar for switching.
+- **Dynamic Sidebars**:
+    - **Left Sidebar**: 
+      - Common: `GameInfoView` at the top, and
+      - Analysis Mode: `WinRateView`, `AIEngineView`, `AIEngineLogView`, `GameCommentView`.
+      - Edit Mode: `EditToolboxView`.
+      - Play Mode: `PlayControlView`.
+    - **Right Sidebar**:
+      - Common: `VariationTreeView` at the top, and
+      - Analysis Mode: `MoveEvaluationView`, `EvaluationBoardView`.
+      - Edit Mode: `GameCommentView`.
+      - Play Mode: `PlayLogView`.
+- **Edit Mode Logic**:
+    - Implement tools for placing stones (Black, White, Auto) and marks (TR, CR, SQ, MA, LB).
+    - Update Rust core to handle SGF property updates for marks and comments.
+- **Play Mode Logic**:
+    - Disable all AI overlays and real-time analysis.
+    - Implement `genmove` flow: Player moves -> Engine generates move -> Update board.
+    - Add game controls: Pass, Resign, Score, Undo.
 
-### Phase 3: Visual Markers & AI Enhancements
-- **Move Markers**: Implement "-1" (large hollow circle) and "-2/-3" (small solid circle) markers when move numbers are hidden.
-- **Next Move**: Highlight the actual next move from SGF when AI is active.
-- **AI Overlay**: Color-code candidates (Blue/Green/Orange), add rank numbers (1-9), and refine text layout.
-
-### Phase 4: Advanced Visualization
-- **Win Rate Graph**: Real-time win rate bar and historical win rate/score lead line chart in Left Sidebar.
-- **Hover Preview**: Show AI variation path when hovering over a candidate move.
-- **Ownership Map**: Implement the mini-board for territory/ownership visualization.
+### Phase 14: Advanced Edit & Play Features
+- **SGF Export**: Support exporting the current tree (including marks and comments) to SGF string/file.
+- **Game Setup**: Implement a "New Game" dialog for Play Mode to set board size, handicap, and komi.
+- **Clock System**: (Optional) Add basic timing support for Play Mode.
 
 ## 10. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
@@ -118,3 +127,5 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - [x] **Phase 7: Core Optimization & Evaluation Board**: Refactored Rust engine locks for zero-latency navigation. Implemented "Evaluation Board" (mini-board) with grayscale ownership map and PV sequence. Added centralized logging control and buffer draining to prevent CPU spikes.
 - [x] **Phase 8: Branch Management & UX Refinement**: Implemented "Delete Current Branch" with confirmation dialog. Optimized file dialogs to be non-blocking and path-aware. Synchronized and cleaned up localization files. Refined keyboard focus and shortcut handling using `.onDeleteCommand`.
 - [x] **Phase 9: Sparkle Integration & CI/CD**: Integrated Sparkle framework for auto-updates. Configured GitHub Actions for automated release creation, DMG packaging, and appcast generation. Added "Check for Updates" menu item and configured `Info.plist` keys.
+- [x] **Phase 10: 13x13 and 9x9 Board Support**.
+- [x] **Phase 11: Refactoring and Enhancements**: Improved code organization in views and view model. Win rate graph and ownership map toggles, incremental full game analysis, etc.

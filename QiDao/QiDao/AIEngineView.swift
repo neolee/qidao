@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AIEngineView: View {
     @ObservedObject var viewModel: BoardViewModel
-    @Binding var showEngineConfig: Bool
+    @Binding var showAIConfig: Bool
 
     var body: some View {
         GroupBox(label: Label("AI Engine".localized, systemImage: "cpu")) {
@@ -19,7 +19,7 @@ struct AIEngineView: View {
                     .tint(viewModel.isAnalyzing ? .red : .blue)
                     .focusable(false)
 
-                    Button(action: { showEngineConfig = true }) {
+                    Button(action: { showAIConfig = true }) {
                         Image(systemName: "gearshape")
                             .padding(.horizontal, 8)
                     }

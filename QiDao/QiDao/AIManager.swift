@@ -39,7 +39,7 @@ class AIManager: ObservableObject {
     private var currentTurnNumber: Int = 0
     private var currentNodeId: String = ""
 
-    func start(executable: String, args: [String], config: AppConfig) {
+    func start(executable: String, args: [String], config: AIConfig) {
         guard analysisEngine == nil else { return }
 
         isAnalyzing = true
@@ -97,7 +97,7 @@ class AIManager: ObservableObject {
         nextPlayer: String,
         turnNumber: Int,
         metadata: GameMetadata,
-        config: AppConfig
+        config: AIConfig
     ) {
         guard isAnalyzing, let engine = analysisEngine else {
             analysisResult = nil
@@ -184,7 +184,7 @@ class AIManager: ObservableObject {
         mainLineMoves: [[String]],
         initialStones: [[String]],
         metadata: GameMetadata,
-        config: AppConfig,
+        config: AIConfig,
         initialPlayer: String
     ) {
         guard isAnalyzing, let engine = analysisEngine else { return }

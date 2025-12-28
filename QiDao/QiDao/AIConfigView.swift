@@ -1,12 +1,12 @@
 import SwiftUI
 
-struct EngineConfigView: View {
+struct AIConfigView: View {
     @ObservedObject var viewModel: BoardViewModel
     @Environment(\.dismiss) var dismiss
     @ObservedObject private var configManager = ConfigManager.shared
 
     @State private var selectedTab: ConfigTab = .profiles
-    @State private var localConfig: AppConfig = ConfigManager.shared.config
+    @State private var localConfig: AIConfig = ConfigManager.shared.config
     @State private var showAdvanced: Bool = false
     @State private var newParamKey: String = ""
     @State private var newParamValue: String = ""
@@ -42,7 +42,7 @@ struct EngineConfigView: View {
 
                 HStack {
                     Button("Reset to Default".localized) {
-                        localConfig = AppConfig.default
+                        localConfig = AIConfig.default
                     }
                     Spacer()
                     Button("Cancel".localized) {

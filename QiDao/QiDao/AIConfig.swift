@@ -53,15 +53,15 @@ struct DisplaySettings: Codable, Equatable {
     var overlayWinRatePerspective: WinRatePerspective = .current
 }
 
-struct AppConfig: Codable {
+struct AIConfig: Codable {
     var currentProfileId: UUID?
     var profiles: [EngineProfile]
     var analysis: AnalysisSettings
     var display: DisplaySettings
 
-    static var `default`: AppConfig {
+    static var `default`: AIConfig {
         let defaultProfile = EngineProfile.default
-        return AppConfig(
+        return AIConfig(
             currentProfileId: defaultProfile.id,
             profiles: [defaultProfile],
             analysis: AnalysisSettings(),
@@ -73,16 +73,16 @@ struct AppConfig: Codable {
 class ConfigManager: ObservableObject {
     static let shared = ConfigManager()
 
-    @Published var config: AppConfig
+    @Published var config: AIConfig
 
     private let configKey = "QiDaoAppConfig"
 
     private init() {
         if let data = UserDefaults.standard.data(forKey: configKey),
-           let decoded = try? JSONDecoder().decode(AppConfig.self, from: data) {
+           let decoded = try? JSONDecoder().decode(AIConfig.self, from: data) {
             self.config = decoded
         } else {
-            self.config = AppConfig.default
+            self.config = AIConfig.default
         }
     }
 

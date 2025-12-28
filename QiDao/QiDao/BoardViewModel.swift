@@ -83,13 +83,13 @@ enum MarkerType {
 class BoardViewModel: ObservableObject {
     @Published var message: String = "Ready".localized
     @Published var gameInfo: String = ""
-    
+
     // Core Game State (Grouped for atomicity and to avoid SwiftUI publishing errors)
     // internalState is updated synchronously for the engine, while gameState is updated
     // asynchronously to notify SwiftUI without triggering "within view updates" errors.
     private var internalState = GameState()
     @Published private(set) var gameState = GameState()
-    
+
     // Computed properties for backward compatibility with views and engine
     var board: Board { internalState.board }
     var boardSize: Int {
@@ -196,6 +196,7 @@ class BoardViewModel: ObservableObject {
     private var fullGameScanTask: Task<Void, Never>? = nil
     private var mainLineColors: [Int: String] = [:]
     private var currentAnalysisId: String? = nil
+    private var analysisSessionId: Int = 0
 
     private var analysisEngine: AnalysisEngine? = nil
     private var analysisTask: Task<Void, Never>? = nil
@@ -256,10 +257,10 @@ class BoardViewModel: ObservableObject {
         // Load persisted settings
         let savedSize = UserDefaults.standard.integer(forKey: "boardSize")
         let initialSize = savedSize > 0 ? savedSize : 19
-        
+
         // 1. Initialize all stored properties first
         self.game = Game(size: UInt32(initialSize))
-        
+
         // 2. Now we can use self and set initial state
         self.internalState.boardSize = initialSize
         self.internalState.metadata.size = UInt32(initialSize)
@@ -591,53 +592,68 @@ class BoardViewModel: ObservableObject {
             return
         }
 
-        if result.id == "qidao-\(currentNodeId)" {
-            let analyzingWhiteToMove = nextColor == .white
+        // Parse session ID from result.id (format: "prefix-sessionId-...")
+        let parts = result.id.split(separator: "-")
+        if result.id.hasPrefix("qidao-") {
+            if parts.count >= 2, let resultSessionId = Int(parts[1]) {
+                if resultSessionId != self.analysisSessionId { return }
+            }
+        } else if result.id.hasPrefix("fullscan-") {
+            if parts.count >= 2, let resultSessionId = Int(parts[1]) {
+                if resultSessionId != self.analysisSessionId { return }
+            }
+        }
 
-            // Normalize to Black's perspective for history and sidebar displays
-            // We force the engine to return Black's perspective via overrideSettings.
-            let normalizedWinRate = WinRateConverter.convertWinRate(
-                result.rootInfo.winrate,
-                reportedAs: .black,
-                target: .black,
-                isWhiteTurn: analyzingWhiteToMove
-            )
-            let normalizedScoreLead = WinRateConverter.convertScoreLead(
-                result.rootInfo.scoreLead,
-                reportedAs: .black,
-                target: .black,
-                isWhiteTurn: analyzingWhiteToMove
-            )
+        if result.id.hasPrefix("qidao-") {
+            // Check if this result matches the current node
+            if result.id.hasSuffix("-\(currentNodeId)") {
+                let analyzingWhiteToMove = nextColor == .white
 
-            let normalizedResult = AnalysisResult(
-                id: result.id,
-                turnNumber: result.turnNumber,
-                isDuringSearch: result.isDuringSearch,
-                noResults: result.noResults,
-                rootInfo: AnalysisRootInfo(
-                    winrate: normalizedWinRate,
-                    scoreLead: normalizedScoreLead,
-                    visits: result.rootInfo.visits
-                ),
-                moveInfos: result.moveInfos,
-                ownership: result.ownership
-            )
+                // Normalize to Black's perspective for history and sidebar displays
+                // We force the engine to return Black's perspective via overrideSettings.
+                let normalizedWinRate = WinRateConverter.convertWinRate(
+                    result.rootInfo.winrate,
+                    reportedAs: .black,
+                    target: .black,
+                    isWhiteTurn: analyzingWhiteToMove
+                )
+                let normalizedScoreLead = WinRateConverter.convertScoreLead(
+                    result.rootInfo.scoreLead,
+                    reportedAs: .black,
+                    target: .black,
+                    isWhiteTurn: analyzingWhiteToMove
+                )
 
-            self.analysisResult = normalizedResult
+                let normalizedResult = AnalysisResult(
+                    id: result.id,
+                    turnNumber: result.turnNumber,
+                    isDuringSearch: result.isDuringSearch,
+                    noResults: result.noResults,
+                    rootInfo: AnalysisRootInfo(
+                        winrate: normalizedWinRate,
+                        scoreLead: normalizedScoreLead,
+                        visits: result.rootInfo.visits
+                    ),
+                    moveInfos: result.moveInfos,
+                    ownership: result.ownership
+                )
 
-            // Update history for the current turn
-            let turn = self.moveCount
-            self.winRateHistory[turn] = normalizedWinRate
-            self.scoreLeadHistory[turn] = normalizedScoreLead
-            detectBlunder(at: turn)
+                self.analysisResult = normalizedResult
 
-            // If we reached max visits, we can stop polling for this turn
-            if let maxVisits = config.analysis.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
-                Task {
-                    try? await analysisEngine?.terminate(id: result.id)
+                // Update history for the current turn
+                let turn = self.moveCount
+                self.winRateHistory[turn] = normalizedWinRate
+                self.scoreLeadHistory[turn] = normalizedScoreLead
+                detectBlunder(at: turn)
+
+                // If we reached max visits, we can stop polling for this turn
+                if let maxVisits = config.analysis.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
+                    Task {
+                        try? await analysisEngine?.terminate(id: result.id)
+                    }
                 }
             }
-        } else if result.id == "full-game-scan" {
+        } else if result.id.hasPrefix("fullscan-") {
             // Background scan results
             // Only update history if it's a final result for that turn (not during search)
             if !result.isDuringSearch {
@@ -743,7 +759,7 @@ class BoardViewModel: ObservableObject {
                     try? await engine.terminate(id: oldId)
                 }
 
-                let newId = "qidao-\(currentNodeId)"
+                let newId = "qidao-\(self.analysisSessionId)-\(currentNodeId)"
                 self.currentAnalysisId = newId
 
                 var query: [String: Any] = [
@@ -908,10 +924,10 @@ class BoardViewModel: ObservableObject {
             newState.treeNodes = tree.nodes
             newState.treeEdges = tree.edges
         }
-        
+
         // Apply synchronously to internalState for engine/logic
         self.internalState = newState
-        
+
         // 2. Asynchronous updates for UI messages and AI analysis
         // This avoids "Publishing changes from within view updates is not allowed"
         // when syncStateWithGame is called from a view update context (like onChange).
@@ -952,12 +968,20 @@ class BoardViewModel: ObservableObject {
     func resetBoard() {
         fullGameScanTask?.cancel()
         fullGameScanTask = nil
+        self.analysisSessionId += 1
         self.game = Game(size: UInt32(boardSize))
         self.winRateHistory = [:]
         self.scoreLeadHistory = [:]
         self.blunders = [:]
         self.analysisResult = nil
         self.isSizeLocked = false
+
+        if isAnalyzing {
+            Task {
+                try? await analysisEngine?.terminateAll()
+            }
+        }
+
         syncStateWithGame(rebuildTree: true)
         self.message = "Board Reset".localized
     }
@@ -1005,6 +1029,7 @@ class BoardViewModel: ObservableObject {
 
             self.game = try Game.fromSgf(sgfContent: sgfContent)
             self.isSizeLocked = true
+            self.analysisSessionId += 1
             self.winRateHistory = [:]
             self.scoreLeadHistory = [:]
             self.blunders = [:]
@@ -1054,8 +1079,10 @@ class BoardViewModel: ObservableObject {
 
         fullGameScanTask = Task {
             do {
+                let scanId = "fullscan-\(self.analysisSessionId)"
+
                 // Terminate any previous background scan on the engine side
-                try? await engine.terminate(id: "full-game-scan")
+                try? await engine.terminateAll() // Stop everything before starting a full scan
 
                 // To avoid blocking the main analysis, we analyze in small batches
                 // and use a lower priority.
@@ -1069,7 +1096,7 @@ class BoardViewModel: ObservableObject {
                     let analyzeTurns = Array(startTurn...endTurn)
 
                     let query: [String: Any] = [
-                        "id": "full-game-scan",
+                        "id": scanId,
                         "initialStones": initialStones,
                         "moves": mainLineMoves,
                         "initialPlayer": initialPlayer,

@@ -27,7 +27,7 @@ struct EvaluationBoardView: View {
                     Text("AI Analysis Inactive".localized)
                         .foregroundColor(.secondary)
                         .font(.subheadline)
-                } else if viewModel.analysisResult == nil {
+                } else if viewModel.analysisResult == nil || viewModel.analysisResult?.id.hasSuffix("-\(viewModel.currentNodeId)") == false {
                     Rectangle()
                         .fill(.ultraThinMaterial.opacity(0.5))
                         .cornerRadius(4)

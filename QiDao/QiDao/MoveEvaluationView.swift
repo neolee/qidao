@@ -7,7 +7,7 @@ struct MoveEvaluationView: View {
         GroupBox(label: Label("Move Evaluation".localized, systemImage: "list.bullet.rectangle")) {
             VStack(spacing: 0) {
                 if viewModel.isAnalyzing {
-                    if let result = viewModel.analysisResult {
+                    if let result = viewModel.analysisResult, result.id.hasSuffix("-\(viewModel.currentNodeId)") {
                         // Header
                         HStack {
                             Text("Move_Header".localized).frame(width: 45, alignment: .leading)

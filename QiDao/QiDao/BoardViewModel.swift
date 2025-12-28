@@ -291,7 +291,7 @@ class BoardViewModel: ObservableObject {
     }
 
     func goToEnd() {
-        gameManager.jumpToMove(Int.max)
+        gameManager.jumpToMove(maxMoveCount)
     }
 
     func jumpToMove(_ target: Int) {

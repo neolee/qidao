@@ -247,6 +247,12 @@ class AIManager: ObservableObject {
         }
     }
 
+    func stopFullGameAnalysis() {
+        fullGameScanTask?.cancel()
+        fullGameScanTask = nil
+        isFullGameScanning = false
+    }
+
     func resetSession() {
         self.analysisSessionId += 1
         self.winRateHistory = [:]

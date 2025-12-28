@@ -97,7 +97,15 @@ class BoardViewModel: ObservableObject {
     @Published var scoreLeadHistory: [Int: Double] = [:]
     @Published var blunders: [Int: BlunderType] = [:]
     @Published var hoveredMoveStr: String? = nil
-    @Published var config = ConfigManager.shared.config
+    @Published var config = ConfigManager.shared.config {
+        didSet {
+            if !config.display.showWinRateGraph {
+                stopFullGameAnalysis()
+            } else if isAnalyzing && !oldValue.display.showWinRateGraph {
+                startFullGameAnalysis()
+            }
+        }
+    }
     @Published var isFullGameScanning: Bool = false
 
     private var gameManager: GameManager
@@ -362,6 +370,7 @@ class BoardViewModel: ObservableObject {
     }
 
     func startFullGameAnalysis() {
+        guard config.display.showWinRateGraph else { return }
         let game = gameManager.getGame()
         let currentId = game.getCurrentNode().getId()
 
@@ -379,6 +388,10 @@ class BoardViewModel: ObservableObject {
             config: config,
             initialPlayer: initialPlayer
         )
+    }
+
+    func stopFullGameAnalysis() {
+        aiManager.stopFullGameAnalysis()
     }
 
     func resetBoard() {

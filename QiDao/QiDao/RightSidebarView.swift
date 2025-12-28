@@ -16,11 +16,13 @@ struct RightSidebarView: View {
             MoveEvaluationView(viewModel: viewModel)
 
             // 3. Evaluation Board - Square based on width
-            EvaluationBoardView(
-                viewModel: viewModel,
-                ownership: viewModel.isAnalyzing ? viewModel.analysisResult?.ownership : nil,
-                pv: viewModel.isAnalyzing ? viewModel.analysisResult?.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv : nil
-            )
+            if viewModel.config.display.showOwnership {
+                EvaluationBoardView(
+                    viewModel: viewModel,
+                    ownership: viewModel.isAnalyzing ? viewModel.analysisResult?.ownership : nil,
+                    pv: viewModel.isAnalyzing ? viewModel.analysisResult?.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv : nil
+                )
+            }
         }
         .padding()
         .frame(minWidth: 250, maxWidth: 500)

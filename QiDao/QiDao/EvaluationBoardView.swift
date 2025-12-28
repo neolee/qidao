@@ -27,16 +27,24 @@ struct EvaluationBoardView: View {
                     Text("AI Analysis Inactive".localized)
                         .foregroundColor(.secondary)
                         .font(.subheadline)
-                } else if viewModel.analysisResult == nil || viewModel.analysisResult?.id.hasSuffix("-\(viewModel.currentNodeId)") == false {
-                    Rectangle()
-                        .fill(.ultraThinMaterial.opacity(0.5))
-                        .cornerRadius(4)
+                } else {
+                    let isStale = viewModel.analysisResult == nil || viewModel.analysisResult?.id.hasSuffix("-\(viewModel.currentNodeId)") == false
 
-                    VStack(spacing: 8) {
-                        CustomSpinner()
-                        Text("Waiting for AI...".localized)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    if isStale {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                CustomSpinner()
+                                    .frame(width: 20, height: 20)
+                                    .padding(8)
+                                    .background(.ultraThinMaterial)
+                                    .cornerRadius(8)
+                                    .shadow(radius: 2)
+                                Spacer()
+                            }
+                            Spacer()
+                        }
                     }
                 }
             }

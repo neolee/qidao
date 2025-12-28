@@ -7,7 +7,9 @@ struct MoveEvaluationView: View {
         GroupBox(label: Label("Move Evaluation".localized, systemImage: "list.bullet.rectangle")) {
             VStack(spacing: 0) {
                 if viewModel.isAnalyzing {
-                    if let result = viewModel.analysisResult, result.id.hasSuffix("-\(viewModel.currentNodeId)") {
+                    if let result = viewModel.analysisResult {
+                        let isStale = !result.id.hasSuffix("-\(viewModel.currentNodeId)")
+
                         // Header
                         HStack {
                             Text("Move_Header".localized).frame(width: 45, alignment: .leading)
@@ -59,6 +61,12 @@ struct MoveEvaluationView: View {
 
                                     Divider()
                                 }
+                            }
+                        }
+                        .opacity(isStale ? 0.5 : 1.0)
+                        .overlay(alignment: .center) {
+                            if isStale {
+                                CustomSpinner()
                             }
                         }
                     } else {

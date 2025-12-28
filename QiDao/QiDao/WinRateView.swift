@@ -7,8 +7,8 @@ struct WinRateView: View {
         GroupBox(label: Label("Win Rate".localized, systemImage: "chart.line.uptrend.xyaxis")) {
             VStack(spacing: 12) {
                 // Real-time win rate bar
-                let currentResult = (viewModel.analysisResult?.id.hasSuffix("-\(viewModel.currentNodeId)") == true) ? viewModel.analysisResult : nil
-                let winRate = currentResult?.rootInfo.winrate ?? 0.5
+                let isStale = viewModel.analysisResult == nil || viewModel.analysisResult?.id.hasSuffix("-\(viewModel.currentNodeId)") == false
+                let winRate = viewModel.analysisResult?.rootInfo.winrate ?? 0.5
                 VStack(spacing: 4) {
                     HStack {
                         Text(String(format: "B: %.1f%%", winRate * 100))
@@ -31,6 +31,7 @@ struct WinRateView: View {
                             RoundedRectangle(cornerRadius: 4)
                                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
                         )
+                        .opacity(isStale ? 0.6 : 1.0)
                     }
                     .frame(height: 12)
                 }

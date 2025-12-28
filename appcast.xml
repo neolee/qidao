@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>QiDao</title>
+        <item>
+            <title>1.0.0</title>
+            <pubDate>Sun, 28 Dec 2025 11:06:12 +0000</pubDate>
+            <link>https://github.com/neolee/qidao</link>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/neolee/qidao/releases/download/v1.0.0/QiDao.dmg" length="2408125" type="application/octet-stream" sparkle:edSignature="ujpNzgEjDgvSu1nsfcY4TnjMauEJwU28Y4Inx1eGvzSqy8dt9HiaqinWRkRs4Vp5VvyGd3uiONACHXnMh3jfAg=="/>
+        </item>
+    </channel>
+</rss>

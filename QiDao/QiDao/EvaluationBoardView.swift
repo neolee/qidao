@@ -23,7 +23,7 @@ struct EvaluationBoardView: View {
                     Rectangle()
                         .fill(.ultraThinMaterial)
                         .cornerRadius(4)
-                    
+
                     Text("AI Analysis Inactive".localized)
                         .foregroundColor(.secondary)
                         .font(.subheadline)
@@ -31,7 +31,7 @@ struct EvaluationBoardView: View {
                     Rectangle()
                         .fill(.ultraThinMaterial.opacity(0.5))
                         .cornerRadius(4)
-                    
+
                     VStack(spacing: 8) {
                         CustomSpinner()
                         Text("Waiting for AI...".localized)

@@ -89,10 +89,10 @@ struct GameBoardView: View {
                     let displayCount = min(sortedMoves.count, viewModel.config.display.maxCandidates)
                     let isWhiteTurn = viewModel.nextColor == .white
                     let perspective = viewModel.config.display.overlayWinRatePerspective
-                    
+
                     // Best win rate from current player's perspective
                     let bestMoveWinRate = sortedMoves.first?.winrate ?? 0.5
-                    
+
                     ForEach(Array(sortedMoves.prefix(displayCount).enumerated()), id: \.element.moveStr) { index, info in
                         if let pos = viewModel.decodeKataGoMove(info.moveStr) {
                             let displayWinRate = WinRateConverter.convertWinRate(
@@ -107,7 +107,7 @@ struct GameBoardView: View {
                                 target: perspective,
                                 isWhiteTurn: isWhiteTurn
                             )
-                            
+
                             let markerColor: Color = {
                                 if index == 0 { return viewModel.theme.aiBestMoveColor }
                                 // Compare win rates in Black's perspective (both are normalized to Black)
@@ -116,7 +116,7 @@ struct GameBoardView: View {
                                 }
                                 return viewModel.theme.aiCandidateMoveColor
                             }()
-                            
+
                             ZStack {
                                 // 1. Stable Hover Target (Transparent but hit-testable)
                                 // Using a Rectangle ensures the entire intersection area captures the hover

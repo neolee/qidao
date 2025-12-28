@@ -294,7 +294,7 @@ struct EngineConfigView: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = canChooseDirectories
         panel.canChooseFiles = !canChooseDirectories
-        
+
         if let path = initialPath, !path.isEmpty {
             let url = URL(fileURLWithPath: path)
             // If it's a file path, open the parent directory
@@ -304,7 +304,7 @@ struct EngineConfigView: View {
                 panel.directoryURL = url
             }
         }
-        
+
         panel.begin { response in
             if response == .OK, let url = panel.url {
                 completion(url)

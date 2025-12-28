@@ -2,114 +2,33 @@ import Foundation
 import Combine
 import qidao_coreFFI
 
-struct Variation: Identifiable {
-    let id: Int
-    let moveText: String
-    let x: Int?
-    let y: Int?
-
-    var label: String {
-        if id < 26 {
-            return String(UnicodeScalar(UInt8(ascii: "A") + UInt8(id)))
-        } else {
-            return "\(id + 1)"
-        }
-    }
-}
-
-struct TreeVisualNode: Identifiable {
-    let id: String
-    let x: CGFloat
-    let y: CGFloat
-    let color: StoneColor?
-}
-
-struct TreeVisualEdge: Identifiable {
-    let id: String
-    let from: CGPoint
-    let to: CGPoint
-}
-
-struct GameState {
-    var board: Board = Board(size: 19)
-    var boardSize: Int = 19
-    var isSizeLocked: Bool = false
-    var nextColor: StoneColor = .black
-    var lastMove: (x: Int, y: Int)? = nil
-    var moveCount: Int = 0
-    var maxMoveCount: Int = 0
-    var variations: [Variation] = []
-    var treeNodes: [TreeVisualNode] = []
-    var treeEdges: [TreeVisualEdge] = []
-    var currentNodeId: String = ""
-    var moveNumbers: [String: Int] = [:]
-    var metadata: GameMetadata = GameMetadata(
-        blackName: "", blackRank: "",
-        whiteName: "", whiteRank: "",
-        komi: 7.5, result: "",
-        date: "", event: "",
-        gameName: "", place: "",
-        size: 19
-    )
-}
-
-enum MoveNumberDisplay: Int, CaseIterable, Identifiable {
-    case all = 0
-    case last10 = 10
-    case last5 = 5
-    case last1 = 1
-    case none = -1
-
-    var id: Int { self.rawValue }
-
-    var label: String {
-        switch self {
-        case .all: return "All".localized
-        case .last10: return "Last 10".localized
-        case .last5: return "Last 5".localized
-        case .last1: return "Last 1".localized
-        case .none: return "None".localized
-        }
-    }
-}
-
-enum MarkerType {
-    case last1 // -1
-    case last2 // -2
-    case last3 // -3
-}
-
 @MainActor
 class BoardViewModel: ObservableObject {
     @Published var message: String = "Ready".localized
     @Published var gameInfo: String = ""
 
-    // Core Game State (Grouped for atomicity and to avoid SwiftUI publishing errors)
-    // internalState is updated synchronously for the engine, while gameState is updated
-    // asynchronously to notify SwiftUI without triggering "within view updates" errors.
-    private var internalState = GameState()
     @Published private(set) var gameState = GameState()
 
     // Computed properties for backward compatibility with views and engine
-    var board: Board { internalState.board }
+    var board: Board { gameState.board }
     var boardSize: Int {
-        get { internalState.boardSize }
+        get { gameState.boardSize }
         set { changeBoardSize(newValue) }
     }
     var isSizeLocked: Bool {
-        get { internalState.isSizeLocked }
-        set { internalState.isSizeLocked = newValue }
+        get { gameState.isSizeLocked }
+        set { gameManager.internalState.isSizeLocked = newValue }
     }
-    var nextColor: StoneColor { internalState.nextColor }
-    var lastMove: (x: Int, y: Int)? { internalState.lastMove }
-    var moveCount: Int { internalState.moveCount }
-    var maxMoveCount: Int { internalState.maxMoveCount }
-    var variations: [Variation] { internalState.variations }
-    var treeNodes: [TreeVisualNode] { internalState.treeNodes }
-    var treeEdges: [TreeVisualEdge] { internalState.treeEdges }
-    var currentNodeId: String { internalState.currentNodeId }
-    var moveNumbers: [String: Int] { internalState.moveNumbers }
-    var metadata: GameMetadata { internalState.metadata }
+    var nextColor: StoneColor { gameState.nextColor }
+    var lastMove: (x: Int, y: Int)? { gameState.lastMove }
+    var moveCount: Int { gameState.moveCount }
+    var maxMoveCount: Int { gameState.maxMoveCount }
+    var variations: [Variation] { gameState.variations }
+    var treeNodes: [TreeVisualNode] { gameState.treeNodes }
+    var treeEdges: [TreeVisualEdge] { gameState.treeEdges }
+    var currentNodeId: String { gameState.currentNodeId }
+    var moveNumbers: [String: Int] { gameState.moveNumbers }
+    var metadata: GameMetadata { gameState.metadata }
 
     @Published var theme: BoardTheme = .defaultWood
     @Published var moveNumberDisplay: MoveNumberDisplay = .all {
@@ -123,7 +42,7 @@ class BoardViewModel: ObservableObject {
     }
 
     var nextSgfMove: (x: Int, y: Int)? {
-        let children = game.getCurrentNode().getChildren()
+        let children = gameManager.getGame().getCurrentNode().getChildren()
         if let first = children.first {
             let props = first.getProperties()
             if let moveProp = props.first(where: { $0.identifier == "B" || $0.identifier == "W" }),
@@ -146,6 +65,13 @@ class BoardViewModel: ObservableObject {
         }
     }
 
+    func getDisplayMoveNumber(x: Int, y: Int) -> Int? {
+        if let moveNum = moveNumbers["\(x),\(y)"], shouldShowMoveNumber(moveNum) {
+            return moveNum
+        }
+        return nil
+    }
+
     func getMarkerType(x: Int, y: Int, moveNumber: Int?) -> MarkerType? {
         guard let moveNum = moveNumber else { return nil }
         // Only show markers if move numbers are NOT shown for this stone
@@ -157,18 +83,6 @@ class BoardViewModel: ObservableObject {
         return nil
     }
 
-    struct LogEntry: Identifiable {
-        let id = UUID()
-        let timestamp = Date()
-        let message: String
-        let isError: Bool
-        let isCommunication: Bool
-    }
-
-    enum BlunderType: String {
-        case blunder // > 15% drop
-    }
-
     // AI Analysis
     @Published var isAnalyzing: Bool = false
     @Published var engineMessage: String = "AI Not Started".localized
@@ -176,15 +90,7 @@ class BoardViewModel: ObservableObject {
     @Published var logEntries: [LogEntry] = []
     @Published var showAllLogs: Bool = false {
         didSet {
-            Task {
-                await analysisEngine?.setLoggingEnabled(enabled: showAllLogs)
-            }
-            if !showAllLogs {
-                // Clean up existing communication logs when disabling
-                DispatchQueue.main.async {
-                    self.logEntries.removeAll { $0.isCommunication }
-                }
-            }
+            aiManager.showAllLogs = showAllLogs
         }
     }
     @Published var winRateHistory: [Int: Double] = [:]
@@ -193,16 +99,11 @@ class BoardViewModel: ObservableObject {
     @Published var hoveredMoveStr: String? = nil
     @Published var config = ConfigManager.shared.config
     @Published var isFullGameScanning: Bool = false
-    private var fullGameScanTask: Task<Void, Never>? = nil
-    private var mainLineColors: [Int: String] = [:]
-    private var currentAnalysisId: String? = nil
-    private var analysisSessionId: Int = 0
 
-    private var analysisEngine: AnalysisEngine? = nil
-    private var analysisTask: Task<Void, Never>? = nil
-    private var resultTask: Task<Void, Never>? = nil
-    private var logTask: Task<Void, Never>? = nil
-    private var isEngineReady: Bool = false
+    private var gameManager: GameManager
+    private var aiManager: AIManager
+    private var sgfManager = SgfManager()
+    private var cancellables = Set<AnyCancellable>()
 
     var treeWidth: CGFloat {
         let maxX = treeNodes.map { $0.x }.max() ?? 0
@@ -213,8 +114,6 @@ class BoardViewModel: ObservableObject {
         let maxY = treeNodes.map { $0.y }.max() ?? 0
         return maxY
     }
-
-    private var nodeMap: [String: SgfNode] = [:]
 
     var formattedResult: String {
         let res = metadata.result.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -247,23 +146,15 @@ class BoardViewModel: ObservableObject {
         return res
     }
 
-    private var cancellables = Set<AnyCancellable>()
     var langManager = LanguageManager.shared
-
-    // Core Game Controller
-    private var game: Game
 
     init() {
         // Load persisted settings
         let savedSize = UserDefaults.standard.integer(forKey: "boardSize")
         let initialSize = savedSize > 0 ? savedSize : 19
 
-        // 1. Initialize all stored properties first
-        self.game = Game(size: UInt32(initialSize))
-
-        // 2. Now we can use self and set initial state
-        self.internalState.boardSize = initialSize
-        self.internalState.metadata.size = UInt32(initialSize)
+        self.gameManager = GameManager(initialSize: initialSize)
+        self.aiManager = AIManager()
 
         if let rawValue = UserDefaults.standard.object(forKey: "moveNumberDisplay") as? Int,
            let display = MoveNumberDisplay(rawValue: rawValue) {
@@ -279,6 +170,8 @@ class BoardViewModel: ObservableObject {
         let themeId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "wood"
         self.theme = (themeId == "bw") ? .bwPrint : .defaultWood
 
+        setupBindings()
+
         // Observe language changes to refresh message
         LanguageManager.shared.$selectedLanguage
             .receive(on: RunLoop.main)
@@ -286,9 +179,35 @@ class BoardViewModel: ObservableObject {
                 self?.refreshMessage()
             }
             .store(in: &cancellables)
+    }
 
-        // Initial sync to ensure correct state
-        syncStateWithGame(rebuildTree: true)
+    private func setupBindings() {
+        gameManager.$gameState
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in
+                self?.gameState = $0
+                self?.refreshMessage()
+                self?.updateAnalysis()
+            }
+            .store(in: &cancellables)
+
+        aiManager.$isAnalyzing.assign(to: &$isAnalyzing)
+        aiManager.$isEngineStarted
+            .receive(on: RunLoop.main)
+            .sink { [weak self] started in
+                if started {
+                    self?.updateAnalysis()
+                    self?.startFullGameAnalysis()
+                }
+            }
+            .store(in: &cancellables)
+        aiManager.$engineMessage.assign(to: &$engineMessage)
+        aiManager.$analysisResult.assign(to: &$analysisResult)
+        aiManager.$logEntries.assign(to: &$logEntries)
+        aiManager.$winRateHistory.assign(to: &$winRateHistory)
+        aiManager.$scoreLeadHistory.assign(to: &$scoreLeadHistory)
+        aiManager.$blunders.assign(to: &$blunders)
+        aiManager.$isFullGameScanning.assign(to: &$isFullGameScanning)
     }
 
     private func refreshMessage() {
@@ -306,19 +225,7 @@ class BoardViewModel: ObservableObject {
 
     func placeStone(x: Int, y: Int) {
         do {
-            let color = nextColor
-            let currentBoard = game.getBoard()
-            let oldStoneCount = countStones(on: currentBoard)
-
-            // Use Game controller to place stone
-            try game.placeStone(x: UInt32(x), y: UInt32(y), color: color)
-
-            let newBoard = game.getBoard()
-            let newStoneCount = countStones(on: newBoard)
-
-            // Play sound based on captures
-            let captures = oldStoneCount + 1 - newStoneCount
-
+            let captures = try gameManager.placeStone(x: x, y: y, color: nextColor)
             if captures == 0 {
                 SoundManager.shared.play(name: "stone")
             } else if captures == 1 {
@@ -326,34 +233,21 @@ class BoardViewModel: ObservableObject {
             } else {
                 SoundManager.shared.play(name: "dead-stones")
             }
-
-            syncStateWithGame(rebuildTree: true)
         } catch {
             self.message = "\("Invalid Move".localized): \(error)"
         }
     }
 
     func goBack(playSound: Bool = true) {
-        if game.goBack() {
+        if gameManager.goBack() {
             if playSound {
-                // When going back, for consistency with most Go apps, we play a stone sound.
                 SoundManager.shared.play(name: "stone")
             }
-
-            syncStateWithGame()
         }
     }
 
     func goForward(index: Int = 0) {
-        let currentBoard = game.getBoard()
-        let oldStoneCount = countStones(on: currentBoard)
-        if game.goForward(index: UInt32(index)) {
-            let newBoard = game.getBoard()
-            let newStoneCount = countStones(on: newBoard)
-
-            // Calculate captures: (old + 1) - new
-            let captures = oldStoneCount + 1 - newStoneCount
-
+        if let captures = gameManager.goForward(index: index) {
             if captures == 0 {
                 SoundManager.shared.play(name: "stone")
             } else if captures == 1 {
@@ -361,17 +255,15 @@ class BoardViewModel: ObservableObject {
             } else {
                 SoundManager.shared.play(name: "dead-stones")
             }
-
-            syncStateWithGame()
         }
     }
 
     func nextVariation() {
+        let game = gameManager.getGame()
         let count = Int(game.getVariationCount())
         if count > 1 {
             let currentIndex = Int(game.getCurrentVariationIndex())
             let nextIndex = (currentIndex + 1) % count
-            // Go back silently and then forward to the next variation
             if game.goBack() {
                 goForward(index: nextIndex)
             }
@@ -379,11 +271,11 @@ class BoardViewModel: ObservableObject {
     }
 
     func previousVariation() {
+        let game = gameManager.getGame()
         let count = Int(game.getVariationCount())
         if count > 1 {
             let currentIndex = Int(game.getCurrentVariationIndex())
             let prevIndex = (currentIndex - 1 + count) % count
-            // Go back silently and then forward to the previous variation
             if game.goBack() {
                 goForward(index: prevIndex)
             }
@@ -395,35 +287,24 @@ class BoardViewModel: ObservableObject {
     }
 
     func goToStart() {
-        while game.canGoBack() {
-            _ = game.goBack()
-        }
-        syncStateWithGame()
+        gameManager.jumpToMove(0)
     }
 
     func goToEnd() {
-        while game.canGoForward() {
-            _ = game.goForward(index: 0)
-        }
-        syncStateWithGame()
+        gameManager.jumpToMove(Int.max)
     }
 
     func jumpToMove(_ target: Int) {
-        game.jumpToMoveNumber(target: UInt32(target))
-        syncStateWithGame()
+        gameManager.jumpToMove(target)
     }
 
     func jumpToNode(id: String) {
-        if let node = nodeMap[id] {
-            game.jumpToNode(target: node)
-            syncStateWithGame()
-        }
+        gameManager.jumpToNode(id: id)
     }
 
     func deleteCurrentBranch() {
-        if game.deleteCurrentBranch() {
-            SoundManager.shared.play(name: "stone") // Play a sound for feedback
-            syncStateWithGame(rebuildTree: true)
+        if gameManager.deleteCurrentBranch() {
+            SoundManager.shared.play(name: "stone")
         }
     }
 
@@ -438,18 +319,10 @@ class BoardViewModel: ObservableObject {
     }
 
     func startAnalysis() {
-        guard analysisEngine == nil else { return }
-
-        isAnalyzing = true
-        isEngineReady = false
-        engineMessage = "Starting AI...".localized
-        logEntries = [] // Clear logs for new session
-
         let profile = ConfigManager.shared.currentProfile
         let executable = profile.path
         var args = profile.extraArgs.split(separator: " ").map(String.init)
 
-        // If no args provided, default to analysis mode
         if args.isEmpty {
             args = ["analysis"]
         }
@@ -463,532 +336,59 @@ class BoardViewModel: ObservableObject {
             args.append(profile.model)
         }
 
-        // Validation: KataGo analysis mode requires a config file
         if args.contains("analysis") && profile.config.isEmpty {
-            self.isAnalyzing = false
             self.message = "Error: Config file is required for analysis mode".localized
-            self.addLog("[ERROR] Config file is required. Please set it in Engine Settings.", isError: true)
             return
         }
 
-        Task {
-            do {
-                let engine = AnalysisEngine()
-                await engine.setLoggingEnabled(enabled: self.showAllLogs)
-                try await engine.start(executable: executable, args: args)
-                self.analysisEngine = engine
-                // engineMessage will be updated via logs
-                self.startLogPolling()
-                self.startResultPolling()
-                updateAnalysis()
-
-                // If we have a game loaded, start a full game scan in the background
-                if self.game.getMaxMoveCount() > 0 {
-                    self.startFullGameAnalysis()
-                }
-            } catch {
-                self.isAnalyzing = false
-                self.engineMessage = "AI Error: \(error)".localized
-                self.addLog("AI Error: \(error)", isError: true)
-            }
-        }
-    }
-
-    private func addLog(_ message: String, isError: Bool = false) {
-        var displayMessage = message
-        let isStderrPrefixed = message.hasPrefix("[STDERR]")
-        if isStderrPrefixed {
-            // Remove "[STDERR] " prefix if present, otherwise just "[STDERR]"
-            if message.hasPrefix("[STDERR] ") {
-                displayMessage = String(message.dropFirst(9))
-            } else {
-                displayMessage = String(message.dropFirst(8))
-            }
-        }
-
-        let trimmed = displayMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return }
-
-        // Communication logs start with >>> or <<<
-        let isComm = trimmed.hasPrefix(">>>") || trimmed.hasPrefix("<<<")
-
-        // If communication logging is disabled, skip adding to logEntries
-        if isComm && !showAllLogs { return }
-
-        // Improved error detection for engine logs
-        let lowerTrimmed = trimmed.lowercased()
-        let containsErrorMarker = lowerTrimmed.contains("[error]") ||
-                                 lowerTrimmed.contains("fatal error") ||
-                                 lowerTrimmed.hasPrefix("error:") ||
-                                 lowerTrimmed.contains(" error: ")
-
-        // If it's from stderr, we only treat it as an error if it has a strong error marker.
-        let finalIsError = isError || containsErrorMarker
-
-        let entry = LogEntry(message: displayMessage, isError: finalIsError, isCommunication: isComm)
-
-        DispatchQueue.main.async {
-            self.logEntries.append(entry)
-            if self.logEntries.count > 2000 {
-                self.logEntries.removeFirst(500)
-            }
-
-            // Update engine status message
-            if trimmed.contains("Started, ready to begin handling requests") {
-                if !self.isEngineReady {
-                    self.isEngineReady = true
-                    self.engineMessage = "AI Started".localized
-                }
-            } else if trimmed.contains("info: visits") {
-                self.isEngineReady = true
-                self.engineMessage = trimmed
-            } else if self.isEngineReady && !isComm && !finalIsError {
-                self.engineMessage = trimmed
-            } else if finalIsError {
-                self.engineMessage = "AI Error".localized + ": " + trimmed
-            }
-        }
-    }
-
-    private func startLogPolling() {
-        logTask?.cancel()
-        logTask = Task {
-            while !Task.isCancelled {
-                if let engine = analysisEngine {
-                    let logs = await engine.getLogs()
-                    for log in logs {
-                        self.addLog(log)
-                    }
-                }
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-            }
-        }
-    }
-
-    private func startResultPolling() {
-        resultTask?.cancel()
-        resultTask = Task {
-            while !Task.isCancelled {
-                guard let engine = analysisEngine else {
-                    try? await Task.sleep(nanoseconds: 100_000_000)
-                    continue
-                }
-
-                do {
-                    let result = try await engine.getNextResult()
-                    if Task.isCancelled { break }
-
-                    self.handleAnalysisResult(result)
-                } catch {
-                    // Timeout or error, just continue
-                    try? await Task.sleep(nanoseconds: 10_000_000)
-                }
-            }
-        }
-    }
-
-    private func handleAnalysisResult(_ result: AnalysisResult) {
-        if result.noResults {
-            return
-        }
-
-        // Parse session ID from result.id (format: "prefix-sessionId-...")
-        let parts = result.id.split(separator: "-")
-        if result.id.hasPrefix("qidao-") {
-            if parts.count >= 2, let resultSessionId = Int(parts[1]) {
-                if resultSessionId != self.analysisSessionId { return }
-            }
-        } else if result.id.hasPrefix("fullscan-") {
-            if parts.count >= 2, let resultSessionId = Int(parts[1]) {
-                if resultSessionId != self.analysisSessionId { return }
-            }
-        }
-
-        if result.id.hasPrefix("qidao-") {
-            // Check if this result matches the current node
-            if result.id.hasSuffix("-\(currentNodeId)") {
-                let analyzingWhiteToMove = nextColor == .white
-
-                // Normalize to Black's perspective for history and sidebar displays
-                // We force the engine to return Black's perspective via overrideSettings.
-                let normalizedWinRate = WinRateConverter.convertWinRate(
-                    result.rootInfo.winrate,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: analyzingWhiteToMove
-                )
-                let normalizedScoreLead = WinRateConverter.convertScoreLead(
-                    result.rootInfo.scoreLead,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: analyzingWhiteToMove
-                )
-
-                let normalizedResult = AnalysisResult(
-                    id: result.id,
-                    turnNumber: result.turnNumber,
-                    isDuringSearch: result.isDuringSearch,
-                    noResults: result.noResults,
-                    rootInfo: AnalysisRootInfo(
-                        winrate: normalizedWinRate,
-                        scoreLead: normalizedScoreLead,
-                        visits: result.rootInfo.visits
-                    ),
-                    moveInfos: result.moveInfos,
-                    ownership: result.ownership
-                )
-
-                self.analysisResult = normalizedResult
-
-                // Update history for the current turn
-                let turn = self.moveCount
-                self.winRateHistory[turn] = normalizedWinRate
-                self.scoreLeadHistory[turn] = normalizedScoreLead
-                detectBlunder(at: turn)
-
-                // If we reached max visits, we can stop polling for this turn
-                if let maxVisits = config.analysis.maxVisits, result.rootInfo.visits >= UInt32(maxVisits) {
-                    Task {
-                        try? await analysisEngine?.terminate(id: result.id)
-                    }
-                }
-            }
-        } else if result.id.hasPrefix("fullscan-") {
-            // Background scan results
-            // Only update history if it's a final result for that turn (not during search)
-            if !result.isDuringSearch {
-                let turn = Int(result.turnNumber)
-
-                // Use mainLineColors to determine if it's White's turn at this turn number
-                let isWhiteAtTurn: Bool
-                if turn == 0 {
-                    isWhiteAtTurn = false // Initial position, Black to move
-                } else {
-                    let lastMoveColor = self.mainLineColors[turn]
-                    isWhiteAtTurn = (lastMoveColor == "B")
-                }
-
-                let normalizedWinRate = WinRateConverter.convertWinRate(
-                    result.rootInfo.winrate,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: isWhiteAtTurn
-                )
-                let normalizedScoreLead = WinRateConverter.convertScoreLead(
-                    result.rootInfo.scoreLead,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: isWhiteAtTurn
-                )
-
-                self.winRateHistory[turn] = normalizedWinRate
-                self.scoreLeadHistory[turn] = normalizedScoreLead
-
-                detectBlunder(at: turn)
-            }
-        } else if result.id.hasPrefix("terminate-") {
-            // Ignore termination acknowledgments
-        }
-    }
-
-    private func detectBlunder(at turn: Int) {
-        guard turn > 0,
-              let currentWR = winRateHistory[turn],
-              let prevWR = winRateHistory[turn - 1] else { return }
-
-        let diff = currentWR - prevWR
-        let absDiff = abs(diff)
-        let threshold = config.display.blunderThreshold
-
-        if absDiff >= threshold {
-            blunders[turn] = .blunder
-        } else {
-            blunders.removeValue(forKey: turn)
-        }
+        aiManager.start(executable: executable, args: args, config: config)
     }
 
     func stopAnalysis() {
-        isAnalyzing = false
-        isEngineReady = false
-        analysisResult = nil
-        winRateHistory = [:]
-        scoreLeadHistory = [:]
-        blunders = [:]
-        analysisTask?.cancel()
-        analysisTask = nil
-        fullGameScanTask?.cancel()
-        fullGameScanTask = nil
-        resultTask?.cancel()
-        resultTask = nil
-        logTask?.cancel()
-        logTask = nil
-        if let engine = analysisEngine {
-            Task {
-                try? await engine.stop()
-            }
-        }
-        analysisEngine = nil
-        engineMessage = "AI Not Started".localized
+        aiManager.stop()
     }
 
     func updateAnalysis() {
-        self.hoveredMoveStr = nil // Clear hover state when board changes
-        guard isAnalyzing, let engine = analysisEngine else {
-            analysisResult = nil
-            return
-        }
-
-        analysisTask?.cancel()
-        // Don't clear analysisResult here to avoid UI flickering.
-        // The UI will keep showing the previous result until new data arrives.
-
-        let initialStones = game.getCurrentBoardStones()
-        let nextPlayer = nextColor == .black ? "B" : "W"
-        let currentNodeId = game.getCurrentNode().getId()
-        let analysisSettings = config.analysis
-        let displaySettings = config.display
-        let metadataSnapshot = metadata
-
-        analysisTask = Task {
-            do {
-                // Debounce: wait for 0.5 seconds before starting analysis (reduced from 1s)
-                try await Task.sleep(nanoseconds: 500_000_000)
-
-                // Terminate previous move analysis to free up engine resources
-                if let oldId = self.currentAnalysisId {
-                    try? await engine.terminate(id: oldId)
-                }
-
-                let newId = "qidao-\(self.analysisSessionId)-\(currentNodeId)"
-                self.currentAnalysisId = newId
-
-                var query: [String: Any] = [
-                    "id": newId,
-                    "moves": [] as [Any],
-                    "initialStones": initialStones,
-                    "initialPlayer": nextPlayer,
-                    "rules": "chinese",
-                    "komi": metadataSnapshot.komi,
-                    "boardXSize": metadataSnapshot.size,
-                    "boardYSize": metadataSnapshot.size,
-                    "analyzeTurns": [0],
-                    "priority": 10, // High priority for current move
-                    "includeOwnership": displaySettings.showOwnership,
-                    "includePolicy": analysisSettings.includePolicy
-                ]
-
-                if let reportInterval = analysisSettings.reportDuringSearchEvery, reportInterval >= 0.001 {
-                    query["reportDuringSearchEvery"] = reportInterval
-                }
-
-                if let maxVisits = analysisSettings.maxVisits {
-                    query["maxVisits"] = maxVisits
-                }
-
-                var overrideSettings: [String: Any] = [
-                    "reportAnalysisWinratesAs": "BLACK"
-                ]
-                if let maxTime = analysisSettings.maxTime {
-                    overrideSettings["maxTime"] = maxTime
-                }
-
-                for (key, value) in analysisSettings.advancedParams {
-                    // Try to parse as Bool, then Double, then fallback to String
-                    if let boolVal = Bool(value.lowercased()) {
-                        overrideSettings[key] = boolVal
-                    } else if let doubleVal = Double(value) {
-                        overrideSettings[key] = doubleVal
-                    } else {
-                        overrideSettings[key] = value
-                    }
-                }
-
-                if !overrideSettings.isEmpty {
-                    query["overrideSettings"] = overrideSettings
-                }
-
-                let jsonData = try JSONSerialization.data(withJSONObject: query)
-                let jsonString = String(data: jsonData, encoding: .utf8)!
-
-                try await engine.analyze(queryJson: jsonString)
-            } catch is CancellationError {
-                // Task was cancelled, ignore
-            } catch {
-                print("Analysis error: \(error)")
-            }
-        }
+        self.hoveredMoveStr = nil
+        let game = gameManager.getGame()
+        aiManager.updateAnalysis(
+            currentNodeId: game.getCurrentNode().getId(),
+            initialStones: game.getCurrentBoardStones(),
+            nextPlayer: nextColor == .black ? "B" : "W",
+            turnNumber: moveCount,
+            metadata: game.getMetadata(),
+            config: config
+        )
     }
 
-    private func rebuildTree() -> (nodes: [TreeVisualNode], edges: [TreeVisualEdge]) {
-        nodeMap = [:]
-        var nodes: [TreeVisualNode] = []
-        var edges: [TreeVisualEdge] = []
+    func startFullGameAnalysis() {
+        let game = gameManager.getGame()
+        let currentId = game.getCurrentNode().getId()
 
-        let root = game.getRootNode()
+        // Get initial player by jumping to root temporarily
+        game.jumpToMoveNumber(target: 0)
+        let initialPlayer = game.getNextColor() == .black ? "B" : "W"
 
-        var nextXAtDepth: [Int: Int] = [:]
+        // Jump back to original position
+        gameManager.jumpToNode(id: currentId)
 
-        func traverse(node: SgfNode, depth: Int, xOffset: Int, parentPos: CGPoint?) {
-            let id = node.getId()
-            nodeMap[id] = node
-
-            let x = CGFloat(xOffset)
-            let y = CGFloat(depth)
-            let currentPos = CGPoint(x: x, y: y)
-
-            let props = node.getProperties()
-            var color: StoneColor? = nil
-            if props.contains(where: { $0.identifier == "B" }) {
-                color = .black
-            } else if props.contains(where: { $0.identifier == "W" }) {
-                color = .white
-            }
-
-            nodes.append(TreeVisualNode(id: id, x: x, y: y, color: color))
-
-            if let parent = parentPos {
-                edges.append(TreeVisualEdge(id: "\(id)-edge", from: parent, to: currentPos))
-            }
-
-            let children = node.getChildren()
-            let currentX = xOffset
-            for (index, child) in children.enumerated() {
-                let childX = (index == 0) ? currentX : (nextXAtDepth[depth + 1] ?? currentX + 1)
-                nextXAtDepth[depth + 1] = max(nextXAtDepth[depth + 1] ?? 0, childX + 1)
-                traverse(node: child, depth: depth + 1, xOffset: childX, parentPos: currentPos)
-            }
-        }
-
-        traverse(node: root, depth: 0, xOffset: 0, parentPos: nil)
-
-        return (nodes, edges)
-    }
-
-    private func syncStateWithGame(rebuildTree: Bool = false) {
-        // 1. Synchronous updates for critical data (board, size, metadata)
-        // This ensures that subsequent calls (like startFullGameAnalysis) see the correct state.
-        // We update internalState synchronously so the engine can read it immediately.
-        var newState = internalState
-        newState.board = self.game.getBoard()
-        newState.nextColor = self.game.getNextColor()
-        newState.moveCount = Int(self.game.getMoveCount())
-        newState.maxMoveCount = Int(self.game.getMaxMoveCount())
-        newState.metadata = self.game.getMetadata()
-        newState.currentNodeId = self.game.getCurrentNode().getId()
-
-        // Update board size and lock state
-        newState.boardSize = Int(newState.metadata.size)
-        newState.isSizeLocked = newState.isSizeLocked || newState.moveCount > 0 || self.game.getMaxMoveCount() > 0
-
-        // Update lastMove
-        if let last = self.game.getLastMove(), let coords = last.values.first, coords.count == 2 {
-            let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
-            let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
-            newState.lastMove = (x, y)
-        } else {
-            newState.lastMove = nil
-        }
-
-        // Rebuild moveNumbers map
-        newState.moveNumbers = [:]
-        let pathMoves = self.game.getCurrentPathMoves()
-        for (index, moveProp) in pathMoves.enumerated() {
-            if let coords = moveProp.values.first, coords.count == 2 {
-                let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
-                let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
-                newState.moveNumbers["\(x),\(y)"] = index + 1
-            }
-        }
-
-        // Update variations
-        let children = self.game.getCurrentNode().getChildren()
-        let variationChildren = children.count > 1 ? children : []
-        newState.variations = variationChildren.enumerated().map { (index, node) in
-            let props = node.getProperties()
-            let moveProp = props.first { $0.identifier == "B" || $0.identifier == "W" }
-            var vx: Int? = nil
-            var vy: Int? = nil
-            let moveText: String
-            if let prop = moveProp, let coords = prop.values.first, coords.count == 2 {
-                vx = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
-                vy = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
-                moveText = "\(prop.identifier) (\(vx!), \(vy!))"
-            } else {
-                moveText = "Node \(index + 1)"
-            }
-            return Variation(id: index, moveText: moveText, x: vx, y: vy)
-        }
-
-        if rebuildTree {
-            let tree = self.rebuildTree()
-            newState.treeNodes = tree.nodes
-            newState.treeEdges = tree.edges
-        }
-
-        // Apply synchronously to internalState for engine/logic
-        self.internalState = newState
-
-        // 2. Asynchronous updates for UI messages and AI analysis
-        // This avoids "Publishing changes from within view updates is not allowed"
-        // when syncStateWithGame is called from a view update context (like onChange).
-        DispatchQueue.main.async {
-            self.gameState = newState
-            self.refreshMessage()
-            self.updateAnalysis()
-        }
-    }
-
-    private func countStones(on board: Board) -> Int {
-        var count = 0
-        let size = board.getSize()
-        for y in 0..<size {
-            for x in 0..<size {
-                if board.getStone(x: x, y: y) != nil {
-                    count += 1
-                }
-            }
-        }
-        return count
-    }
-
-    func getDisplayMoveNumber(x: Int, y: Int) -> Int? {
-        guard let num = moveNumbers["\(x),\(y)"] else { return nil }
-        switch moveNumberDisplay {
-        case .all: return num
-        case .none: return nil
-        default:
-            if num > moveCount - moveNumberDisplay.rawValue {
-                return num
-            } else {
-                return nil
-            }
-        }
+        aiManager.startFullGameAnalysis(
+            mainLineMoves: game.getMainLineMoves(),
+            initialStones: game.getInitialStones(),
+            metadata: game.getMetadata(),
+            config: config,
+            initialPlayer: initialPlayer
+        )
     }
 
     func resetBoard() {
-        fullGameScanTask?.cancel()
-        fullGameScanTask = nil
-        self.analysisSessionId += 1
-        self.game = Game(size: UInt32(boardSize))
-        self.winRateHistory = [:]
-        self.scoreLeadHistory = [:]
-        self.blunders = [:]
-        self.analysisResult = nil
-        self.isSizeLocked = false
-
-        if isAnalyzing {
-            Task {
-                try? await analysisEngine?.terminateAll()
-            }
-        }
-
-        syncStateWithGame(rebuildTree: true)
+        aiManager.resetSession()
+        gameManager.reset(size: boardSize)
         self.message = "Board Reset".localized
     }
 
     func changeBoardSize(_ newSize: Int) {
         guard !isSizeLocked else { return }
-        internalState.boardSize = newSize
         UserDefaults.standard.set(newSize, forKey: "boardSize")
         resetBoard()
     }
@@ -999,140 +399,45 @@ class BoardViewModel: ObservableObject {
     }
 
     func updateMetadata(_ newMetadata: GameMetadata) {
-        game.setMetadata(metadata: newMetadata)
-        syncStateWithGame(rebuildTree: true)
+        gameManager.updateMetadata(newMetadata)
     }
 
     func loadSgf(url: URL) {
         do {
-            let data = try Data(contentsOf: url)
-            var content: String?
-
-            // Try UTF-8 first
-            content = String(data: data, encoding: .utf8)
-
-            // If failed, try GB18030 (common for Chinese SGFs)
-            if content == nil {
-                let gbkEncoding = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue))
-                content = String(data: data, encoding: String.Encoding(rawValue: gbkEncoding))
-            }
-
-            // Fallback to ASCII if all else fails
-            if content == nil {
-                content = String(data: data, encoding: .ascii)
-            }
-
-            guard let sgfContent = content else {
-                self.message = "\("Load Failed".localized): \("Failed to decode SGF file".localized)"
-                return
-            }
-
-            self.game = try Game.fromSgf(sgfContent: sgfContent)
-            self.isSizeLocked = true
-            self.analysisSessionId += 1
-            self.winRateHistory = [:]
-            self.scoreLeadHistory = [:]
-            self.blunders = [:]
-            self.analysisResult = nil
+            let newGame = try sgfManager.loadSgf(url: url)
+            gameManager.setGame(newGame)
+            aiManager.resetSession()
 
             // Update main line colors for win rate normalization
-            let mainLine = game.getMainLineMoves()
-            self.mainLineColors = [:]
+            let mainLine = newGame.getMainLineMoves()
+            var colors: [Int: String] = [:]
             for (i, m) in mainLine.enumerated() {
                 if m.count >= 1 {
-                    self.mainLineColors[i + 1] = m[0] // 1-indexed turn number
+                    colors[i + 1] = m[0]
                 }
             }
+            aiManager.setMainLineColors(colors)
 
-            syncStateWithGame(rebuildTree: true)
             self.message = "\("Loaded".localized): \(url.lastPathComponent)"
-
-            // Start background fast analysis for the whole game if AI is active
             if isAnalyzing {
-                self.startFullGameAnalysis()
+                // Use the newGame's data directly to avoid stale metadata from self.metadata
+                let initialPlayer = newGame.getNextColor() == .black ? "B" : "W"
+                aiManager.startFullGameAnalysis(
+                    mainLineMoves: newGame.getMainLineMoves(),
+                    initialStones: newGame.getInitialStones(),
+                    metadata: newGame.getMetadata(),
+                    config: config,
+                    initialPlayer: initialPlayer
+                )
             }
         } catch {
             self.message = "\("Load Failed".localized): \(error.localizedDescription)"
         }
     }
 
-    private func startFullGameAnalysis() {
-        guard isAnalyzing, let engine = analysisEngine else { return }
-
-        let mainLineMoves = game.getMainLineMoves()
-        let initialStones = game.getInitialStones()
-        if mainLineMoves.isEmpty && initialStones.isEmpty { return }
-
-        // Update main line colors for win rate normalization
-        self.mainLineColors = [:]
-        for (i, m) in mainLineMoves.enumerated() {
-            if m.count >= 1 {
-                self.mainLineColors[i + 1] = m[0] // 1-indexed turn number
-            }
-        }
-
-        let metadataSnapshot = metadata
-        let initialPlayer = "B"
-
-        fullGameScanTask?.cancel()
-        isFullGameScanning = true
-
-        fullGameScanTask = Task {
-            do {
-                let scanId = "fullscan-\(self.analysisSessionId)"
-
-                // Terminate any previous background scan on the engine side
-                try? await engine.terminateAll() // Stop everything before starting a full scan
-
-                // To avoid blocking the main analysis, we analyze in small batches
-                // and use a lower priority.
-                let totalTurns = mainLineMoves.count
-                let batchSize = 10 // Increased batch size for faster throughput
-
-                for startTurn in stride(from: 0, through: totalTurns, by: batchSize) {
-                    if Task.isCancelled { break }
-
-                    let endTurn = min(startTurn + batchSize - 1, totalTurns)
-                    let analyzeTurns = Array(startTurn...endTurn)
-
-                    let query: [String: Any] = [
-                        "id": scanId,
-                        "initialStones": initialStones,
-                        "moves": mainLineMoves,
-                        "initialPlayer": initialPlayer,
-                        "rules": "chinese",
-                        "komi": metadataSnapshot.komi,
-                        "boardXSize": metadataSnapshot.size,
-                        "boardYSize": metadataSnapshot.size,
-                        "analyzeTurns": analyzeTurns,
-                        "maxVisits": 40, // Reduced visits for much faster rough scan
-                        "priority": -10, // Low priority for background scan
-                        "includeOwnership": false,
-                        "includePolicy": false,
-                        "overrideSettings": [
-                            "reportAnalysisWinratesAs": "BLACK"
-                        ]
-                    ]
-
-                    let jsonData = try JSONSerialization.data(withJSONObject: query)
-                    let jsonString = String(data: jsonData, encoding: .utf8)!
-
-                    try await engine.analyze(queryJson: jsonString)
-
-                    // Wait a bit between batches to let the engine breathe
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-                }
-            } catch {
-                print("Full game analysis failed: \(error)")
-            }
-            isFullGameScanning = false
-        }
-    }
-
     func saveSgf(url: URL) {
         do {
-            let content = game.toSgf()
-            try content.write(to: url, atomically: true, encoding: .utf8)
+            try sgfManager.saveSgf(game: gameManager.getGame(), url: url)
             self.message = "\("Saved".localized): \(url.lastPathComponent)"
         } catch {
             self.message = "\("Save Failed".localized): \(error.localizedDescription)"

@@ -41,7 +41,7 @@ struct AnalysisSettings: Codable, Equatable {
 enum WinRatePerspective: String, Codable, CaseIterable {
     case black = "Black"
     case current = "Current Player"
-    
+
     var localized: String { self.rawValue.localized }
 }
 

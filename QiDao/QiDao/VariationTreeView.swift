@@ -161,32 +161,3 @@ struct VariationTreeView: View {
         }
     }
 }
-
-extension CGPoint {
-    func distance(to other: CGPoint) -> CGFloat {
-        sqrt(pow(x - other.x, 2) + pow(y - other.y, 2))
-    }
-}
-
-struct VariationMarker: View {
-    let label: String
-    let theme: BoardTheme
-    let size: CGFloat
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.black.opacity(0.4))
-                .frame(width: size * 0.6, height: size * 0.6)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
-                )
-                .shadow(color: .black.opacity(0.2), radius: 2)
-
-            Text(label)
-                .font(.system(size: size * 0.35, weight: .black))
-                .foregroundColor(.white)
-        }
-    }
-}

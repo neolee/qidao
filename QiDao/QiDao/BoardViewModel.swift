@@ -30,6 +30,29 @@ struct TreeVisualEdge: Identifiable {
     let to: CGPoint
 }
 
+struct GameState {
+    var board: Board = Board(size: 19)
+    var boardSize: Int = 19
+    var isSizeLocked: Bool = false
+    var nextColor: StoneColor = .black
+    var lastMove: (x: Int, y: Int)? = nil
+    var moveCount: Int = 0
+    var maxMoveCount: Int = 0
+    var variations: [Variation] = []
+    var treeNodes: [TreeVisualNode] = []
+    var treeEdges: [TreeVisualEdge] = []
+    var currentNodeId: String = ""
+    var moveNumbers: [String: Int] = [:]
+    var metadata: GameMetadata = GameMetadata(
+        blackName: "", blackRank: "",
+        whiteName: "", whiteRank: "",
+        komi: 7.5, result: "",
+        date: "", event: "",
+        gameName: "", place: "",
+        size: 19
+    )
+}
+
 enum MoveNumberDisplay: Int, CaseIterable, Identifiable {
     case all = 0
     case last10 = 10
@@ -60,8 +83,34 @@ enum MarkerType {
 class BoardViewModel: ObservableObject {
     @Published var message: String = "Ready".localized
     @Published var gameInfo: String = ""
-    @Published var board: Board = Board(size: 19)
-    @Published var nextColor: StoneColor = .black
+    
+    // Core Game State (Grouped for atomicity and to avoid SwiftUI publishing errors)
+    // internalState is updated synchronously for the engine, while gameState is updated
+    // asynchronously to notify SwiftUI without triggering "within view updates" errors.
+    private var internalState = GameState()
+    @Published private(set) var gameState = GameState()
+    
+    // Computed properties for backward compatibility with views and engine
+    var board: Board { internalState.board }
+    var boardSize: Int {
+        get { internalState.boardSize }
+        set { changeBoardSize(newValue) }
+    }
+    var isSizeLocked: Bool {
+        get { internalState.isSizeLocked }
+        set { internalState.isSizeLocked = newValue }
+    }
+    var nextColor: StoneColor { internalState.nextColor }
+    var lastMove: (x: Int, y: Int)? { internalState.lastMove }
+    var moveCount: Int { internalState.moveCount }
+    var maxMoveCount: Int { internalState.maxMoveCount }
+    var variations: [Variation] { internalState.variations }
+    var treeNodes: [TreeVisualNode] { internalState.treeNodes }
+    var treeEdges: [TreeVisualEdge] { internalState.treeEdges }
+    var currentNodeId: String { internalState.currentNodeId }
+    var moveNumbers: [String: Int] { internalState.moveNumbers }
+    var metadata: GameMetadata { internalState.metadata }
+
     @Published var theme: BoardTheme = .defaultWood
     @Published var moveNumberDisplay: MoveNumberDisplay = .all {
         didSet { UserDefaults.standard.set(moveNumberDisplay.rawValue, forKey: "moveNumberDisplay") }
@@ -72,13 +121,6 @@ class BoardViewModel: ObservableObject {
     @Published var playSound: Bool = true {
         didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
     }
-    @Published var lastMove: (x: Int, y: Int)? = nil
-    @Published var moveCount: Int = 0
-    @Published var maxMoveCount: Int = 0
-    @Published var variations: [Variation] = []
-    @Published var treeNodes: [TreeVisualNode] = []
-    @Published var treeEdges: [TreeVisualEdge] = []
-    @Published var currentNodeId: String = ""
 
     var nextSgfMove: (x: Int, y: Int)? {
         let children = game.getCurrentNode().getChildren()
@@ -171,15 +213,6 @@ class BoardViewModel: ObservableObject {
         return maxY
     }
 
-    @Published var metadata: GameMetadata = GameMetadata(
-        blackName: "", blackRank: "",
-        whiteName: "", whiteRank: "",
-        komi: 7.5, result: "",
-        date: "", event: "",
-        gameName: "", place: "",
-        size: 19
-    )
-
     private var nodeMap: [String: SgfNode] = [:]
 
     var formattedResult: String {
@@ -219,14 +252,18 @@ class BoardViewModel: ObservableObject {
     // Core Game Controller
     private var game: Game
 
-    // Track move history for numbering
-    @Published var moveNumbers: [String: Int] = [:]
-
     init() {
-        // Initialize Game Controller
-        self.game = Game(size: 19)
-
         // Load persisted settings
+        let savedSize = UserDefaults.standard.integer(forKey: "boardSize")
+        let initialSize = savedSize > 0 ? savedSize : 19
+        
+        // 1. Initialize all stored properties first
+        self.game = Game(size: UInt32(initialSize))
+        
+        // 2. Now we can use self and set initial state
+        self.internalState.boardSize = initialSize
+        self.internalState.metadata.size = UInt32(initialSize)
+
         if let rawValue = UserDefaults.standard.object(forKey: "moveNumberDisplay") as? Int,
            let display = MoveNumberDisplay(rawValue: rawValue) {
             self.moveNumberDisplay = display
@@ -766,7 +803,7 @@ class BoardViewModel: ObservableObject {
         }
     }
 
-    private func rebuildTree() {
+    private func rebuildTree() -> (nodes: [TreeVisualNode], edges: [TreeVisualEdge]) {
         nodeMap = [:]
         var nodes: [TreeVisualNode] = []
         var edges: [TreeVisualEdge] = []
@@ -808,63 +845,78 @@ class BoardViewModel: ObservableObject {
 
         traverse(node: root, depth: 0, xOffset: 0, parentPos: nil)
 
-        self.treeNodes = nodes
-        self.treeEdges = edges
+        return (nodes, edges)
     }
 
     private func syncStateWithGame(rebuildTree: Bool = false) {
-        // Ensure updates happen on main thread and outside immediate view update cycle
-        DispatchQueue.main.async {
-            self.board = self.game.getBoard()
-            self.nextColor = self.game.getNextColor()
-            self.moveCount = Int(self.game.getMoveCount())
-            self.maxMoveCount = Int(self.game.getMaxMoveCount())
-            self.metadata = self.game.getMetadata()
-            self.currentNodeId = self.game.getCurrentNode().getId()
+        // 1. Synchronous updates for critical data (board, size, metadata)
+        // This ensures that subsequent calls (like startFullGameAnalysis) see the correct state.
+        // We update internalState synchronously so the engine can read it immediately.
+        var newState = internalState
+        newState.board = self.game.getBoard()
+        newState.nextColor = self.game.getNextColor()
+        newState.moveCount = Int(self.game.getMoveCount())
+        newState.maxMoveCount = Int(self.game.getMaxMoveCount())
+        newState.metadata = self.game.getMetadata()
+        newState.currentNodeId = self.game.getCurrentNode().getId()
 
-            // Update lastMove
-            if let last = self.game.getLastMove(), let coords = last.values.first, coords.count == 2 {
+        // Update board size and lock state
+        newState.boardSize = Int(newState.metadata.size)
+        newState.isSizeLocked = newState.isSizeLocked || newState.moveCount > 0 || self.game.getMaxMoveCount() > 0
+
+        // Update lastMove
+        if let last = self.game.getLastMove(), let coords = last.values.first, coords.count == 2 {
+            let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+            let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+            newState.lastMove = (x, y)
+        } else {
+            newState.lastMove = nil
+        }
+
+        // Rebuild moveNumbers map
+        newState.moveNumbers = [:]
+        let pathMoves = self.game.getCurrentPathMoves()
+        for (index, moveProp) in pathMoves.enumerated() {
+            if let coords = moveProp.values.first, coords.count == 2 {
                 let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
                 let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
-                self.lastMove = (x, y)
+                newState.moveNumbers["\(x),\(y)"] = index + 1
+            }
+        }
+
+        // Update variations
+        let children = self.game.getCurrentNode().getChildren()
+        let variationChildren = children.count > 1 ? children : []
+        newState.variations = variationChildren.enumerated().map { (index, node) in
+            let props = node.getProperties()
+            let moveProp = props.first { $0.identifier == "B" || $0.identifier == "W" }
+            var vx: Int? = nil
+            var vy: Int? = nil
+            let moveText: String
+            if let prop = moveProp, let coords = prop.values.first, coords.count == 2 {
+                vx = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+                vy = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+                moveText = "\(prop.identifier) (\(vx!), \(vy!))"
             } else {
-                self.lastMove = nil
+                moveText = "Node \(index + 1)"
             }
+            return Variation(id: index, moveText: moveText, x: vx, y: vy)
+        }
 
-            // Rebuild moveNumbers map
-            self.moveNumbers = [:]
-            let pathMoves = self.game.getCurrentPathMoves()
-            for (index, moveProp) in pathMoves.enumerated() {
-                if let coords = moveProp.values.first, coords.count == 2 {
-                    let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
-                    let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
-                    self.moveNumbers["\(x),\(y)"] = index + 1
-                }
-            }
-
-            // Update variations: Show A, B, C... only if there are multiple branches.
-            // If there's only one branch, don't show any variation marker.
-            let children = self.game.getCurrentNode().getChildren()
-            let variationChildren = children.count > 1 ? children : []
-            self.variations = variationChildren.enumerated().map { (index, node) in
-                let props = node.getProperties()
-                let moveProp = props.first { $0.identifier == "B" || $0.identifier == "W" }
-                var vx: Int? = nil
-                var vy: Int? = nil
-                let moveText: String
-                if let prop = moveProp, let coords = prop.values.first, coords.count == 2 {
-                    vx = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
-                    vy = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
-                    moveText = "\(prop.identifier) (\(vx!), \(vy!))"
-                } else {
-                    moveText = "Node \(index + 1)"
-                }
-                return Variation(id: index, moveText: moveText, x: vx, y: vy)
-            }
-
-            if rebuildTree {
-                self.rebuildTree()
-            }
+        if rebuildTree {
+            let tree = self.rebuildTree()
+            newState.treeNodes = tree.nodes
+            newState.treeEdges = tree.edges
+        }
+        
+        // Apply synchronously to internalState for engine/logic
+        self.internalState = newState
+        
+        // 2. Asynchronous updates for UI messages and AI analysis
+        // This avoids "Publishing changes from within view updates is not allowed"
+        // when syncStateWithGame is called from a view update context (like onChange).
+        DispatchQueue.main.async {
+            self.gameState = newState
             self.refreshMessage()
             self.updateAnalysis()
         }
@@ -900,13 +952,21 @@ class BoardViewModel: ObservableObject {
     func resetBoard() {
         fullGameScanTask?.cancel()
         fullGameScanTask = nil
-        self.game = Game(size: 19)
+        self.game = Game(size: UInt32(boardSize))
         self.winRateHistory = [:]
         self.scoreLeadHistory = [:]
         self.blunders = [:]
         self.analysisResult = nil
+        self.isSizeLocked = false
         syncStateWithGame(rebuildTree: true)
         self.message = "Board Reset".localized
+    }
+
+    func changeBoardSize(_ newSize: Int) {
+        guard !isSizeLocked else { return }
+        internalState.boardSize = newSize
+        UserDefaults.standard.set(newSize, forKey: "boardSize")
+        resetBoard()
     }
 
     func toggleTheme() {
@@ -944,6 +1004,7 @@ class BoardViewModel: ObservableObject {
             }
 
             self.game = try Game.fromSgf(sgfContent: sgfContent)
+            self.isSizeLocked = true
             self.winRateHistory = [:]
             self.scoreLeadHistory = [:]
             self.blunders = [:]

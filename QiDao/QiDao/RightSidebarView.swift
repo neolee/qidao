@@ -134,7 +134,7 @@ struct EvaluationBoardView: View {
     @ObservedObject var viewModel: BoardViewModel
     let ownership: [Double]?
     let pv: [String]?
-    let gridSize: Int = 19
+    var gridSize: Int { viewModel.boardSize }
 
     var body: some View {
         VStack {

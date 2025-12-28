@@ -4,7 +4,7 @@ import qidao_coreFFI
 struct GameBoardView: View {
     @ObservedObject var viewModel: BoardViewModel
     let size: CGFloat
-    let gridSize: Int = 19
+    var gridSize: Int { viewModel.boardSize }
 
     var body: some View {
         let spacing = size / CGFloat(gridSize + 1)

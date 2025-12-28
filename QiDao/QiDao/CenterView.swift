@@ -16,6 +16,23 @@ struct CenterView: View {
             // Toolbar
             HStack {
                 Group {
+                    Picker("Size".localized, selection: $viewModel.boardSize) {
+                        Text("19").tag(19)
+                        Text("13").tag(13)
+                        Text("9").tag(9)
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 50)
+                    .labelsHidden()
+                    .disabled(viewModel.isSizeLocked)
+                    .onChange(of: viewModel.boardSize) { oldSize, newSize in
+                        // Use async to avoid "Publishing changes from within view updates is not allowed"
+                        // when the picker updates the value.
+                        DispatchQueue.main.async {
+                            viewModel.changeBoardSize(newSize)
+                        }
+                    }
+
                     ToolbarButton(title: "Open".localized, icon: "arrow.up.doc", action: openSgf)
                     ToolbarButton(title: "Save".localized, icon: "arrow.down.doc", action: saveSgf)
 

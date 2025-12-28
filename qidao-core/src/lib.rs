@@ -280,38 +280,49 @@ fn sgf_to_gtp(sgf_coord: &str, size: u32) -> String {
 
 fn convert_node(node: &ParserNode<Prop>) -> Arc<SgfNode> {
     let properties = node.properties().map(|prop: &Prop| {
-        let s = prop.to_string();
         let id = prop.identifier();
-
         let mut values = Vec::new();
-        let mut current_value = String::new();
-        let mut in_brackets = false;
-        let mut escaped = false;
 
-        // s is "ID[val1][val2]"
-        for c in s.chars().skip(id.len()) {
-            if escaped {
-                current_value.push(c);
-                escaped = false;
-            } else if c == '\\' {
-                escaped = true;
-            } else if c == '[' {
-                if in_brackets {
-                    current_value.push(c);
+        match prop {
+            Prop::SZ(size) => {
+                if size.0 == size.1 {
+                    values.push(size.0.to_string());
                 } else {
-                    in_brackets = true;
+                    values.push(format!("{}:{}", size.0, size.1));
                 }
-            } else if c == ']' {
-                if escaped {
-                    current_value.push(c);
-                    escaped = false;
-                } else {
-                    values.push(current_value.clone());
-                    current_value.clear();
-                    in_brackets = false;
+            }
+            _ => {
+                let s = prop.to_string();
+                let mut current_value = String::new();
+                let mut in_brackets = false;
+                let mut escaped = false;
+
+                // s is "ID[val1][val2]"
+                for c in s.chars().skip(id.len()) {
+                    if escaped {
+                        current_value.push(c);
+                        escaped = false;
+                    } else if c == '\\' {
+                        escaped = true;
+                    } else if c == '[' {
+                        if in_brackets {
+                            current_value.push(c);
+                        } else {
+                            in_brackets = true;
+                        }
+                    } else if c == ']' {
+                        if escaped {
+                            current_value.push(c);
+                            escaped = false;
+                        } else {
+                            values.push(current_value.clone());
+                            current_value.clear();
+                            in_brackets = false;
+                        }
+                    } else {
+                        current_value.push(c);
+                    }
                 }
-            } else {
-                current_value.push(c);
             }
         }
 
@@ -455,7 +466,17 @@ impl Game {
             props.iter()
                 .find(|p| p.identifier == "SZ")
                 .and_then(|p| p.values.first())
-                .and_then(|v| v.parse::<u32>().ok())
+                .and_then(|v| {
+                    // SGF may encode board size as "W:H" for rectangular boards (e.g., "13:13").
+                    // Try to parse a plain integer first, otherwise split on ':' and parse the first part.
+                    if let Ok(n) = v.parse::<u32>() {
+                        Some(n)
+                    } else if v.contains(':') {
+                        v.split(':').next().and_then(|s| s.parse::<u32>().ok())
+                    } else {
+                        None
+                    }
+                })
                 .unwrap_or(19)
         };
 

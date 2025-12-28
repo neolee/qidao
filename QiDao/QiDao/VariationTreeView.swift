@@ -41,11 +41,20 @@ struct VariationTreeView: View {
                     handleTap(at: value.location)
                 })
             }
-            .onChange(of: viewModel.currentNodeId) { oldId, newId in
+            .onChange(of: viewModel.gameState.currentNodeId) { oldId, newId in
                 centerCurrentNode(in: geometry.size)
             }
+            .onChange(of: geometry.size) { oldSize, newSize in
+                // Use async to avoid "update multiple times per frame" warning
+                DispatchQueue.main.async {
+                    centerCurrentNode(in: newSize)
+                }
+            }
             .onAppear {
-                centerCurrentNode(in: geometry.size)
+                // Small delay to ensure geometry is stable and tree is loaded
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    centerCurrentNode(in: geometry.size)
+                }
             }
         }
         .clipped()
@@ -129,6 +138,8 @@ struct VariationTreeView: View {
     }
 
     private func centerCurrentNode(in viewportSize: CGSize) {
+        guard viewportSize.width > 0 && viewportSize.height > 0 else { return }
+
         guard let currentNode = viewModel.treeNodes.first(where: { $0.id == viewModel.currentNodeId }) else {
             return
         }
@@ -141,9 +152,12 @@ struct VariationTreeView: View {
             height: viewportSize.height / 2 - targetY
         )
 
-        withAnimation(.easeInOut(duration: 0.3)) {
-            self.offset = newOffset
-            self.lastOffset = newOffset
+        // Only update if the offset has actually changed significantly
+        if abs(self.offset.width - newOffset.width) > 0.1 || abs(self.offset.height - newOffset.height) > 0.1 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                self.offset = newOffset
+                self.lastOffset = newOffset
+            }
         }
     }
 }

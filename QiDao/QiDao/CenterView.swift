@@ -15,42 +15,59 @@ struct CenterView: View {
         VStack(spacing: 0) {
             // Toolbar
             HStack {
-                Button(action: openSgf) {
-                    Label("Open".localized, systemImage: "arrow.up.doc")
+                Group {
+                    ToolbarButton(title: "Open".localized, icon: "arrow.up.doc", action: openSgf)
+                    ToolbarButton(title: "Save".localized, icon: "arrow.down.doc", action: saveSgf)
+
+                    Divider().frame(height: 20)
+
+                    ToolbarButton(title: "Theme".localized, icon: "paintpalette", action: viewModel.toggleTheme)
+                    ToolbarButton(title: "Reset".localized, icon: "arrow.counterclockwise", action: viewModel.resetBoard)
                 }
-                .focusable(false)
-                Button(action: saveSgf) {
-                    Label("Save".localized, systemImage: "arrow.down.doc")
-                }
-                .focusable(false)
 
                 Divider().frame(height: 20)
 
-                Button(action: viewModel.toggleTheme) {
-                    Label("Theme".localized, systemImage: "paintpalette")
-                }
-                .focusable(false)
-                Button(action: viewModel.resetBoard) {
-                    Label("Reset".localized, systemImage: "arrow.counterclockwise")
-                }
-                .focusable(false)
-
-                Divider().frame(height: 20)
-
-                Picker("Numbers".localized, selection: $viewModel.moveNumberDisplay) {
-                    ForEach(MoveNumberDisplay.allCases) { display in
-                        Text(display.label).tag(display)
+                Group {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 10) {
+                            Text("Numbers".localized)
+                                .foregroundColor(.secondary)
+                            Picker("Numbers".localized, selection: $viewModel.moveNumberDisplay) {
+                                ForEach(MoveNumberDisplay.allCases) { display in
+                                    Text(display.label).tag(display)
+                                }
+                            }
+                            .labelsHidden()
+                        }
+                        Picker("Numbers".localized, selection: $viewModel.moveNumberDisplay) {
+                            ForEach(MoveNumberDisplay.allCases) { display in
+                                Text(display.label).tag(display)
+                            }
+                        }
+                        .labelsHidden()
                     }
-                }
-                .pickerStyle(.menu)
-                .id("moveNumberPicker_\(langManager.selectedLanguage.rawValue)")
+                    .frame(minWidth: 100, maxWidth: 150)
+                    .help("Move Numbers".localized)
 
-                Toggle("Coordinates".localized, isOn: $viewModel.showCoordinates)
+                    Toggle(isOn: $viewModel.showCoordinates) {
+                        ViewThatFits(in: .horizontal) {
+                            Text("Coordinates".localized)
+                            Image(systemName: "number")
+                        }
+                    }
                     .toggleStyle(.checkbox)
-                    .focusable(false)
-                Toggle("Sound".localized, isOn: $viewModel.playSound)
+                    .help("Coordinates".localized)
+
+                    Toggle(isOn: $viewModel.playSound) {
+                        ViewThatFits(in: .horizontal) {
+                            Text("Sound".localized)
+                            Image(systemName: "speaker.wave.2")
+                        }
+                    }
                     .toggleStyle(.checkbox)
-                    .focusable(false)
+                    .help("Sound".localized)
+                }
+                .focusable(false)
 
                 Spacer()
 
@@ -63,13 +80,16 @@ struct CenterView: View {
                         }
                     }
                 } label: {
-                    Label(langManager.selectedLanguage.displayName, systemImage: "globe")
+                    ViewThatFits(in: .horizontal) {
+                        Label(langManager.selectedLanguage.displayName, systemImage: "globe")
+                        Image(systemName: "globe")
+                    }
                 }
-                .menuStyle(.button)
-                .frame(width: 120)
+                .buttonStyle(.plain)
                 .focusable(false)
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.vertical, 8)
             .background(.ultraThinMaterial)
 
             // Board Container
@@ -229,6 +249,23 @@ struct CenterView: View {
                 isBoardFocused = true
             }
         }
+    }
+}
+
+struct ToolbarButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ViewThatFits(in: .horizontal) {
+                Label(title, systemImage: icon)
+                Label(title, systemImage: icon).labelStyle(.iconOnly)
+            }
+        }
+        .focusable(false)
+        .help(title)
     }
 }
 

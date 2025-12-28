@@ -5,12 +5,14 @@ struct RightSidebarView: View {
     @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 15) {
+            // 1. Variation Tree - Takes remaining space
             GroupBox(label: Label("Variation Tree".localized, systemImage: "arrow.triangle.branch")) {
                 VariationTreeView(viewModel: viewModel)
-                    .frame(maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
+            // 2. Move Evaluation - Fixed height
             GroupBox(label: Label("Move Evaluation".localized, systemImage: "list.bullet.rectangle")) {
                 VStack(spacing: 0) {
                     if viewModel.isAnalyzing {
@@ -83,45 +85,48 @@ struct RightSidebarView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     }
                 }
-                .frame(height: 180)
+                .frame(height: 200) // Fixed height for move evaluation
             }
 
+            // 3. Evaluation Board - Square based on width
             GroupBox(label: Label("Evaluation".localized, systemImage: "eye")) {
-                VStack(spacing: 10) {
-                    if viewModel.isAnalyzing {
-                        if let result = viewModel.analysisResult {
-                            // Mini Board for Evaluation
-                            EvaluationBoardView(
-                                viewModel: viewModel,
-                                ownership: result.ownership,
-                                pv: result.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv
-                            )
-                            .aspectRatio(1.0, contentMode: .fit)
-                            .frame(maxWidth: .infinity)
-                            .background(viewModel.theme.boardColor)
+                ZStack {
+                    // Always show the board to maintain aspect ratio and provide visual context
+                    EvaluationBoardView(
+                        viewModel: viewModel,
+                        ownership: viewModel.isAnalyzing ? viewModel.analysisResult?.ownership : nil,
+                        pv: viewModel.isAnalyzing ? viewModel.analysisResult?.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv : nil
+                    )
+                    .background(viewModel.theme.boardColor)
+                    .cornerRadius(4)
+
+                    if !viewModel.isAnalyzing {
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
                             .cornerRadius(4)
-                        } else {
-                            VStack {
-                                CustomSpinner()
-                                Text("Waiting for AI...".localized)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                    } else {
+                        
                         Text("AI Analysis Inactive".localized)
                             .foregroundColor(.secondary)
-                            .font(.caption)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            .font(.subheadline)
+                    } else if viewModel.analysisResult == nil {
+                        Rectangle()
+                            .fill(.ultraThinMaterial.opacity(0.5))
+                            .cornerRadius(4)
+                        
+                        VStack(spacing: 8) {
+                            CustomSpinner()
+                            Text("Waiting for AI...".localized)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
-                .padding(.vertical, 5)
-                .frame(height: 260) // Increased height for the mini board
+                .aspectRatio(1.0, contentMode: .fit)
+                .frame(maxWidth: .infinity)
             }
         }
         .padding()
-        .frame(minWidth: 200, maxWidth: 300)
+        .frame(minWidth: 250, maxWidth: 500)
     }
 }
 
@@ -132,91 +137,94 @@ struct EvaluationBoardView: View {
     let gridSize: Int = 19
 
     var body: some View {
-        GeometryReader { geometry in
-            let size = min(geometry.size.width, geometry.size.height)
-            let spacing = size / CGFloat(gridSize + 1)
+        VStack {
+            GeometryReader { geometry in
+                let size = min(geometry.size.width, geometry.size.height)
+                let spacing = size / CGFloat(gridSize + 1)
 
-            ZStack {
-                // 1. Ownership Map (Grayscale)
-                if let ownership = ownership {
-                    Canvas { context, geoSize in
-                        let cellSize = geoSize.width / CGFloat(gridSize + 1)
-                        let d = cellSize * 0.5
-                        for y in 0..<gridSize {
-                            for x in 0..<gridSize {
-                                let idx = y * gridSize + x
-                                if idx < ownership.count {
-                                    let val = ownership[idx] // -1.0 to 1.0
+                ZStack {
+                    // 1. Ownership Map (Grayscale)
+                    if let ownership = ownership {
+                        Canvas { context, geoSize in
+                            let cellSize = geoSize.width / CGFloat(gridSize + 1)
+                            let d = cellSize * 0.5
+                            for y in 0..<gridSize {
+                                for x in 0..<gridSize {
+                                    let idx = y * gridSize + x
+                                    if idx < ownership.count {
+                                        let val = ownership[idx] // -1.0 to 1.0
 
-                                    // Skip drawing if the value is near zero (neutral or no data)
-                                    if abs(val) < 0.01 { continue }
+                                        // Skip drawing if the value is near zero (neutral or no data)
+                                        if abs(val) < 0.01 { continue }
 
-                                    let probBlack = (val + 1.0) / 2.0
-                                    let color = Color(white: 1.0 - probBlack)
+                                        let probBlack = (val + 1.0) / 2.0
+                                        let color = Color(white: 1.0 - probBlack)
 
-                                    let rect = CGRect(
-                                        x: CGFloat(x + 1) * cellSize - d/2,
-                                        y: CGFloat(y + 1) * cellSize - d/2,
-                                        width: d,
-                                        height: d
-                                    )
-                                    context.fill(Path(rect), with: .color(color))
+                                        let rect = CGRect(
+                                            x: CGFloat(x + 1) * cellSize - d/2,
+                                            y: CGFloat(y + 1) * cellSize - d/2,
+                                            width: d,
+                                            height: d
+                                        )
+                                        context.fill(Path(rect), with: .color(color))
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                // 2. Grid & Star Points
-                BoardGrid(gridSize: gridSize)
-                    .stroke(viewModel.theme.lineColor.opacity(0.4), lineWidth: 0.5)
+                    // 2. Grid & Star Points
+                    BoardGrid(gridSize: gridSize)
+                        .stroke(viewModel.theme.lineColor.opacity(0.4), lineWidth: 0.5)
 
-                StarPoints(gridSize: gridSize)
-                    .fill(viewModel.theme.starPointColor.opacity(0.4))
+                    StarPoints(gridSize: gridSize)
+                        .fill(viewModel.theme.starPointColor.opacity(0.4))
 
-                // 3. Current Stones
-                ForEach(0..<gridSize, id: \.self) { y in
-                    ForEach(0..<gridSize, id: \.self) { x in
-                        if let color = viewModel.board.getStone(x: UInt32(x), y: UInt32(y)) {
-                            StoneView(
-                                color: color,
-                                theme: viewModel.theme,
-                                size: spacing * 0.85,
-                                moveNumber: nil,
-                                markerType: nil
-                            )
-                            .position(
-                                x: CGFloat(x + 1) * spacing,
-                                y: CGFloat(y + 1) * spacing
-                            )
+                    // 3. Current Stones
+                    ForEach(0..<gridSize, id: \.self) { y in
+                        ForEach(0..<gridSize, id: \.self) { x in
+                            if let color = viewModel.board.getStone(x: UInt32(x), y: UInt32(y)) {
+                                StoneView(
+                                    color: color,
+                                    theme: viewModel.theme,
+                                    size: spacing * 0.85,
+                                    moveNumber: nil,
+                                    markerType: nil
+                                )
+                                .position(
+                                    x: CGFloat(x + 1) * spacing,
+                                    y: CGFloat(y + 1) * spacing
+                                )
+                            }
+                        }
+                    }
+
+                    // 4. PV Sequence
+                    if let pv = pv {
+                        let nextColor = viewModel.nextColor
+                        ForEach(Array(pv.enumerated()), id: \.offset) { index, moveStr in
+                            if let pos = viewModel.decodeKataGoMove(moveStr) {
+                                let stoneColor: StoneColor = (index % 2 == 0) ? nextColor : (nextColor == .black ? .white : .black)
+                                StoneView(
+                                    color: stoneColor,
+                                    theme: viewModel.theme,
+                                    size: spacing * 0.85,
+                                    moveNumber: index + 1,
+                                    markerType: nil,
+                                    fontSize: spacing * 0.6 // Larger font ratio for mini board
+                                )
+                                .position(
+                                    x: CGFloat(pos.x + 1) * spacing,
+                                    y: CGFloat(pos.y + 1) * spacing
+                                )
+                            }
                         }
                     }
                 }
-
-                // 4. PV Sequence
-                if let pv = pv {
-                    let nextColor = viewModel.nextColor
-                    ForEach(Array(pv.enumerated()), id: \.offset) { index, moveStr in
-                        if let pos = viewModel.decodeKataGoMove(moveStr) {
-                            let stoneColor: StoneColor = (index % 2 == 0) ? nextColor : (nextColor == .black ? .white : .black)
-                            StoneView(
-                                color: stoneColor,
-                                theme: viewModel.theme,
-                                size: spacing * 0.85,
-                                moveNumber: index + 1,
-                                markerType: nil,
-                                fontSize: spacing * 0.6 // Larger font ratio for mini board
-                            )
-                            .position(
-                                x: CGFloat(pos.x + 1) * spacing,
-                                y: CGFloat(pos.y + 1) * spacing
-                            )
-                        }
-                    }
-                }
+                .frame(width: size, height: size)
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             }
-            .frame(width: size, height: size)
-            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            .aspectRatio(1, contentMode: .fit)
         }
     }
 }

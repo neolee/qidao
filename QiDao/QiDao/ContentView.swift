@@ -16,11 +16,13 @@ struct ContentView: View {
     var body: some View {
         HSplitView {
             LeftSidebarView(viewModel: viewModel, showInfoEditor: $showInfoEditor, showEngineConfig: $showEngineConfig)
-            
+                .frame(minWidth: 250, maxWidth: 350)
+
             CenterView(viewModel: viewModel, isBoardFocused: $isBoardFocused)
-                .frame(minWidth: 400)
-            
+                .frame(minWidth: 500)
+
             RightSidebarView(viewModel: viewModel)
+                .frame(minWidth: 250, maxWidth: 350)
         }
         .sheet(isPresented: $showInfoEditor) {
             GameInfoEditorView(viewModel: viewModel)

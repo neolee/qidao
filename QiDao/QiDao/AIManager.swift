@@ -38,6 +38,7 @@ class AIManager: ObservableObject {
     private var currentTurnColorIsWhite: Bool = false
     private var currentTurnNumber: Int = 0
     private var currentNodeId: String = ""
+    private var lastMainLineMoves: [[String]] = []
 
     func start(executable: String, args: [String], config: AIConfig) {
         guard analysisEngine == nil else { return }
@@ -190,13 +191,49 @@ class AIManager: ObservableObject {
         guard isAnalyzing, let engine = analysisEngine else { return }
         if mainLineMoves.isEmpty && initialStones.isEmpty { return }
 
+        let hasChanged = mainLineMoves != lastMainLineMoves
+        
+        // If nothing changed and we are already scanning, just return
+        if !hasChanged && isFullGameScanning {
+            return
+        }
+
+        // Detect branch change and clear history for the changed part
+        if hasChanged {
+            var forkPoint = 0
+            while forkPoint < mainLineMoves.count && forkPoint < lastMainLineMoves.count {
+                if mainLineMoves[forkPoint] != lastMainLineMoves[forkPoint] {
+                    break
+                }
+                forkPoint += 1
+            }
+            
+            let maxTurn = max(mainLineMoves.count, lastMainLineMoves.count)
+            if forkPoint <= maxTurn {
+                for turn in forkPoint...maxTurn {
+                    self.winRateHistory.removeValue(forKey: turn)
+                    self.scoreLeadHistory.removeValue(forKey: turn)
+                    self.blunders.removeValue(forKey: turn)
+                }
+            }
+            self.lastMainLineMoves = mainLineMoves
+        }
+
+        // Check if there are actually any missing turns to analyze
+        let totalTurns = mainLineMoves.count
+        let missingTurns = (0...totalTurns).filter { self.winRateHistory[$0] == nil }
+        if missingTurns.isEmpty {
+            isFullGameScanning = false
+            return
+        }
+
+        self.blunderThreshold = config.display.blunderThreshold
         self.mainLineColors = [:]
         for (i, m) in mainLineMoves.enumerated() {
             if m.count >= 1 {
                 self.mainLineColors[i + 1] = m[0]
             }
         }
-        self.blunderThreshold = config.display.blunderThreshold
 
         fullGameScanTask?.cancel()
         isFullGameScanning = true
@@ -204,16 +241,18 @@ class AIManager: ObservableObject {
         fullGameScanTask = Task {
             do {
                 let scanId = "fullscan-\(self.analysisSessionId)"
-                try? await engine.terminateAll()
+                // Only terminate the previous full scan, not the current move analysis
+                try? await engine.terminate(id: scanId)
 
-                let totalTurns = mainLineMoves.count
                 let batchSize = 10
-
                 for startTurn in stride(from: 0, through: totalTurns, by: batchSize) {
                     if Task.isCancelled { break }
 
                     let endTurn = min(startTurn + batchSize - 1, totalTurns)
-                    let analyzeTurns = Array(startTurn...endTurn)
+                    // Only analyze turns that don't have winrate data yet
+                    let analyzeTurns = Array(startTurn...endTurn).filter { self.winRateHistory[$0] == nil }
+                    
+                    if analyzeTurns.isEmpty { continue }
 
                     let query: [String: Any] = [
                         "id": scanId,
@@ -259,6 +298,7 @@ class AIManager: ObservableObject {
         self.scoreLeadHistory = [:]
         self.blunders = [:]
         self.analysisResult = nil
+        self.lastMainLineMoves = []
         if isAnalyzing {
             Task {
                 try? await analysisEngine?.terminateAll()

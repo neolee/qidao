@@ -1135,25 +1135,8 @@ impl AnalysisEngine {
         self.add_internal_log(log_msg).await;
 
         let stdin_mutex = Arc::clone(&self.stdin);
-        let stdout_mutex = Arc::clone(&self.stdout);
 
         get_runtime().spawn(async move {
-            // 1. Clear any pending results from stdout before sending a new query
-            {
-                let mut lock = stdout_mutex.lock().await;
-                if let Some(stdout) = lock.as_mut() {
-                    use tokio::io::AsyncBufReadExt;
-                    // Drain the buffer
-                    loop {
-                        let mut line = String::new();
-                        match tokio::time::timeout(std::time::Duration::from_millis(1), stdout.read_line(&mut line)).await {
-                            Ok(Ok(n)) if n > 0 => continue,
-                            _ => break,
-                        }
-                    }
-                }
-            }
-
             // 2. Send the query
             let mut lock = stdin_mutex.lock().await;
             if let Some(stdin) = lock.as_mut() {

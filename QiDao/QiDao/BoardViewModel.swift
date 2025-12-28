@@ -367,23 +367,29 @@ class BoardViewModel: ObservableObject {
             metadata: game.getMetadata(),
             config: config
         )
+
+        // Trigger background full game analysis if enabled
+        if isAnalyzing && config.display.showWinRateGraph {
+            startFullGameAnalysis()
+        }
     }
 
     func startFullGameAnalysis() {
         guard config.display.showWinRateGraph else { return }
         let game = gameManager.getGame()
-        let currentId = game.getCurrentNode().getId()
-
-        // Get initial player by jumping to root temporarily
-        game.jumpToMoveNumber(target: 0)
-        let initialPlayer = game.getNextColor() == .black ? "B" : "W"
-
-        // Jump back to original position
-        gameManager.jumpToNode(id: currentId)
+        
+        let mainLineMoves = game.getMainLineMoves()
+        let initialStones = game.getInitialStones()
+        
+        // Determine initial player without jumping
+        var initialPlayer = "B"
+        if let firstMove = mainLineMoves.first, firstMove.count > 0 {
+            initialPlayer = firstMove[0]
+        }
 
         aiManager.startFullGameAnalysis(
-            mainLineMoves: game.getMainLineMoves(),
-            initialStones: game.getInitialStones(),
+            mainLineMoves: mainLineMoves,
+            initialStones: initialStones,
             metadata: game.getMetadata(),
             config: config,
             initialPlayer: initialPlayer

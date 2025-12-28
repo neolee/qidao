@@ -377,10 +377,10 @@ class BoardViewModel: ObservableObject {
     func startFullGameAnalysis() {
         guard config.display.showWinRateGraph else { return }
         let game = gameManager.getGame()
-        
+
         let mainLineMoves = game.getMainLineMoves()
         let initialStones = game.getInitialStones()
-        
+
         // Determine initial player without jumping
         var initialPlayer = "B"
         if let firstMove = mainLineMoves.first, firstMove.count > 0 {

@@ -192,7 +192,7 @@ class AIManager: ObservableObject {
         if mainLineMoves.isEmpty && initialStones.isEmpty { return }
 
         let hasChanged = mainLineMoves != lastMainLineMoves
-        
+
         // If nothing changed and we are already scanning, just return
         if !hasChanged && isFullGameScanning {
             return
@@ -207,7 +207,7 @@ class AIManager: ObservableObject {
                 }
                 forkPoint += 1
             }
-            
+
             let maxTurn = max(mainLineMoves.count, lastMainLineMoves.count)
             if forkPoint <= maxTurn {
                 for turn in forkPoint...maxTurn {
@@ -251,7 +251,7 @@ class AIManager: ObservableObject {
                     let endTurn = min(startTurn + batchSize - 1, totalTurns)
                     // Only analyze turns that don't have winrate data yet
                     let analyzeTurns = Array(startTurn...endTurn).filter { self.winRateHistory[$0] == nil }
-                    
+
                     if analyzeTurns.isEmpty { continue }
 
                     let query: [String: Any] = [

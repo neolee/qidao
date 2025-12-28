@@ -16,11 +16,11 @@ struct CenterView: View {
             // Toolbar
             HStack {
                 Button(action: openSgf) {
-                    Label("Open".localized, systemImage: "doc.badge.plus")
+                    Label("Open".localized, systemImage: "arrow.up.doc")
                 }
                 .focusable(false)
                 Button(action: saveSgf) {
-                    Label("Save".localized, systemImage: "square.and.arrow.down")
+                    Label("Save".localized, systemImage: "arrow.down.doc")
                 }
                 .focusable(false)
 

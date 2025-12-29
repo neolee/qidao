@@ -969,9 +969,17 @@ public func FfiConverterTypeBoard_lower(_ value: Board) -> UInt64 {
 
 public protocol GameProtocol: AnyObject, Sendable {
     
+    func addLabel(x: UInt32, y: UInt32, label: String) 
+    
+    func addMark(x: UInt32, y: UInt32, markType: String) 
+    
+    func addStone(x: UInt32, y: UInt32, color: StoneColor) 
+    
     func canGoBack()  -> Bool
     
     func canGoForward()  -> Bool
+    
+    func clearMarks(x: UInt32, y: UInt32) 
     
     func deleteCurrentBranch()  -> Bool
     
@@ -1015,11 +1023,17 @@ public protocol GameProtocol: AnyObject, Sendable {
     
     func jumpToNode(target: SgfNode) 
     
+    func pass(color: StoneColor) throws 
+    
     func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws 
+    
+    func removeStone(x: UInt32, y: UInt32) 
     
     func setComment(comment: String) 
     
     func setMetadata(metadata: GameMetadata) 
+    
+    func setNextPlayer(color: StoneColor) 
     
     func toSgf()  -> String
     
@@ -1088,6 +1102,36 @@ public static func fromSgf(sgfContent: String)throws  -> Game  {
     
 
     
+open func addLabel(x: UInt32, y: UInt32, label: String)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_add_label(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),
+        FfiConverterString.lower(label),$0
+    )
+}
+}
+    
+open func addMark(x: UInt32, y: UInt32, markType: String)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_add_mark(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),
+        FfiConverterString.lower(markType),$0
+    )
+}
+}
+    
+open func addStone(x: UInt32, y: UInt32, color: StoneColor)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_add_stone(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),
+        FfiConverterTypeStoneColor_lower(color),$0
+    )
+}
+}
+    
 open func canGoBack() -> Bool  {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_can_go_back(
@@ -1102,6 +1146,15 @@ open func canGoForward() -> Bool  {
             self.uniffiCloneHandle(),$0
     )
 })
+}
+    
+open func clearMarks(x: UInt32, y: UInt32)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_clear_marks(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),$0
+    )
+}
 }
     
 open func deleteCurrentBranch() -> Bool  {
@@ -1273,12 +1326,29 @@ open func jumpToNode(target: SgfNode)  {try! rustCall() {
 }
 }
     
+open func pass(color: StoneColor)throws   {try rustCallWithError(FfiConverterTypeSgfError_lift) {
+    uniffi_qidao_core_fn_method_game_pass(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeStoneColor_lower(color),$0
+    )
+}
+}
+    
 open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws   {try rustCallWithError(FfiConverterTypeSgfError_lift) {
     uniffi_qidao_core_fn_method_game_place_stone(
             self.uniffiCloneHandle(),
         FfiConverterUInt32.lower(x),
         FfiConverterUInt32.lower(y),
         FfiConverterTypeStoneColor_lower(color),$0
+    )
+}
+}
+    
+open func removeStone(x: UInt32, y: UInt32)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_remove_stone(
+            self.uniffiCloneHandle(),
+        FfiConverterUInt32.lower(x),
+        FfiConverterUInt32.lower(y),$0
     )
 }
 }
@@ -1295,6 +1365,14 @@ open func setMetadata(metadata: GameMetadata)  {try! rustCall() {
     uniffi_qidao_core_fn_method_game_set_metadata(
             self.uniffiCloneHandle(),
         FfiConverterTypeGameMetadata_lower(metadata),$0
+    )
+}
+}
+    
+open func setNextPlayer(color: StoneColor)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_set_next_player(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeStoneColor_lower(color),$0
     )
 }
 }
@@ -2152,6 +2230,8 @@ public enum SgfError: Swift.Error, Equatable, Hashable, Foundation.LocalizedErro
     
     case ParseError(message: String
     )
+    case InvalidMove(message: String
+    )
 
     
 
@@ -2182,6 +2262,9 @@ public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
         case 1: return .ParseError(
             message: try FfiConverterString.read(from: &buf)
             )
+        case 2: return .InvalidMove(
+            message: try FfiConverterString.read(from: &buf)
+            )
 
          default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2196,6 +2279,11 @@ public struct FfiConverterTypeSgfError: FfiConverterRustBuffer {
         
         case let .ParseError(message):
             writeInt(&buf, Int32(1))
+            FfiConverterString.write(message, into: &buf)
+            
+        
+        case let .InvalidMove(message):
+            writeInt(&buf, Int32(2))
             FfiConverterString.write(message, into: &buf)
             
         }
@@ -2627,10 +2715,22 @@ private let initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_board_with_stone() != 42743) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_add_label() != 8581) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_add_mark() != 51689) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_add_stone() != 11658) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_can_go_back() != 61635) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_can_go_forward() != 40449) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_clear_marks() != 29180) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_delete_current_branch() != 43989) {
@@ -2696,13 +2796,22 @@ private let initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_game_jump_to_node() != 53846) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_pass() != 58806) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_place_stone() != 19675) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_remove_stone() != 17810) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_set_comment() != 54713) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_set_metadata() != 11810) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_set_next_player() != 56741) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_to_sgf() != 50649) {

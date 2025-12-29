@@ -50,6 +50,9 @@ class BoardViewModel: ObservableObject {
         }
     }
 
+    @Published var activeEditTool: EditTool = .stoneAuto
+    @Published var editLabelText: String = "1"
+
     var nextSgfMove: (x: Int, y: Int)? {
         let children = gameManager.getGame().getCurrentNode().getChildren()
         if let first = children.first {
@@ -90,6 +93,139 @@ class BoardViewModel: ObservableObject {
         if moveNum == moveCount - 1 { return .last2 }
         if moveNum == moveCount - 2 { return .last3 }
         return nil
+    }
+
+    func handleBoardClick(x: Int, y: Int) {
+        switch appMode {
+        case .analysis:
+            placeStone(x: x, y: y)
+        case .edit:
+            handleEditClick(x: x, y: y)
+        case .play:
+            // TODO: Implement play mode logic
+            placeStone(x: x, y: y)
+        }
+    }
+
+    private func handleEditClick(x: Int, y: Int) {
+        let game = gameManager.getGame()
+        let currentStone = board.getStone(x: UInt32(x), y: UInt32(y))
+        
+        switch activeEditTool {
+        case .stoneBlack:
+            if currentStone == .black {
+                game.removeStone(x: UInt32(x), y: UInt32(y))
+            } else {
+                game.addStone(x: UInt32(x), y: UInt32(y), color: .black)
+            }
+        case .stoneWhite:
+            if currentStone == .white {
+                game.removeStone(x: UInt32(x), y: UInt32(y))
+            } else {
+                game.addStone(x: UInt32(x), y: UInt32(y), color: .white)
+            }
+        case .stoneAuto:
+            // Toggle: Empty -> Black -> White -> Empty
+            if currentStone == nil {
+                game.addStone(x: UInt32(x), y: UInt32(y), color: .black)
+            } else if currentStone == .black {
+                game.addStone(x: UInt32(x), y: UInt32(y), color: .white)
+            } else {
+                game.removeStone(x: UInt32(x), y: UInt32(y))
+            }
+        case .markTriangle, .markCircle, .markSquare, .markCross:
+            let markType = activeEditTool.markType!
+            if gameState.marks.contains(where: { $0.x == x && $0.y == y && $0.type == markType }) {
+                game.clearMarks(x: UInt32(x), y: UInt32(y))
+            } else {
+                game.addMark(x: UInt32(x), y: UInt32(y), markType: markType)
+            }
+        case .markLabel:
+            if gameState.marks.contains(where: { $0.x == x && $0.y == y && $0.type == "LB" && $0.label == editLabelText }) {
+                game.clearMarks(x: UInt32(x), y: UInt32(y))
+            } else {
+                game.addLabel(x: UInt32(x), y: UInt32(y), label: editLabelText)
+                // Auto increment label if it's a number
+                if let num = Int(editLabelText) {
+                    editLabelText = "\(num + 1)"
+                } else if editLabelText.count == 1, let char = editLabelText.first, char.isLetter {
+                    if let scalar = char.unicodeScalars.first {
+                        if let next = UnicodeScalar(scalar.value + 1), Character(next).isLetter {
+                            editLabelText = String(next)
+                        }
+                    }
+                }
+            }
+        case .clear:
+            game.removeStone(x: UInt32(x), y: UInt32(y))
+            game.clearMarks(x: UInt32(x), y: UInt32(y))
+        }
+
+        // Refresh game state
+        gameManager.syncState()
+    }
+
+    func pass() {
+        do {
+            try gameManager.getGame().pass(color: nextColor)
+            gameManager.syncState()
+            if isAnalyzing {
+                startAnalysis()
+            }
+        } catch {
+            message = "Error: \(error.localizedDescription)"
+        }
+    }
+
+    func resign() {
+        let winner = nextColor == .black ? "White" : "Black"
+        let currentMeta = gameManager.getGame().getMetadata()
+        gameManager.getGame().setMetadata(metadata: GameMetadata(
+            blackName: currentMeta.blackName,
+            blackRank: currentMeta.blackRank,
+            whiteName: currentMeta.whiteName,
+            whiteRank: currentMeta.whiteRank,
+            komi: currentMeta.komi,
+            result: "\(winner.first!)+R",
+            date: currentMeta.date,
+            event: currentMeta.event,
+            gameName: currentMeta.gameName,
+            place: currentMeta.place,
+            size: currentMeta.size
+        ))
+        gameManager.syncState()
+        message = "\(winner) wins by resignation".localized
+    }
+
+    func deleteCurrentBranch() {
+        if gameManager.deleteCurrentBranch() {
+            SoundManager.shared.play(name: "stone")
+            message = "Branch deleted".localized
+        }
+    }
+
+    func setNextPlayer(_ color: StoneColor) {
+        gameManager.getGame().setNextPlayer(color: color)
+        gameManager.syncState()
+    }
+
+    func getMoveText(at moveNumber: Int) -> String {
+        let pathMoves = gameManager.getGame().getCurrentPathMoves()
+        if moveNumber > 0 && moveNumber <= pathMoves.count {
+            let prop = pathMoves[moveNumber - 1]
+            let color = prop.identifier == "B" ? "Black".localized : "White".localized
+            if let coords = prop.values.first, coords.count == 2 {
+                let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+                let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+                // Skip 'I' in Go coordinates
+                let colChar = Character(UnicodeScalar(UInt8(ascii: "A") + UInt8(x >= 8 ? x + 1 : x)))
+                let rowNum = boardSize - y
+                return "\(color) \(colChar)\(rowNum)"
+            } else {
+                return "\(color) \("Pass".localized)"
+            }
+        }
+        return ""
     }
 
     // AI Analysis
@@ -317,12 +453,6 @@ class BoardViewModel: ObservableObject {
 
     func jumpToNode(id: String) {
         gameManager.jumpToNode(id: id)
-    }
-
-    func deleteCurrentBranch() {
-        if gameManager.deleteCurrentBranch() {
-            SoundManager.shared.play(name: "stone")
-        }
     }
 
     // MARK: - AI Analysis

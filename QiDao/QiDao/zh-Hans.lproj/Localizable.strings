@@ -38,6 +38,24 @@
 "Play Control" = "练习控制";
 "Play Log" = "练习日志";
 "App Mode" = "应用模式";
+"Black Stone" = "黑子";
+"White Stone" = "白子";
+"Auto Stone" = "自动";
+"Triangle" = "三角";
+"Circle" = "圆圈";
+"Square" = "正方形";
+"Cross" = "叉号";
+"Label" = "字母数字";
+"Clear" = "擦除";
+"Label:" = "标签内容:";
+"Pass" = "停一手";
+"Resign" = "认输";
+"Undo" = "悔棋";
+"Restart" = "重新开始";
+"No moves yet" = "暂无落子";
+"Next Player:" = "下一手:";
+"Delete Branch" = "删除当前分支";
+"Branch deleted" = "分支已删除";
 
 /* Game Metadata */
 "Event" = "赛事";

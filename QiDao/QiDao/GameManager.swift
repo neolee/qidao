@@ -119,6 +119,30 @@ class GameManager: ObservableObject {
             }
         }
 
+        newState.marks = []
+        let currentProps = self.game.getCurrentNode().getProperties()
+        for prop in currentProps {
+            if ["TR", "CR", "SQ", "MA"].contains(prop.identifier) {
+                for val in prop.values {
+                    if val.count == 2 {
+                        let x = Int(val.first!.asciiValue! - UInt8(ascii: "a"))
+                        let y = Int(val.last!.asciiValue! - UInt8(ascii: "a"))
+                        newState.marks.append(BoardMark(x: x, y: y, type: prop.identifier, label: nil))
+                    }
+                }
+            } else if prop.identifier == "LB" {
+                for val in prop.values {
+                    let parts = val.split(separator: ":")
+                    if parts.count == 2, let coords = parts.first, coords.count == 2 {
+                        let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
+                        let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
+                        let label = String(parts.last!)
+                        newState.marks.append(BoardMark(x: x, y: y, type: "LB", label: label))
+                    }
+                }
+            }
+        }
+
         let children = self.game.getCurrentNode().getChildren()
         let variationChildren = children.count > 1 ? children : []
         newState.variations = variationChildren.enumerated().map { (index, node) in

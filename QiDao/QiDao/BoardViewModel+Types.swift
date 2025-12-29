@@ -33,6 +33,59 @@ enum AppMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum EditTool: String, CaseIterable, Identifiable {
+    case stoneBlack
+    case stoneWhite
+    case stoneAuto
+    case markTriangle
+    case markCircle
+    case markSquare
+    case markCross
+    case markLabel
+    case clear
+
+    var id: String { self.rawValue }
+
+    var icon: String {
+        switch self {
+        case .stoneBlack: return "circle.fill"
+        case .stoneWhite: return "circle"
+        case .stoneAuto: return "circle.badge.plus"
+        case .markTriangle: return "triangle"
+        case .markCircle: return "circle"
+        case .markSquare: return "square"
+        case .markCross: return "xmark"
+        case .markLabel: return "character.textbox"
+        case .clear: return "eraser"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .stoneBlack: return "Black Stone".localized
+        case .stoneWhite: return "White Stone".localized
+        case .stoneAuto: return "Auto Stone".localized
+        case .markTriangle: return "Triangle".localized
+        case .markCircle: return "Circle".localized
+        case .markSquare: return "Square".localized
+        case .markCross: return "Cross".localized
+        case .markLabel: return "Label".localized
+        case .clear: return "Clear".localized
+        }
+    }
+
+    var markType: String? {
+        switch self {
+        case .markTriangle: return "TR"
+        case .markCircle: return "CR"
+        case .markSquare: return "SQ"
+        case .markCross: return "MA"
+        case .markLabel: return "LB"
+        default: return nil
+        }
+    }
+}
+
 struct TreeVisualNode: Identifiable {
     let id: String
     let x: CGFloat
@@ -44,6 +97,14 @@ struct TreeVisualEdge: Identifiable {
     let id: String
     let from: CGPoint
     let to: CGPoint
+}
+
+struct BoardMark: Identifiable {
+    let id = UUID()
+    let x: Int
+    let y: Int
+    let type: String // "TR", "CR", "SQ", "MA", "LB"
+    let label: String?
 }
 
 struct GameState {
@@ -68,6 +129,7 @@ struct GameState {
         gameName: "", place: "",
         size: 19
     )
+    var marks: [BoardMark] = []
 }
 
 enum MoveNumberDisplay: Int, CaseIterable, Identifiable {

@@ -234,3 +234,66 @@ struct AIMoveMarker: View {
         }
     }
 }
+
+struct MarkerView: View {
+    let type: String
+    let label: String?
+    let theme: BoardTheme
+    let size: CGFloat
+    let hasStone: Bool
+
+    var body: some View {
+        let color = hasStone ? (theme.blackStoneStyle.textColor) : theme.lineColor
+
+        Group {
+            switch type {
+            case "TR":
+                Triangle()
+                    .stroke(color, lineWidth: 2)
+                    .frame(width: size * 0.5, height: size * 0.5)
+            case "CR":
+                Circle()
+                    .stroke(color, lineWidth: 2)
+                    .frame(width: size * 0.5, height: size * 0.5)
+            case "SQ":
+                Rectangle()
+                    .stroke(color, lineWidth: 2)
+                    .frame(width: size * 0.45, height: size * 0.45)
+            case "MA":
+                Cross()
+                    .stroke(color, lineWidth: 2)
+                    .frame(width: size * 0.45, height: size * 0.45)
+            case "LB":
+                if let label = label {
+                    Text(label)
+                        .font(.system(size: size * 0.5, weight: .bold))
+                        .foregroundColor(color)
+                }
+            default:
+                EmptyView()
+            }
+        }
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+struct Cross: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.move(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        return path
+    }
+}

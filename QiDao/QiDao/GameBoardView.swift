@@ -50,7 +50,22 @@ struct GameBoardView: View {
                     }
                 }
 
-                // 6. Variation Markers
+                // 6. Marks (SGF)
+                ForEach(viewModel.gameState.marks) { mark in
+                    MarkerView(
+                        type: mark.type,
+                        label: mark.label,
+                        theme: viewModel.theme,
+                        size: spacing,
+                        hasStone: viewModel.board.getStone(x: UInt32(mark.x), y: UInt32(mark.y)) != nil
+                    )
+                    .position(
+                        x: CGFloat(mark.x + 1) * spacing,
+                        y: CGFloat(mark.y + 1) * spacing
+                    )
+                }
+
+                // 7. Variation Markers
                 if viewModel.variations.count > 1 {
                     ForEach(viewModel.variations, id: \.id) { variation in
                         if let vx = variation.x, let vy = variation.y {
@@ -189,7 +204,7 @@ struct GameBoardView: View {
                     let y = Int(round(value.location.y / spacing)) - 1
 
                     if x >= 0 && x < gridSize && y >= 0 && y < gridSize {
-                        viewModel.placeStone(x: x, y: y)
+                        viewModel.handleBoardClick(x: x, y: y)
                     }
                 }
         )

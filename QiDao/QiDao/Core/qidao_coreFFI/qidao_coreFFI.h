@@ -359,6 +359,21 @@ uint64_t uniffi_qidao_core_fn_constructor_game_from_sgf(RustBuffer sgf_content, 
 uint64_t uniffi_qidao_core_fn_constructor_game_new(uint32_t size, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_ADD_LABEL
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_ADD_LABEL
+void uniffi_qidao_core_fn_method_game_add_label(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer label, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_ADD_MARK
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_ADD_MARK
+void uniffi_qidao_core_fn_method_game_add_mark(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer mark_type, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_ADD_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_ADD_STONE
+void uniffi_qidao_core_fn_method_game_add_stone(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_BACK
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_BACK
 int8_t uniffi_qidao_core_fn_method_game_can_go_back(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -367,6 +382,11 @@ int8_t uniffi_qidao_core_fn_method_game_can_go_back(uint64_t ptr, RustCallStatus
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CAN_GO_FORWARD
 int8_t uniffi_qidao_core_fn_method_game_can_go_forward(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CLEAR_MARKS
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_CLEAR_MARKS
+void uniffi_qidao_core_fn_method_game_clear_marks(uint64_t ptr, uint32_t x, uint32_t y, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_DELETE_CURRENT_BRANCH
@@ -474,9 +494,19 @@ void uniffi_qidao_core_fn_method_game_jump_to_move_number(uint64_t ptr, uint32_t
 void uniffi_qidao_core_fn_method_game_jump_to_node(uint64_t ptr, uint64_t target, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PASS
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PASS
+void uniffi_qidao_core_fn_method_game_pass(uint64_t ptr, RustBuffer color, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
 void uniffi_qidao_core_fn_method_game_place_stone(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_REMOVE_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_REMOVE_STONE
+void uniffi_qidao_core_fn_method_game_remove_stone(uint64_t ptr, uint32_t x, uint32_t y, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_COMMENT
@@ -487,6 +517,11 @@ void uniffi_qidao_core_fn_method_game_set_comment(uint64_t ptr, RustBuffer comme
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_METADATA
 void uniffi_qidao_core_fn_method_game_set_metadata(uint64_t ptr, RustBuffer metadata, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_NEXT_PLAYER
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_NEXT_PLAYER
+void uniffi_qidao_core_fn_method_game_set_next_player(uint64_t ptr, RustBuffer color, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_TO_SGF
@@ -925,6 +960,24 @@ uint16_t uniffi_qidao_core_checksum_method_board_with_stone(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_ADD_LABEL
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_ADD_LABEL
+uint16_t uniffi_qidao_core_checksum_method_game_add_label(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_ADD_MARK
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_ADD_MARK
+uint16_t uniffi_qidao_core_checksum_method_game_add_mark(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_ADD_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_ADD_STONE
+uint16_t uniffi_qidao_core_checksum_method_game_add_stone(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_BACK
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_BACK
 uint16_t uniffi_qidao_core_checksum_method_game_can_go_back(void
@@ -934,6 +987,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_can_go_back(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_FORWARD
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CAN_GO_FORWARD
 uint16_t uniffi_qidao_core_checksum_method_game_can_go_forward(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CLEAR_MARKS
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_CLEAR_MARKS
+uint16_t uniffi_qidao_core_checksum_method_game_clear_marks(void
     
 );
 #endif
@@ -1063,9 +1122,21 @@ uint16_t uniffi_qidao_core_checksum_method_game_jump_to_node(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PASS
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PASS
+uint16_t uniffi_qidao_core_checksum_method_game_pass(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PLACE_STONE
 uint16_t uniffi_qidao_core_checksum_method_game_place_stone(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_REMOVE_STONE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_REMOVE_STONE
+uint16_t uniffi_qidao_core_checksum_method_game_remove_stone(void
     
 );
 #endif
@@ -1078,6 +1149,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_set_comment(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_METADATA
 uint16_t uniffi_qidao_core_checksum_method_game_set_metadata(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_NEXT_PLAYER
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_NEXT_PLAYER
+uint16_t uniffi_qidao_core_checksum_method_game_set_next_player(void
     
 );
 #endif

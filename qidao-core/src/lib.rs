@@ -48,6 +48,8 @@ pub fn add(a: u32, b: u32) -> u32 {
 pub enum SgfError {
     #[error("Parse error: {message}")]
     ParseError { message: String },
+    #[error("Invalid move: {message}")]
+    InvalidMove { message: String },
 }
 
 #[derive(uniffi::Object)]
@@ -693,16 +695,48 @@ impl Game {
         get_max_depth(&state.root)
     }
 
+    pub fn set_next_player(&self, color: StoneColor) {
+        let state = self.state.lock().unwrap();
+        let mut props = state.current_node.properties.lock().unwrap();
+        let val = match color {
+            StoneColor::Black => "B",
+            StoneColor::White => "W",
+        };
+
+        if let Some(p) = props.iter_mut().find(|p| p.identifier == "PL") {
+            p.values = vec![val.to_string()];
+        } else {
+            props.push(SgfProperty {
+                identifier: "PL".to_string(),
+                values: vec![val.to_string()],
+            });
+        }
+    }
+
     pub fn get_next_color(&self) -> StoneColor {
         let state = self.state.lock().unwrap();
-        // Simple heuristic: if last move was Black, next is White.
-        // In a real SGF, we'd check the properties of the current node.
-        let props = state.current_node.properties.lock().unwrap();
-        for prop in props.iter() {
-            if prop.identifier == "B" { return StoneColor::White; }
-            if prop.identifier == "W" { return StoneColor::Black; }
+        
+        // 1. Check PL property in current node
+        {
+            let props = state.current_node.properties.lock().unwrap();
+            if let Some(p) = props.iter().find(|p| p.identifier == "PL") {
+                if let Some(v) = p.values.first() {
+                    if v == "B" { return StoneColor::Black; }
+                    if v == "W" { return StoneColor::White; }
+                }
+            }
         }
-        // Default to Black for root or if no move property found
+
+        // 2. Check if current node is a move
+        {
+            let props = state.current_node.properties.lock().unwrap();
+            for prop in props.iter() {
+                if prop.identifier == "B" { return StoneColor::White; }
+                if prop.identifier == "W" { return StoneColor::Black; }
+            }
+        }
+
+        // 3. Default to Black
         StoneColor::Black
     }
 
@@ -942,6 +976,220 @@ impl Game {
         state.board_cache.insert(Arc::as_ptr(&new_node) as usize, new_board);
 
         Ok(())
+    }
+
+    pub fn pass(&self, color: StoneColor) -> Result<(), SgfError> {
+        let mut state = self.state.lock().unwrap();
+        let prop_id = match color {
+            StoneColor::Black => "B",
+            StoneColor::White => "W",
+        };
+
+        let new_node = Arc::new(SgfNode {
+            properties: Mutex::new(vec![SgfProperty {
+                identifier: prop_id.to_string(),
+                values: vec!["".to_string()],
+            }]),
+            children: Mutex::new(vec![]),
+        });
+
+        state.current_node.children.lock().unwrap().push(new_node.clone());
+        let current = state.current_node.clone();
+        state.history.push(current);
+        state.current_node = new_node.clone();
+
+        let current_board = state.board_cache.get(&(Arc::as_ptr(&state.history.last().unwrap()) as usize))
+            .cloned()
+            .unwrap_or_else(|| Board::new(state.size));
+        state.board_cache.insert(Arc::as_ptr(&new_node) as usize, current_board);
+
+        Ok(())
+    }
+
+    pub fn add_stone(&self, x: u32, y: u32, color: StoneColor) {
+        let mut state = self.state.lock().unwrap();
+        let coords = format!("{}{}", (b'a' + x as u8) as char, (b'a' + y as u8) as char);
+        let prop_id = match color {
+            StoneColor::Black => "AB",
+            StoneColor::White => "AW",
+        };
+
+        {
+            let mut props = state.current_node.properties.lock().unwrap();
+            // Remove from other stone properties first
+            for id in &["AB", "AW", "AE"] {
+                if let Some(p) = props.iter_mut().find(|p| p.identifier == *id) {
+                    p.values.retain(|v| v != &coords);
+                }
+            }
+
+            if let Some(p) = props.iter_mut().find(|p| p.identifier == prop_id) {
+                if !p.values.contains(&coords) {
+                    p.values.push(coords);
+                }
+            } else {
+                props.push(SgfProperty {
+                    identifier: prop_id.to_string(),
+                    values: vec![coords],
+                });
+            }
+        }
+
+        // Update board cache for this node
+        self.recalculate_board_internal(&mut state);
+    }
+
+    pub fn remove_stone(&self, x: u32, y: u32) {
+        let mut state = self.state.lock().unwrap();
+        let coords = format!("{}{}", (b'a' + x as u8) as char, (b'a' + y as u8) as char);
+
+        {
+            let mut props = state.current_node.properties.lock().unwrap();
+            // Remove from AB, AW
+            for id in &["AB", "AW"] {
+                if let Some(p) = props.iter_mut().find(|p| p.identifier == *id) {
+                    p.values.retain(|v| v != &coords);
+                }
+            }
+
+            // Add to AE (Add Empty)
+            if let Some(p) = props.iter_mut().find(|p| p.identifier == "AE") {
+                if !p.values.contains(&coords) {
+                    p.values.push(coords);
+                }
+            } else {
+                props.push(SgfProperty {
+                    identifier: "AE".to_string(),
+                    values: vec![coords],
+                });
+            }
+        }
+
+        // Update board cache for this node
+        self.recalculate_board_internal(&mut state);
+    }
+}
+
+impl Game {
+    fn recalculate_board_internal(&self, state: &mut GameState) {
+        let mut path = state.history.clone();
+        path.push(state.current_node.clone());
+
+        let mut current_board = Board::new(state.size);
+        for node in path {
+            let props = node.properties.lock().unwrap();
+            
+            // 1. Handle setup stones (AB, AW, AE)
+            for prop in props.iter() {
+                match prop.identifier.as_str() {
+                    "AB" => {
+                        for val in &prop.values {
+                            if val.len() == 2 {
+                                let x = (val.as_bytes()[0] - b'a') as u32;
+                                let y = (val.as_bytes()[1] - b'a') as u32;
+                                current_board = current_board.with_stone(x, y, Some(StoneColor::Black));
+                            }
+                        }
+                    }
+                    "AW" => {
+                        for val in &prop.values {
+                            if val.len() == 2 {
+                                let x = (val.as_bytes()[0] - b'a') as u32;
+                                let y = (val.as_bytes()[1] - b'a') as u32;
+                                current_board = current_board.with_stone(x, y, Some(StoneColor::White));
+                            }
+                        }
+                    }
+                    "AE" => {
+                        for val in &prop.values {
+                            if val.len() == 2 {
+                                let x = (val.as_bytes()[0] - b'a') as u32;
+                                let y = (val.as_bytes()[1] - b'a') as u32;
+                                current_board = current_board.with_stone(x, y, None);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // 2. Handle moves (B, W)
+            for prop in props.iter() {
+                match prop.identifier.as_str() {
+                    "B" | "W" => {
+                        if let Some(val) = prop.values.first() {
+                            if val.len() == 2 {
+                                let x = (val.as_bytes()[0] - b'a') as u32;
+                                let y = (val.as_bytes()[1] - b'a') as u32;
+                                let color = if prop.identifier == "B" { StoneColor::Black } else { StoneColor::White };
+                                if let Ok(next_board) = current_board.place_stone(x, y, color) {
+                                    current_board = next_board;
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            
+            // Update cache for this node in the path
+            state.board_cache.insert(Arc::as_ptr(&node) as usize, current_board.clone());
+        }
+    }
+}
+
+#[uniffi::export]
+impl Game {
+    pub fn add_mark(&self, x: u32, y: u32, mark_type: String) {
+        let state = self.state.lock().unwrap();
+        let mut props = state.current_node.properties.lock().unwrap();
+        let coords = format!("{}{}", (b'a' + x as u8) as char, (b'a' + y as u8) as char);
+
+        // mark_type should be TR, CR, SQ, MA
+        if let Some(p) = props.iter_mut().find(|p| p.identifier == mark_type) {
+            if !p.values.contains(&coords) {
+                p.values.push(coords);
+            }
+        } else {
+            props.push(SgfProperty {
+                identifier: mark_type,
+                values: vec![coords],
+            });
+        }
+    }
+
+    pub fn add_label(&self, x: u32, y: u32, label: String) {
+        let state = self.state.lock().unwrap();
+        let mut props = state.current_node.properties.lock().unwrap();
+        let coords = format!("{}{}", (b'a' + x as u8) as char, (b'a' + y as u8) as char);
+        let val = format!("{}:{}", coords, label);
+
+        if let Some(p) = props.iter_mut().find(|p| p.identifier == "LB") {
+            // Remove existing label at this coordinate
+            p.values.retain(|v| !v.starts_with(&format!("{}:", coords)));
+            p.values.push(val);
+        } else {
+            props.push(SgfProperty {
+                identifier: "LB".to_string(),
+                values: vec![val],
+            });
+        }
+    }
+
+    pub fn clear_marks(&self, x: u32, y: u32) {
+        let state = self.state.lock().unwrap();
+        let mut props = state.current_node.properties.lock().unwrap();
+        let coords = format!("{}{}", (b'a' + x as u8) as char, (b'a' + y as u8) as char);
+
+        for id in &["TR", "CR", "SQ", "MA", "LB"] {
+            if let Some(p) = props.iter_mut().find(|p| p.identifier == *id) {
+                if *id == "LB" {
+                    p.values.retain(|v| !v.starts_with(&format!("{}:", coords)));
+                } else {
+                    p.values.retain(|v| v != &coords);
+                }
+            }
+        }
     }
 }
 

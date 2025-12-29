@@ -38,6 +38,24 @@
 "Play Control" = "Play Control";
 "Play Log" = "Play Log";
 "App Mode" = "App Mode";
+"Black Stone" = "Black Stone";
+"White Stone" = "White Stone";
+"Auto Stone" = "Auto Stone";
+"Triangle" = "Triangle";
+"Circle" = "Circle";
+"Square" = "Square";
+"Cross" = "Cross";
+"Label" = "Label";
+"Clear" = "Clear";
+"Label:" = "Label:";
+"Pass" = "Pass";
+"Resign" = "Resign";
+"Undo" = "Undo";
+"Restart" = "Restart";
+"No moves yet" = "No moves yet";
+"Next Player:" = "Next Player:";
+"Delete Branch" = "Delete Branch";
+"Branch deleted" = "Branch deleted";
 
 /* Game Metadata */
 "Event" = "Event";

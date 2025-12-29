@@ -11,7 +11,7 @@
 - **硬件**：搭载 Apple Silicon (M1, M2, M3, M4 等) 芯片的 Mac。
 - **操作系统**：macOS 14.0 Sonoma 或更高版本。
 - **AI 引擎**：目前仅支持 KataGo 引擎。
-  - 本软件不内置 KataGo 引擎，您需要从 [KataGo 主页](https://github.com/lightvector/KataGo) 自行下载二进制文件、权重模型（Model）以及配置文件（Config），或使用 [Homebrew](https://brew.sh/) 安装（`brew install katago`）。
+  - 本软件不内置 KataGo 引擎，您需要从 [KataGo 主页](https://github.com/lightvector/KataGo) 自行下载二进制文件、权重模型 *model* 及配置文件，或使用 [Homebrew](https://brew.sh/) 安装（`brew install katago`）。
 
 ## 核心功能
 
@@ -22,9 +22,9 @@
   - 高性能渲染的图形化棋谱变化树，支持分支删除。
 - **AI 实时分析**：
   - 集成 KataGo Analysis API，提供毫秒级的实时分析反馈。
-  - **胜率走势图**：实时追踪对局胜率变化，自动识别失误（Blunder）着法并在胜率图中标记。
+  - **胜率走势图**：实时追踪对局胜率变化，自动识别失误着法 *blunder* 并在胜率图中标记。
   - **AI 选点提示**：在棋盘上直接显示 AI 推荐的选点、胜率及后续变化（鼠标悬停显示），并在 **着法评估** 表格中实时更新详细数据。
-  - **形势评估**：通过 **领地图 Ownership Map** 直观展示双方控制区域。
+  - **形势评估**：通过 **领地图** *ownership map* 直观展示双方控制区域。
 
 ## 主要亮点
 

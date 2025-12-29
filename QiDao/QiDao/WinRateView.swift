@@ -48,7 +48,6 @@ struct WinRateView: View {
                             .padding(.top, 5)
                     } else {
                         Text("AI Analysis Inactive".localized)
-                            .font(.caption)
                             .foregroundColor(.secondary)
                             .frame(height: 80)
                             .frame(maxWidth: .infinity)

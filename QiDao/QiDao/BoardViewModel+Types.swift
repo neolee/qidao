@@ -159,6 +159,13 @@ enum MarkerType {
     case last3 // -3
 }
 
+enum AIState {
+    case idle       // Engine not started
+    case ready      // Engine ready, waiting for tasks
+    case analyzing  // Analyzing (Slot B/C)
+    case thinking   // Thinking for a move (Slot A)
+}
+
 enum AIRole: String, CaseIterable, Identifiable {
     case manual
     case black

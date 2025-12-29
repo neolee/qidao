@@ -6,6 +6,7 @@ import Combine
 class AIManager: ObservableObject {
     @Published var isAnalyzing: Bool = false
     @Published var isEngineStarted: Bool = false
+    @Published var aiState: AIState = .idle
     @Published var engineMessage: String = "AI Not Started".localized
     @Published var analysisResult: AnalysisResult? = nil
     @Published var logEntries: [BoardViewModel.LogEntry] = []
@@ -26,10 +27,15 @@ class AIManager: ObservableObject {
     var blunderThreshold: Double = 15.0
 
     private var analysisEngine: AnalysisEngine? = nil
-    private var analysisTask: Task<Void, Never>? = nil
+
+    // Task Slots
+    private var playTask: Task<Void, Never>? = nil          // Slot A: Play
+    private var interactiveTask: Task<Void, Never>? = nil   // Slot B: Interactive Analysis
+    private var fullScanTask: Task<Void, Never>? = nil      // Slot C: Full Game Analysis
+
+    // Infrastructure Tasks
     private var resultTask: Task<Void, Never>? = nil
     private var logTask: Task<Void, Never>? = nil
-    private var fullGameScanTask: Task<Void, Never>? = nil
 
     private var isEngineReady: Bool = false
     private var currentAnalysisId: String? = nil
@@ -44,6 +50,7 @@ class AIManager: ObservableObject {
         guard analysisEngine == nil else { return }
 
         isAnalyzing = true
+        aiState = .idle
         isEngineReady = false
         engineMessage = "Starting AI...".localized
         logEntries = []
@@ -56,11 +63,13 @@ class AIManager: ObservableObject {
                 try await engine.start(executable: executable, args: args)
                 self.analysisEngine = engine
                 self.isEngineStarted = true
+                self.aiState = .ready
                 self.startLogPolling()
                 self.startResultPolling()
             } catch {
                 self.isAnalyzing = false
                 self.isEngineStarted = false
+                self.aiState = .idle
                 self.engineMessage = "AI Error: \(error)".localized
                 self.addLog("AI Error: \(error)", isError: true)
             }
@@ -70,15 +79,20 @@ class AIManager: ObservableObject {
     func stop() {
         isAnalyzing = false
         isEngineStarted = false
+        aiState = .idle
         isEngineReady = false
         analysisResult = nil
         winRateHistory = [:]
         scoreLeadHistory = [:]
         blunders = [:]
-        analysisTask?.cancel()
-        analysisTask = nil
-        fullGameScanTask?.cancel()
-        fullGameScanTask = nil
+
+        playTask?.cancel()
+        playTask = nil
+        interactiveTask?.cancel()
+        interactiveTask = nil
+        fullScanTask?.cancel()
+        fullScanTask = nil
+
         resultTask?.cancel()
         resultTask = nil
         logTask?.cancel()
@@ -110,12 +124,12 @@ class AIManager: ObservableObject {
         self.currentTurnNumber = turnNumber
         self.blunderThreshold = config.display.blunderThreshold
 
-        analysisTask?.cancel()
+        interactiveTask?.cancel()
 
         let analysisSettings = config.analysis
         let displaySettings = config.display
 
-        analysisTask = Task {
+        interactiveTask = Task {
             do {
                 try await Task.sleep(nanoseconds: 500_000_000)
 
@@ -173,6 +187,7 @@ class AIManager: ObservableObject {
                 let jsonData = try JSONSerialization.data(withJSONObject: query)
                 let jsonString = String(data: jsonData, encoding: .utf8)!
 
+                self.aiState = .analyzing
                 try await engine.analyze(queryJson: jsonString)
             } catch is CancellationError {
             } catch {
@@ -235,10 +250,10 @@ class AIManager: ObservableObject {
             }
         }
 
-        fullGameScanTask?.cancel()
+        fullScanTask?.cancel()
         isFullGameScanning = true
 
-        fullGameScanTask = Task {
+        fullScanTask = Task {
             do {
                 let scanId = "fullscan-\(self.analysisSessionId)"
                 // Only terminate the previous full scan, not the current move analysis
@@ -287,8 +302,8 @@ class AIManager: ObservableObject {
     }
 
     func stopFullGameAnalysis() {
-        fullGameScanTask?.cancel()
-        fullGameScanTask = nil
+        fullScanTask?.cancel()
+        fullScanTask = nil
         isFullGameScanning = false
     }
 

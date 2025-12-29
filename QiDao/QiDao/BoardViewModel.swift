@@ -238,6 +238,7 @@ class BoardViewModel: ObservableObject {
 
     // AI Analysis
     @Published var isAnalyzing: Bool = false
+    @Published var aiState: AIState = .idle
     @Published var engineMessage: String = "AI Not Started".localized
     @Published var analysisResult: AnalysisResult? = nil
     @Published var logEntries: [LogEntry] = []
@@ -353,6 +354,7 @@ class BoardViewModel: ObservableObject {
             .store(in: &cancellables)
 
         aiManager.$isAnalyzing.assign(to: &$isAnalyzing)
+        aiManager.$aiState.assign(to: &$aiState)
         aiManager.$isEngineStarted
             .receive(on: RunLoop.main)
             .sink { [weak self] started in
@@ -394,7 +396,7 @@ class BoardViewModel: ObservableObject {
             } else {
                 SoundManager.shared.play(name: "dead-stones")
             }
-            
+
             if appMode == .play {
                 checkAIMove()
             }
@@ -405,7 +407,7 @@ class BoardViewModel: ObservableObject {
 
     private func checkAIMove() {
         guard appMode == .play, isAnalyzing else { return }
-        
+
         let shouldAIPlay: Bool
         switch aiRole {
         case .manual: shouldAIPlay = false
@@ -413,7 +415,7 @@ class BoardViewModel: ObservableObject {
         case .white: shouldAIPlay = (nextColor == .white)
         case .both: shouldAIPlay = true
         }
-        
+
         if shouldAIPlay {
             // We'll implement the actual AI move triggering in the next step
             // For now, we just need the logic structure

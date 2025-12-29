@@ -240,37 +240,51 @@ struct MarkerView: View {
     let label: String?
     let theme: BoardTheme
     let size: CGFloat
-    let hasStone: Bool
+    let stoneColor: StoneColor?
 
     var body: some View {
-        let color = hasStone ? (theme.blackStoneStyle.textColor) : theme.lineColor
+        let color: Color = {
+            if let stoneColor = stoneColor {
+                return stoneColor == .black ? theme.blackStoneStyle.textColor : theme.whiteStoneStyle.textColor
+            }
+            return theme.lineColor
+        }()
 
-        Group {
-            switch type {
-            case "TR":
-                Triangle()
-                    .stroke(color, lineWidth: 2)
-                    .frame(width: size * 0.5, height: size * 0.5)
-            case "CR":
+        ZStack {
+            // Background mask for marks on empty intersections
+            if stoneColor == nil {
                 Circle()
-                    .stroke(color, lineWidth: 2)
-                    .frame(width: size * 0.5, height: size * 0.5)
-            case "SQ":
-                Rectangle()
-                    .stroke(color, lineWidth: 2)
-                    .frame(width: size * 0.45, height: size * 0.45)
-            case "MA":
-                Cross()
-                    .stroke(color, lineWidth: 2)
-                    .frame(width: size * 0.45, height: size * 0.45)
-            case "LB":
-                if let label = label {
-                    Text(label)
-                        .font(.system(size: size * 0.5, weight: .bold))
-                        .foregroundColor(color)
+                    .fill(theme.boardColor)
+                    .frame(width: size * 0.6, height: size * 0.6)
+            }
+
+            Group {
+                switch type {
+                case "TR":
+                    Triangle()
+                        .stroke(color, lineWidth: 2)
+                        .frame(width: size * 0.5, height: size * 0.43) // Closer to equilateral
+                case "CR":
+                    Circle()
+                        .stroke(color, lineWidth: 2)
+                        .frame(width: size * 0.5, height: size * 0.5)
+                case "SQ":
+                    Rectangle()
+                        .stroke(color, lineWidth: 2)
+                        .frame(width: size * 0.45, height: size * 0.45)
+                case "MA":
+                    Cross()
+                        .stroke(color, lineWidth: 2)
+                        .frame(width: size * 0.45, height: size * 0.45)
+                case "LB":
+                    if let label = label {
+                        Text(label)
+                            .font(.system(size: size * 0.5, weight: .bold))
+                            .foregroundColor(color)
+                    }
+                default:
+                    EmptyView()
                 }
-            default:
-                EmptyView()
             }
         }
     }

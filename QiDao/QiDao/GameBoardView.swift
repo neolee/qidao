@@ -57,7 +57,7 @@ struct GameBoardView: View {
                         label: mark.label,
                         theme: viewModel.theme,
                         size: spacing,
-                        hasStone: viewModel.board.getStone(x: UInt32(mark.x), y: UInt32(mark.y)) != nil
+                        stoneColor: viewModel.board.getStone(x: UInt32(mark.x), y: UInt32(mark.y))
                     )
                     .position(
                         x: CGFloat(mark.x + 1) * spacing,

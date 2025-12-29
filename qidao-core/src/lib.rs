@@ -482,8 +482,7 @@ impl Game {
                 .unwrap_or(19)
         };
 
-        let mut board_cache = std::collections::HashMap::new();
-        board_cache.insert(Arc::as_ptr(&root) as usize, Board::new(size));
+        let board_cache = std::collections::HashMap::new();
 
         Ok(Arc::new(Self {
             state: Mutex::new(GameState {

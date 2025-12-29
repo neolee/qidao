@@ -103,6 +103,7 @@ struct ToolButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
+            .contentShape(Rectangle()) // Make the entire area clickable
             .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
             .cornerRadius(6)
             .overlay(

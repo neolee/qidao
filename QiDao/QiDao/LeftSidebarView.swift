@@ -41,7 +41,10 @@ struct LeftSidebarView: View {
                     .frame(maxHeight: .infinity)
 
             case .play:
+                AIEngineView(viewModel: viewModel, showAIConfig: $showAIConfig)
+                
                 PlayControlView(viewModel: viewModel)
+                
                 Spacer()
             }
         }

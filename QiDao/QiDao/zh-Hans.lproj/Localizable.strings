@@ -36,7 +36,6 @@
 "Play Mode" = "练习";
 "Edit Toolbox" = "编辑工具箱";
 "Play Control" = "练习控制";
-"Play Log" = "练习日志";
 "App Mode" = "应用模式";
 "Black Stone" = "黑子";
 "White Stone" = "白子";
@@ -60,7 +59,17 @@
 "Copied!" = "已复制!";
 "Copy" = "复制";
 "Write some game comment" = "输入着法解说";
-
+"AI Role" = "AI 角色";
+"Manual" = "手动";
+"AI Black" = "AI 执黑";
+"AI White" = "AI 执白";
+"Both" = "AI 对弈";
+"New Game" = "开始新对局";
+"Start New Game" = "创建新对局";
+"Board Size" = "棋盘大小";
+"Handicap" = "让子";
+"Start" = "开始";
+"New Game Started" = "新对局已开始";
 /* Game Metadata */
 "Event" = "赛事";
 "Date" = "日期";

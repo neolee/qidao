@@ -53,6 +53,14 @@ class BoardViewModel: ObservableObject {
     @Published var activeEditTool: EditTool = .stoneAuto
     @Published var editLabelText: String = "A"
 
+    @Published var aiRole: AIRole = .manual {
+        didSet {
+            if appMode == .play {
+                checkAIMove()
+            }
+        }
+    }
+
     var nextSgfMove: (x: Int, y: Int)? {
         let children = gameManager.getGame().getCurrentNode().getChildren()
         if let first = children.first {
@@ -386,8 +394,29 @@ class BoardViewModel: ObservableObject {
             } else {
                 SoundManager.shared.play(name: "dead-stones")
             }
+            
+            if appMode == .play {
+                checkAIMove()
+            }
         } catch {
             self.message = "\("Invalid Move".localized): \(error)"
+        }
+    }
+
+    private func checkAIMove() {
+        guard appMode == .play, isAnalyzing else { return }
+        
+        let shouldAIPlay: Bool
+        switch aiRole {
+        case .manual: shouldAIPlay = false
+        case .black: shouldAIPlay = (nextColor == .black)
+        case .white: shouldAIPlay = (nextColor == .white)
+        case .both: shouldAIPlay = true
+        }
+        
+        if shouldAIPlay {
+            // We'll implement the actual AI move triggering in the next step
+            // For now, we just need the logic structure
         }
     }
 
@@ -543,6 +572,18 @@ class BoardViewModel: ObservableObject {
         aiManager.resetSession()
         gameManager.reset(size: boardSize)
         self.message = "Board Reset".localized
+    }
+
+    func startNewGame(size: Int, komi: Double, handicap: Int) {
+        aiManager.resetSession()
+        gameManager.reset(size: size)
+        let game = gameManager.getGame()
+        var meta = game.getMetadata()
+        meta.komi = komi
+        // TODO: Handle handicap stones
+        game.setMetadata(metadata: meta)
+        gameManager.syncState(rebuildTree: true)
+        self.message = "New Game Started".localized
     }
 
     func changeBoardSize(_ newSize: Int) {

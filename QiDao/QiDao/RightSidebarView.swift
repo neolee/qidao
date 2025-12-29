@@ -29,8 +29,7 @@ struct RightSidebarView: View {
                 SGFPreviewView(viewModel: viewModel)
                     .frame(height: 400)
             case .play:
-                PlayLogView(viewModel: viewModel)
-                    .frame(height: 400)
+                EmptyView()
             }
         }
         .padding()

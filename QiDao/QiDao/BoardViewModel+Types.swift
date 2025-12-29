@@ -159,6 +159,33 @@ enum MarkerType {
     case last3 // -3
 }
 
+enum AIRole: String, CaseIterable, Identifiable {
+    case manual
+    case black
+    case white
+    case both
+
+    var id: String { self.rawValue }
+
+    var label: String {
+        switch self {
+        case .manual: return "Manual".localized
+        case .black: return "AI Black".localized
+        case .white: return "AI White".localized
+        case .both: return "Both".localized
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .manual: return "person"
+        case .black: return "cpu"
+        case .white: return "cpu.fill"
+        case .both: return "bolt.fill"
+        }
+    }
+}
+
 extension BoardViewModel {
     struct LogEntry: Identifiable {
         let id = UUID()

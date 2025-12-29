@@ -12,25 +12,36 @@ struct LeftSidebarView: View {
         VStack(alignment: .leading, spacing: 15) {
             GameInfoView(viewModel: viewModel, showInfoEditor: $showInfoEditor)
 
-            WinRateView(viewModel: viewModel)
+            switch viewModel.appMode {
+            case .analysis:
+                WinRateView(viewModel: viewModel)
 
-            AIEngineView(viewModel: viewModel, showAIConfig: $showAIConfig)
+                AIEngineView(viewModel: viewModel, showAIConfig: $showAIConfig)
 
-            VStack(spacing: 10) {
-                Picker("", selection: $selectedTab) {
-                    Text("Comments".localized).tag(0)
-                    Text("AI Engine Logs".localized).tag(1)
+                VStack(spacing: 10) {
+                    Picker("", selection: $selectedTab) {
+                        Text("Comments".localized).tag(0)
+                        Text("AI Engine Logs".localized).tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+
+                    if selectedTab == 0 {
+                        GameCommentView(viewModel: viewModel)
+                    } else {
+                        AIEngineLogView(viewModel: viewModel)
+                    }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                .frame(maxHeight: .infinity)
 
-                if selectedTab == 0 {
-                    GameCommentView(viewModel: viewModel)
-                } else {
-                    AIEngineLogView(viewModel: viewModel)
-                }
+            case .edit:
+                EditToolboxView(viewModel: viewModel)
+                Spacer()
+
+            case .play:
+                PlayControlView(viewModel: viewModel)
+                Spacer()
             }
-            .frame(maxHeight: .infinity)
         }
         .padding()
         .frame(minWidth: 250, maxWidth: 350)

@@ -31,6 +31,13 @@
 "Last 5" = "最近5手";
 "Last 1" = "最近1手";
 "None" = "不显示";
+"Analysis Mode" = "分析";
+"Edit Mode" = "编辑";
+"Play Mode" = "练习";
+"Edit Toolbox" = "编辑工具箱";
+"Play Control" = "练习控制";
+"Play Log" = "练习日志";
+"App Mode" = "应用模式";
 
 /* Game Metadata */
 "Event" = "赛事";
@@ -130,8 +137,8 @@
 "Overlay Win Rate" = "棋盘胜率视角";
 "Current Player" = "当前方";
 "Engine Profiles" = "引擎方案";
-"Analysis" = "分析设置";
-"Display" = "界面设置";
+"Analysis Config" = "分析设置";
+"Display Config" = "显示设置";
 
 /* Updates */
 "Check for Updates..." = "检查更新...";

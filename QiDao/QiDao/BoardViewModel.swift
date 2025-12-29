@@ -42,6 +42,14 @@ class BoardViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
     }
 
+    @Published var appMode: AppMode = .analysis {
+        didSet {
+            if appMode != .analysis && isAnalyzing {
+                stopAnalysis()
+            }
+        }
+    }
+
     var nextSgfMove: (x: Int, y: Int)? {
         let children = gameManager.getGame().getCurrentNode().getChildren()
         if let first = children.first {

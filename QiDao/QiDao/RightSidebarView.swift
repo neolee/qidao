@@ -6,22 +6,31 @@ struct RightSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
-            // 1. Variation Tree - Takes remaining space
+            // 1. Variation Tree - Common
             GroupBox(label: Label("Variation Tree".localized, systemImage: "arrow.triangle.branch")) {
                 VariationTreeView(viewModel: viewModel)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
-            // 2. Move Evaluation - Fixed height
-            MoveEvaluationView(viewModel: viewModel)
+            switch viewModel.appMode {
+            case .analysis:
+                // 2. Move Evaluation - Fixed height
+                MoveEvaluationView(viewModel: viewModel)
 
-            // 3. Evaluation Board - Square based on width
-            if viewModel.config.display.showOwnership {
-                EvaluationBoardView(
-                    viewModel: viewModel,
-                    ownership: viewModel.isAnalyzing ? viewModel.analysisResult?.ownership : nil,
-                    pv: viewModel.isAnalyzing ? viewModel.analysisResult?.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv : nil
-                )
+                // 3. Evaluation Board - Square based on width
+                if viewModel.config.display.showOwnership {
+                    EvaluationBoardView(
+                        viewModel: viewModel,
+                        ownership: viewModel.isAnalyzing ? viewModel.analysisResult?.ownership : nil,
+                        pv: viewModel.isAnalyzing ? viewModel.analysisResult?.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv : nil
+                    )
+                }
+            case .edit:
+                GameCommentView(viewModel: viewModel)
+                    .frame(height: 200)
+            case .play:
+                PlayLogView(viewModel: viewModel)
+                    .frame(height: 200)
             }
         }
         .padding()

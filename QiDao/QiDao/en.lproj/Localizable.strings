@@ -31,6 +31,13 @@
 "Last 5" = "Last 5";
 "Last 1" = "Last 1";
 "None" = "None";
+"Analysis Mode" = "Analysis";
+"Edit Mode" = "Edit";
+"Play Mode" = "Play";
+"Edit Toolbox" = "Edit Toolbox";
+"Play Control" = "Play Control";
+"Play Log" = "Play Log";
+"App Mode" = "App Mode";
 
 /* Game Metadata */
 "Event" = "Event";
@@ -130,8 +137,8 @@
 "Overlay Win Rate" = "Overlay Win Rate";
 "Current Player" = "Current Player";
 "Engine Profiles" = "Engine Profiles";
-"Analysis" = "Analysis";
-"Display" = "Display";
+"Analysis Config" = "Analysis";
+"Display Config" = "Display";
 
 /* Updates */
 "Check for Updates..." = "Check for Updates...";

@@ -16,9 +16,11 @@ struct GameCommentView: View {
                 .onChange(of: viewModel.currentNodeId) {
                     commentText = viewModel.nodeComment
                 }
-                .onChange(of: commentText) {
-                    if commentText != viewModel.nodeComment {
-                        viewModel.updateNodeComment(commentText)
+                .onChange(of: commentText) { old, new in
+                    if new != viewModel.nodeComment {
+                        DispatchQueue.main.async {
+                            viewModel.updateNodeComment(new)
+                        }
                     }
                 }
                 .onAppear {

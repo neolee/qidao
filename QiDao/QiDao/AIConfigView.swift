@@ -13,8 +13,8 @@ struct AIConfigView: View {
 
     enum ConfigTab: String, CaseIterable {
         case profiles = "Engine Profiles"
-        case analysis = "Analysis"
-        case display = "Display"
+        case analysis = "Analysis Config"
+        case display = "Display Config"
 
         var localized: String { self.rawValue.localized }
     }

@@ -17,6 +17,22 @@ struct Variation: Identifiable {
     }
 }
 
+enum AppMode: String, CaseIterable, Identifiable {
+    case analysis
+    case edit
+    case play
+
+    var id: String { self.rawValue }
+
+    var label: String {
+        switch self {
+        case .analysis: return "Analysis Mode".localized
+        case .edit: return "Edit Mode".localized
+        case .play: return "Play Mode".localized
+        }
+    }
+}
+
 struct TreeVisualNode: Identifiable {
     let id: String
     let x: CGFloat

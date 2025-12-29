@@ -44,8 +44,16 @@ class BoardViewModel: ObservableObject {
 
     @Published var appMode: AppMode = .analysis {
         didSet {
-            if appMode != .analysis && isAnalyzing {
-                stopAnalysis()
+            if appMode == .play {
+                aiManager.clearAnalysisResult()
+                checkAIMove()
+            } else if appMode == .analysis {
+                aiPlayTask?.cancel()
+                aiPlayTask = nil
+                updateAnalysis()
+            } else {
+                aiPlayTask?.cancel()
+                aiPlayTask = nil
             }
         }
     }
@@ -178,7 +186,7 @@ class BoardViewModel: ObservableObject {
             try gameManager.getGame().pass(color: nextColor)
             gameManager.syncState()
             if isAnalyzing {
-                startAnalysis()
+                updateAnalysis()
             }
         } catch {
             message = "Error: \(error.localizedDescription)"
@@ -264,6 +272,7 @@ class BoardViewModel: ObservableObject {
 
     private var gameManager: GameManager
     private var aiManager: AIManager
+    private var aiPlayTask: Task<Void, Never>? = nil
     private var sgfManager = SgfManager()
     private var cancellables = Set<AnyCancellable>()
 
@@ -350,6 +359,9 @@ class BoardViewModel: ObservableObject {
                 self?.gameState = $0
                 self?.refreshMessage()
                 self?.updateAnalysis()
+                if self?.appMode == .play {
+                    self?.checkAIMove()
+                }
             }
             .store(in: &cancellables)
 
@@ -396,17 +408,13 @@ class BoardViewModel: ObservableObject {
             } else {
                 SoundManager.shared.play(name: "dead-stones")
             }
-
-            if appMode == .play {
-                checkAIMove()
-            }
         } catch {
             self.message = "\("Invalid Move".localized): \(error)"
         }
     }
 
     private func checkAIMove() {
-        guard appMode == .play, isAnalyzing else { return }
+        guard appMode == .play, isAnalyzing, aiState != .thinking else { return }
 
         let shouldAIPlay: Bool
         switch aiRole {
@@ -417,8 +425,36 @@ class BoardViewModel: ObservableObject {
         }
 
         if shouldAIPlay {
-            // We'll implement the actual AI move triggering in the next step
-            // For now, we just need the logic structure
+            let game = gameManager.getGame()
+            let initialStones = game.getInitialStones()
+            let moves = game.getAnalysisMoves()
+            let nextPlayer = nextColor == .black ? "B" : "W"
+            let currentMetadata = metadata
+            let currentConfig = config
+
+            aiPlayTask?.cancel()
+            aiPlayTask = Task {
+                let move = await aiManager.requestAIMove(
+                    initialStones: initialStones,
+                    moves: moves,
+                    nextPlayer: nextPlayer,
+                    metadata: currentMetadata,
+                    config: currentConfig
+                )
+
+                if Task.isCancelled { return }
+
+                // Re-check conditions after async call
+                guard self.isAnalyzing, self.appMode == .play else { return }
+
+                if let move = move {
+                    self.placeStone(x: move.x, y: move.y)
+                } else {
+                    // If AI returns nil, it could be a PASS or an error.
+                    // For now we assume it's a PASS if the engine is still ready.
+                    self.pass()
+                }
+            }
         }
     }
 
@@ -528,6 +564,12 @@ class BoardViewModel: ObservableObject {
 
     func updateAnalysis() {
         self.hoveredMoveStr = nil
+        guard appMode == .analysis else {
+            // In non-analysis mode, we clear the current analysis result to hide overlays
+            aiManager.clearAnalysisResult()
+            return
+        }
+
         let game = gameManager.getGame()
         aiManager.updateAnalysis(
             currentNodeId: game.getCurrentNode().getId(),

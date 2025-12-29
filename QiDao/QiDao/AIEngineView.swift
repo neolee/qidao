@@ -29,7 +29,20 @@ struct AIEngineView: View {
 
                 HStack(spacing: 8) {
                     if viewModel.isAnalyzing {
-                        CustomSpinner()
+                        switch viewModel.aiState {
+                        case .thinking:
+                            ProgressView()
+                                .scaleEffect(0.5)
+                                .frame(width: 16, height: 16)
+                        case .analyzing:
+                            CustomSpinner()
+                        case .ready:
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                        case .idle:
+                            Image(systemName: "circle")
+                                .foregroundColor(.secondary)
+                        }
                     } else {
                         Image(systemName: "pause.circle")
                             .foregroundColor(.secondary)

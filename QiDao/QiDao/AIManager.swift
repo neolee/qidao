@@ -27,6 +27,7 @@ class AIManager: ObservableObject {
     var blunderThreshold: Double = 15.0
 
     private var analysisEngine: AnalysisEngine? = nil
+    private var resultsById: [String: AnalysisResult] = [:]
 
     // Task Slots
     private var playTask: Task<Void, Never>? = nil          // Slot A: Play
@@ -114,8 +115,8 @@ class AIManager: ObservableObject {
         metadata: GameMetadata,
         config: AIConfig
     ) {
-        guard isAnalyzing, let engine = analysisEngine else {
-            analysisResult = nil
+        guard isAnalyzing, let engine = analysisEngine, aiState != .thinking else {
+            if !isAnalyzing { analysisResult = nil }
             return
         }
 
@@ -192,6 +193,7 @@ class AIManager: ObservableObject {
             } catch is CancellationError {
             } catch {
                 print("Analysis error: \(error)")
+                self.aiState = .ready
             }
         }
     }
@@ -307,12 +309,154 @@ class AIManager: ObservableObject {
         isFullGameScanning = false
     }
 
+    func clearAnalysisResult() {
+        interactiveTask?.cancel()
+        fullScanTask?.cancel()
+        currentAnalysisId = nil
+        self.analysisResult = nil
+    }
+
+    func requestAIMove(
+        initialStones: [[String]],
+        moves: [[String]],
+        nextPlayer: String,
+        metadata: GameMetadata,
+        config: AIConfig
+    ) async -> (x: Int, y: Int)? {
+        guard isAnalyzing, let engine = analysisEngine else {
+            print("AI Play: Engine not ready or analysis disabled")
+            return nil
+        }
+
+        // Cancel analysis tasks to focus on thinking
+        interactiveTask?.cancel()
+        fullScanTask?.cancel()
+
+        aiState = .thinking
+        engineMessage = "AI is thinking...".localized
+
+        let playId = "play-\(self.analysisSessionId)-\(moves.count)"
+        print("AI Play: Requesting move for \(nextPlayer), turn \(moves.count), ID \(playId)")
+
+        return await withTaskCancellationHandler {
+            do {
+                // Terminate any previous play or analysis to free GPU
+                try? await engine.terminate(id: playId)
+                if let oldId = self.currentAnalysisId {
+                    try? await engine.terminate(id: oldId)
+                }
+                // Also try to terminate any other play IDs just in case
+                try? await engine.terminate(id: "play-\(self.analysisSessionId)-\(moves.count - 1)")
+                try? await engine.terminate(id: "fullscan-\(self.analysisSessionId)")
+
+                let query: [String: Any] = [
+                    "id": playId,
+                    "initialStones": initialStones,
+                    "moves": moves,
+                    "initialPlayer": nextPlayer,
+                    "rules": "chinese",
+                    "komi": metadata.komi,
+                    "boardXSize": metadata.size,
+                    "boardYSize": metadata.size,
+                    "analyzeTurns": [moves.count],
+                    "maxVisits": config.analysis.maxVisits ?? 1000,
+                    "priority": 100, // Highest priority
+                    "overrideSettings": [
+                        "reportAnalysisWinratesAs": "BLACK"
+                    ]
+                ]
+
+                let jsonData = try JSONSerialization.data(withJSONObject: query)
+                let jsonString = String(data: jsonData, encoding: .utf8)!
+
+                // Clear previous results for this ID
+                self.resultsById.removeValue(forKey: playId)
+
+                try await engine.analyze(queryJson: jsonString)
+
+                // Wait for the result of this specific ID
+                return await withCheckedContinuation { continuation in
+                    let checkInterval: UInt64 = 50_000_000 // 0.05s
+                    Task {
+                        var attempts = 0
+                        while attempts < 400 { // 20 seconds timeout
+                            if Task.isCancelled {
+                                self.aiState = .ready
+                                continuation.resume(returning: nil)
+                                return
+                            }
+                            if let result = self.resultsById[playId] {
+                                // We want the final result (isDuringSearch == false)
+                                // or at least one with enough visits if it's taking too long
+                                if !result.isDuringSearch || (attempts > 100 && result.rootInfo.visits > 10) {
+                                    if let bestMoveStr = result.moveInfos.first?.moveStr {
+                                        print("AI Play: Found move \(bestMoveStr) for ID \(playId) after \(attempts) attempts")
+                                        if let coords = decodeKataGoMove(bestMoveStr, size: Int(metadata.size)) {
+                                            self.aiState = .ready
+                                            self.engineMessage = "\("AI played".localized) \(bestMoveStr)"
+                                            continuation.resume(returning: coords)
+                                            return
+                                        } else if bestMoveStr.uppercased() == "PASS" {
+                                            print("AI Play: AI passed for ID \(playId)")
+                                            self.aiState = .ready
+                                            self.engineMessage = "AI passed".localized
+                                            continuation.resume(returning: nil)
+                                            return
+                                        }
+                                    }
+                                }
+                            }
+                            try? await Task.sleep(nanoseconds: checkInterval)
+                            attempts += 1
+                        }
+                        print("AI Play: Timeout or no move found for ID \(playId)")
+                        self.aiState = .ready
+                        continuation.resume(returning: nil)
+                    }
+                }
+            } catch {
+                print("AI Play error: \(error)")
+                aiState = .ready
+                return nil
+            }
+        } onCancel: {
+            // This runs immediately when the task is cancelled
+            Task { @MainActor in
+                self.aiState = .ready
+                self.engineMessage = "AI Thinking Cancelled".localized
+            }
+        }
+    }
+
+    private func decodeKataGoMove(_ move: String, size: Int) -> (x: Int, y: Int)? {
+        let move = move.uppercased()
+        if move == "PASS" { return nil } // TODO: Handle pass
+        guard move.count >= 2 else { return nil }
+
+        let colChar = move.first!
+        let rowStr = move.dropFirst()
+
+        guard let row = Int(rowStr) else { return nil }
+
+        let colMap: [Character: Int] = [
+            "A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7,
+            "J": 8, "K": 9, "L": 10, "M": 11, "N": 12, "O": 13, "P": 14, "Q": 15,
+            "R": 16, "S": 17, "T": 18
+        ]
+
+        guard let x = colMap[colChar] else { return nil }
+        let y = size - row
+
+        return (x, y)
+    }
+
     func resetSession() {
         self.analysisSessionId += 1
         self.winRateHistory = [:]
         self.scoreLeadHistory = [:]
         self.blunders = [:]
         self.analysisResult = nil
+        self.resultsById = [:]
         self.lastMainLineMoves = []
         if isAnalyzing {
             Task {
@@ -406,15 +550,18 @@ class AIManager: ObservableObject {
     private func handleAnalysisResult(_ result: AnalysisResult) {
         if result.noResults { return }
 
+        // Store result by ID for requestAIMove to find
+        self.resultsById[result.id] = result
+
         let parts = result.id.split(separator: "-")
-        if result.id.hasPrefix("qidao-") || result.id.hasPrefix("fullscan-") {
+        if result.id.hasPrefix("qidao-") || result.id.hasPrefix("fullscan-") || result.id.hasPrefix("play-") {
             if parts.count >= 2, let resultSessionId = Int(parts[1]) {
                 if resultSessionId != self.analysisSessionId { return }
             }
         }
 
         if result.id.hasPrefix("qidao-") {
-            if result.id.hasSuffix("-\(currentNodeId)") {
+            if result.id == currentAnalysisId && result.id.hasSuffix("-\(currentNodeId)") {
                 let normalizedWinRate = WinRateConverter.convertWinRate(
                     result.rootInfo.winrate,
                     reportedAs: .black,

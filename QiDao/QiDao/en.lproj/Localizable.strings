@@ -56,6 +56,9 @@
 "Next Player:" = "Next Player:";
 "Delete Branch" = "Delete Branch";
 "Branch deleted" = "Branch deleted";
+"SGF Preview" = "SGF Preview";
+"Copied!" = "Copied!";
+"Copy" = "Copy";
 
 /* Game Metadata */
 "Event" = "Event";

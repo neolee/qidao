@@ -36,7 +36,9 @@ struct LeftSidebarView: View {
 
             case .edit:
                 EditToolboxView(viewModel: viewModel)
-                Spacer()
+
+                GameCommentView(viewModel: viewModel)
+                    .frame(maxHeight: .infinity)
 
             case .play:
                 PlayControlView(viewModel: viewModel)

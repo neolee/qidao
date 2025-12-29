@@ -110,7 +110,7 @@ class BoardViewModel: ObservableObject {
     private func handleEditClick(x: Int, y: Int) {
         let game = gameManager.getGame()
         let currentStone = board.getStone(x: UInt32(x), y: UInt32(y))
-        
+
         switch activeEditTool {
         case .stoneBlack:
             if currentStone == .black {

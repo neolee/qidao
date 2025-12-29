@@ -26,11 +26,11 @@ struct RightSidebarView: View {
                     )
                 }
             case .edit:
-                GameCommentView(viewModel: viewModel)
-                    .frame(height: 200)
+                SGFPreviewView(viewModel: viewModel)
+                    .frame(height: 400)
             case .play:
                 PlayLogView(viewModel: viewModel)
-                    .frame(height: 200)
+                    .frame(height: 400)
             }
         }
         .padding()

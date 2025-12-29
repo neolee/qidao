@@ -715,7 +715,7 @@ impl Game {
 
     pub fn get_next_color(&self) -> StoneColor {
         let state = self.state.lock().unwrap();
-        
+
         // 1. Check PL property in current node
         {
             let props = state.current_node.properties.lock().unwrap();
@@ -1078,7 +1078,7 @@ impl Game {
         let mut current_board = Board::new(state.size);
         for node in path {
             let props = node.properties.lock().unwrap();
-            
+
             // 1. Handle setup stones (AB, AW, AE)
             for prop in props.iter() {
                 match prop.identifier.as_str() {
@@ -1131,7 +1131,7 @@ impl Game {
                     _ => {}
                 }
             }
-            
+
             // Update cache for this node in the path
             state.board_cache.insert(Arc::as_ptr(&node) as usize, current_board.clone());
         }

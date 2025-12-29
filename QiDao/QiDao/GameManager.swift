@@ -97,6 +97,7 @@ class GameManager: ObservableObject {
         newState.metadata = self.game.getMetadata()
         newState.currentNodeId = self.game.getCurrentNode().getId()
         newState.nodeComment = self.game.getComment()
+        newState.sgf = self.game.toSgf()
 
         newState.boardSize = Int(newState.metadata.size)
         newState.isSizeLocked = newState.isSizeLocked || newState.moveCount > 0 || self.game.getMaxMoveCount() > 0

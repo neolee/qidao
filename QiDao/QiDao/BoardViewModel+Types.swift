@@ -121,6 +121,7 @@ struct GameState {
     var currentNodeId: String = ""
     var nodeComment: String = ""
     var moveNumbers: [String: Int] = [:]
+    var sgf: String = ""
     var metadata: GameMetadata = GameMetadata(
         blackName: "", blackRank: "",
         whiteName: "", whiteRank: "",

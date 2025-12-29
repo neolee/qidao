@@ -56,6 +56,9 @@
 "Next Player:" = "下一手:";
 "Delete Branch" = "删除当前分支";
 "Branch deleted" = "分支已删除";
+"SGF Preview" = "SGF 预览";
+"Copied!" = "已复制!";
+"Copy" = "复制";
 
 /* Game Metadata */
 "Event" = "赛事";

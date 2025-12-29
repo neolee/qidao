@@ -40,7 +40,7 @@ struct EditToolboxView: View {
                     Text("Next Player:".localized)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
+
                     HStack {
                         Button(action: { viewModel.setNextPlayer(.black) }) {
                             HStack {

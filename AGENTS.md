@@ -89,11 +89,11 @@ QiDao (Tao of Go) is a modern Go (Weiqi) tool targeted primarily for macOS, insp
   - Update project progression in `MEMO.md` after user confirmation of major task completion.
   - Run `./build_core.sh` after any change in `qidao-core` source code.
   - L10n: Add to Localizable.strings before using new UI strings.
-- **Ask first**:
-  - Before modifying existing source code in a major way.
+- **Ask before doing**:
+  - Before modifying existing source code in a major way (i.e. more than 3 source files).
   - Change Xcode project settings.
 - **Never do**:
-  - Commit more than 3 tasks in a single iteration.
+  - Commit more than one major task in a single iteration.
   - Modify UniFFI generated bindings directly (files under `QiDao/QiDao/Core`), use `./build_core.sh` instead.
   - Use `cat` to create or edit files.
 

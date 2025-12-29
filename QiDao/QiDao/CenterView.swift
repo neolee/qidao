@@ -89,7 +89,7 @@ struct CenterView: View {
                 Spacer()
             }
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .background(.ultraThinMaterial)
 
             // Board Container
@@ -172,7 +172,7 @@ struct CenterView: View {
                 .focusable(false)
                 .help("Go to End".localized)
             }
-            .padding(.vertical, 10)
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background(Color.black.opacity(0.05))
         }

@@ -29,15 +29,6 @@ struct GameCommentView: View {
             .padding(8)
             .background(Color.black.opacity(0.03))
             .cornerRadius(4)
-
-            if isFocused {
-                HStack {
-                    Spacer()
-                    Text("Auto-saving...".localized)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
         }
     }
 }

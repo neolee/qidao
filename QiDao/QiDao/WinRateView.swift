@@ -38,22 +38,23 @@ struct WinRateView: View {
 
                 // Win Rate Graph
                 if viewModel.config.display.showWinRateGraph {
-                    if viewModel.isAnalyzing {
-                        let maxCount = viewModel.maxMoveCount
-                        let totalMoves = maxCount <= 100 ? 100 : ((maxCount + 49) / 50) * 50
-                        WinRateGraph(history: viewModel.winRateHistory, blunders: viewModel.blunders, currentTurn: viewModel.moveCount, totalMoves: totalMoves) { turn in
-                            viewModel.jumpToMove(min(turn, viewModel.maxMoveCount))
+                    Group {
+                        if viewModel.isAnalyzing {
+                            let maxCount = viewModel.maxMoveCount
+                            let totalMoves = maxCount <= 100 ? 100 : ((maxCount + 49) / 50) * 50
+                            WinRateGraph(history: viewModel.winRateHistory, blunders: viewModel.blunders, currentTurn: viewModel.moveCount, totalMoves: totalMoves) { turn in
+                                viewModel.jumpToMove(min(turn, viewModel.maxMoveCount))
+                            }
+                        } else {
+                            Text("AI Analysis Inactive".localized)
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color.black.opacity(0.05))
+                                .cornerRadius(4)
                         }
-                            .frame(height: 80)
-                            .padding(.top, 5)
-                    } else {
-                        Text("AI Analysis Inactive".localized)
-                            .foregroundColor(.secondary)
-                            .frame(height: 80)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.black.opacity(0.05))
-                            .cornerRadius(4)
                     }
+                    .frame(height: 80)
+                    .padding(.top, 5)
                 }
             }
             .padding(5)

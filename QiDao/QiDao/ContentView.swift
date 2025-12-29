@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var showInfoEditor = false
     @State private var showAIConfig = false
     @FocusState private var isBoardFocused: Bool
+    @ObservedObject private var langManager = LanguageManager.shared
 
     private var modeBinding: Binding<AppMode> {
         Binding(
@@ -29,6 +30,7 @@ struct ContentView: View {
             // Top Mode Switcher
             HStack {
                 Spacer()
+
                 Picker("Mode".localized, selection: modeBinding) {
                     ForEach(AppMode.allCases) { mode in
                         Text(mode.label).tag(mode)
@@ -38,7 +40,26 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 300)
                 .padding(.vertical, 4)
+                
                 Spacer()
+
+                Menu {
+                    ForEach(Language.allCases) { lang in
+                        Button(lang.displayName) {
+                            DispatchQueue.main.async {
+                                langManager.selectedLanguage = lang
+                            }
+                        }
+                    }
+                } label: {
+                    ViewThatFits(in: .horizontal) {
+                        Label(langManager.selectedLanguage.displayName, systemImage: "globe")
+                        Image(systemName: "globe")
+                    }
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+                .padding(.trailing, 10)
             }
             .background(Color(NSColor.windowBackgroundColor))
 

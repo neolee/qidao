@@ -87,23 +87,6 @@ struct CenterView: View {
                 .focusable(false)
 
                 Spacer()
-
-                Menu {
-                    ForEach(Language.allCases) { lang in
-                        Button(lang.displayName) {
-                            DispatchQueue.main.async {
-                                langManager.selectedLanguage = lang
-                            }
-                        }
-                    }
-                } label: {
-                    ViewThatFits(in: .horizontal) {
-                        Label(langManager.selectedLanguage.displayName, systemImage: "globe")
-                        Image(systemName: "globe")
-                    }
-                }
-                .buttonStyle(.plain)
-                .focusable(false)
             }
             .padding(.horizontal)
             .padding(.vertical, 8)

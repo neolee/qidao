@@ -429,20 +429,34 @@ class BoardViewModel: ObservableObject {
             let initialStones = game.getInitialStones()
             let moves = game.getAnalysisMoves()
             let nextPlayer = nextColor == .black ? "B" : "W"
+            let initialPlayer = gameState.initialColor == .black ? "B" : "W"
             let currentMetadata = metadata
             let currentConfig = config
+            let startNodeId = gameState.currentNodeId
 
             aiPlayTask?.cancel()
             aiPlayTask = Task {
+                // Add a small delay to avoid immediate play during navigation
+                // and give the UI time to settle.
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                if Task.isCancelled { return }
+
                 let move = await aiManager.requestAIMove(
                     initialStones: initialStones,
                     moves: moves,
                     nextPlayer: nextPlayer,
+                    initialPlayer: initialPlayer,
                     metadata: currentMetadata,
                     config: currentConfig
                 )
 
                 if Task.isCancelled { return }
+
+                // Re-check if we are still on the same node after AI finished thinking
+                guard self.gameState.currentNodeId == startNodeId else {
+                    print("AI Play: Node changed from \(startNodeId) to \(self.gameState.currentNodeId), ignoring move")
+                    return
+                }
 
                 // Re-check conditions after async call
                 guard self.isAnalyzing, self.appMode == .play else { return }

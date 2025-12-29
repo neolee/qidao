@@ -434,6 +434,11 @@ RustBuffer uniffi_qidao_core_fn_method_game_get_current_state_sgf(uint64_t ptr, 
 uint32_t uniffi_qidao_core_fn_method_game_get_current_variation_index(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_COLOR
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_COLOR
+RustBuffer uniffi_qidao_core_fn_method_game_get_initial_color(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_STONES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_INITIAL_STONES
 RustBuffer uniffi_qidao_core_fn_method_game_get_initial_stones(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -467,6 +472,11 @@ uint32_t uniffi_qidao_core_fn_method_game_get_move_count(uint64_t ptr, RustCallS
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_NEXT_COLOR
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_NEXT_COLOR
 RustBuffer uniffi_qidao_core_fn_method_game_get_next_color(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_NEXT_COLOR_FOR_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_NEXT_COLOR_FOR_NODE
+RustBuffer uniffi_qidao_core_fn_method_game_get_next_color_for_node(uint64_t ptr, uint64_t node, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_ROOT_NODE
@@ -1055,6 +1065,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_current_variation_index(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_INITIAL_COLOR
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_INITIAL_COLOR
+uint16_t uniffi_qidao_core_checksum_method_game_get_initial_color(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_INITIAL_STONES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_INITIAL_STONES
 uint16_t uniffi_qidao_core_checksum_method_game_get_initial_stones(void
@@ -1094,6 +1110,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_move_count(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_NEXT_COLOR
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_NEXT_COLOR
 uint16_t uniffi_qidao_core_checksum_method_game_get_next_color(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_NEXT_COLOR_FOR_NODE
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_NEXT_COLOR_FOR_NODE
+uint16_t uniffi_qidao_core_checksum_method_game_get_next_color_for_node(void
     
 );
 #endif

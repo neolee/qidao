@@ -320,6 +320,7 @@ class AIManager: ObservableObject {
         initialStones: [[String]],
         moves: [[String]],
         nextPlayer: String,
+        initialPlayer: String,
         metadata: GameMetadata,
         config: AIConfig
     ) async -> (x: Int, y: Int)? {
@@ -338,93 +339,82 @@ class AIManager: ObservableObject {
         let playId = "play-\(self.analysisSessionId)-\(moves.count)"
         print("AI Play: Requesting move for \(nextPlayer), turn \(moves.count), ID \(playId)")
 
-        return await withTaskCancellationHandler {
-            do {
-                // Terminate any previous play or analysis to free GPU
-                try? await engine.terminate(id: playId)
-                if let oldId = self.currentAnalysisId {
-                    try? await engine.terminate(id: oldId)
-                }
-                // Also try to terminate any other play IDs just in case
-                try? await engine.terminate(id: "play-\(self.analysisSessionId)-\(moves.count - 1)")
-                try? await engine.terminate(id: "fullscan-\(self.analysisSessionId)")
+        do {
+            // Terminate any previous play or analysis to free GPU
+            try? await engine.terminate(id: playId)
+            if let oldId = self.currentAnalysisId {
+                try? await engine.terminate(id: oldId)
+            }
+            // Also try to terminate any other play IDs just in case
+            try? await engine.terminate(id: "play-\(self.analysisSessionId)-\(moves.count - 1)")
+            try? await engine.terminate(id: "fullscan-\(self.analysisSessionId)")
 
-                let query: [String: Any] = [
-                    "id": playId,
-                    "initialStones": initialStones,
-                    "moves": moves,
-                    "initialPlayer": nextPlayer,
-                    "rules": "chinese",
-                    "komi": metadata.komi,
-                    "boardXSize": metadata.size,
-                    "boardYSize": metadata.size,
-                    "analyzeTurns": [moves.count],
-                    "maxVisits": config.analysis.maxVisits ?? 1000,
-                    "priority": 100, // Highest priority
-                    "overrideSettings": [
-                        "reportAnalysisWinratesAs": "BLACK"
-                    ]
+            let query: [String: Any] = [
+                "id": playId,
+                "initialStones": initialStones,
+                "moves": moves,
+                "initialPlayer": initialPlayer,
+                "rules": "chinese",
+                "komi": metadata.komi,
+                "boardXSize": metadata.size,
+                "boardYSize": metadata.size,
+                "analyzeTurns": [moves.count],
+                "maxVisits": config.analysis.maxVisits ?? 1000,
+                "priority": 100, // Highest priority
+                "overrideSettings": [
+                    "reportAnalysisWinratesAs": "BLACK"
                 ]
+            ]
 
-                let jsonData = try JSONSerialization.data(withJSONObject: query)
-                let jsonString = String(data: jsonData, encoding: .utf8)!
+            let jsonData = try JSONSerialization.data(withJSONObject: query)
+            let jsonString = String(data: jsonData, encoding: .utf8)!
 
-                // Clear previous results for this ID
-                self.resultsById.removeValue(forKey: playId)
+            // Clear previous results for this ID
+            self.resultsById.removeValue(forKey: playId)
 
-                try await engine.analyze(queryJson: jsonString)
+            try await engine.analyze(queryJson: jsonString)
 
-                // Wait for the result of this specific ID
-                return await withCheckedContinuation { continuation in
-                    let checkInterval: UInt64 = 50_000_000 // 0.05s
-                    Task {
-                        var attempts = 0
-                        while attempts < 400 { // 20 seconds timeout
-                            if Task.isCancelled {
+            // Wait for the result of this specific ID
+            let checkInterval: UInt64 = 50_000_000 // 0.05s
+            var attempts = 0
+            while attempts < 400 { // 20 seconds timeout
+                if Task.isCancelled {
+                    self.aiState = .ready
+                    return nil
+                }
+                if let result = self.resultsById[playId] {
+                    // We want the final result (isDuringSearch == false)
+                    // or at least one with enough visits if it's taking too long
+                    if !result.isDuringSearch || (attempts > 100 && result.rootInfo.visits > 10) {
+                        if let bestMoveStr = result.moveInfos.first?.moveStr {
+                            print("AI Play: Found move \(bestMoveStr) for ID \(playId) after \(attempts) attempts")
+                            if let coords = decodeKataGoMove(bestMoveStr, size: Int(metadata.size)) {
                                 self.aiState = .ready
-                                continuation.resume(returning: nil)
-                                return
+                                self.engineMessage = "\("AI played".localized) \(bestMoveStr)"
+                                return coords
+                            } else if bestMoveStr.uppercased() == "PASS" {
+                                print("AI Play: AI passed for ID \(playId)")
+                                self.aiState = .ready
+                                self.engineMessage = "AI passed".localized
+                                return nil
                             }
-                            if let result = self.resultsById[playId] {
-                                // We want the final result (isDuringSearch == false)
-                                // or at least one with enough visits if it's taking too long
-                                if !result.isDuringSearch || (attempts > 100 && result.rootInfo.visits > 10) {
-                                    if let bestMoveStr = result.moveInfos.first?.moveStr {
-                                        print("AI Play: Found move \(bestMoveStr) for ID \(playId) after \(attempts) attempts")
-                                        if let coords = decodeKataGoMove(bestMoveStr, size: Int(metadata.size)) {
-                                            self.aiState = .ready
-                                            self.engineMessage = "\("AI played".localized) \(bestMoveStr)"
-                                            continuation.resume(returning: coords)
-                                            return
-                                        } else if bestMoveStr.uppercased() == "PASS" {
-                                            print("AI Play: AI passed for ID \(playId)")
-                                            self.aiState = .ready
-                                            self.engineMessage = "AI passed".localized
-                                            continuation.resume(returning: nil)
-                                            return
-                                        }
-                                    }
-                                }
-                            }
-                            try? await Task.sleep(nanoseconds: checkInterval)
-                            attempts += 1
                         }
-                        print("AI Play: Timeout or no move found for ID \(playId)")
-                        self.aiState = .ready
-                        continuation.resume(returning: nil)
                     }
                 }
-            } catch {
-                print("AI Play error: \(error)")
-                aiState = .ready
-                return nil
+                try await Task.sleep(nanoseconds: checkInterval)
+                attempts += 1
             }
-        } onCancel: {
-            // This runs immediately when the task is cancelled
-            Task { @MainActor in
-                self.aiState = .ready
-                self.engineMessage = "AI Thinking Cancelled".localized
-            }
+            print("AI Play: Timeout or no move found for ID \(playId)")
+            self.aiState = .ready
+            return nil
+        } catch is CancellationError {
+            self.aiState = .ready
+            self.engineMessage = "AI Thinking Cancelled".localized
+            return nil
+        } catch {
+            print("AI Play error: \(error)")
+            aiState = .ready
+            return nil
         }
     }
 

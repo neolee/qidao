@@ -112,6 +112,7 @@ struct GameState {
     var boardSize: Int = 19
     var isSizeLocked: Bool = false
     var nextColor: StoneColor = .black
+    var initialColor: StoneColor = .black
     var lastMove: (x: Int, y: Int)? = nil
     var moveCount: Int = 0
     var maxMoveCount: Int = 0

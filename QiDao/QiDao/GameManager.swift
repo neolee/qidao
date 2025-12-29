@@ -92,6 +92,7 @@ class GameManager: ObservableObject {
         var newState = internalState
         newState.board = self.game.getBoard()
         newState.nextColor = self.game.getNextColor()
+        newState.initialColor = self.game.getInitialColor()
         newState.moveCount = Int(self.game.getMoveCount())
         newState.maxMoveCount = Int(self.game.getMaxMoveCount())
         newState.metadata = self.game.getMetadata()

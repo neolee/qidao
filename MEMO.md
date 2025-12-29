@@ -97,14 +97,13 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 2. **Edit Mode**: Add/remove stones and notations (Triangle, Circle, Square, Cross, Label), export to SGF.
 3. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
 4. **SGF Comments**: Display and edit node comments in the sidebar.
+5. **AI Play UX Refinement**:
+    - Move play-mode console logs to `AIEngineLogView`.
+    - Add `AIEngineLogView` to Play mode sidebar.
+    - Redesign engine message and log display for consistency and localization.
+    - Disable AI analysis and play in Edit mode.
 
 ## 9. Implementation Plan (Dec 29, 2025)
-
-### Phase 12: View Improvement
-- Separate `AIEngineLogView` from `AIEngineView`.
-- Add a `GameCommentView` to display/edit SGF comments for the current node.
-- Mix `AIEngineLogView` and `GameCommentView` into a tabbed view (or switch by a segmented picker) in the bottom of left sidebar in Analysis Mode.
-- `GameCommentView` can be reused in other modes.
 
 ### Phase 13: Multi-Mode Support
 - **AppMode State**: Define `AppMode` enum in `BoardViewModel` and implement a `Segmented Picker` in the top toolbar for switching.
@@ -126,6 +125,11 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
     - Disable all AI overlays and real-time analysis.
     - Implement `genmove` flow: Player moves -> Engine generates move -> Update board.
     - Add game controls: Pass, Resign, Score, Undo.
+    - **UX Refinement (Dec 30)**:
+        - Integrate `AIEngineLogView` into the Play mode sidebar (left).
+        - Redirect useful play-mode logs (e.g., "AI is thinking", "Found move") from console to `AIEngineLogView`.
+        - Redesign `AIEngineView`'s message area for better consistency and localization.
+        - Filter analysis logs to show only high-value information.
 
 ### Phase 14: Advanced Edit & Play Features
 - **SGF Export**: Support exporting the current tree (including marks and comments) to SGF string/file.
@@ -146,3 +150,5 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - [x] **Phase 9: Sparkle Integration & CI/CD**: Integrated Sparkle framework for auto-updates. Configured GitHub Actions for automated release creation, DMG packaging, and appcast generation. Added "Check for Updates" menu item and configured `Info.plist` keys.
 - [x] **Phase 10: 13x13 and 9x9 Board Support**.
 - [x] **Phase 11: Refactoring and Enhancements**: Improved code organization in views and view model. Win rate graph and ownership map toggles, incremental full game analysis, etc.
+- [x] **Phase 12: View Improvement**: Separated logs and comments into a tabbed view; implemented `GameCommentView` for SGF comment editing.
+- [x] **Bug Fix: AI Play Logic (Dec 30)**: Fixed AI "double-playing" or playing on wrong turns during navigation by implementing `initialPlayer` tracking and node-ID validation before applying AI moves.

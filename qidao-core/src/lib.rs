@@ -781,10 +781,18 @@ impl Game {
 
     pub fn get_next_color(&self) -> StoneColor {
         let state = self.state.lock().unwrap();
+        self.get_next_color_for_node(&state.current_node)
+    }
 
+    pub fn get_initial_color(&self) -> StoneColor {
+        let state = self.state.lock().unwrap();
+        self.get_next_color_for_node(&state.root)
+    }
+
+    fn get_next_color_for_node(&self, node: &Arc<SgfNode>) -> StoneColor {
         // 1. Check PL property in current node
         {
-            let props = state.current_node.properties.lock().unwrap();
+            let props = node.properties.lock().unwrap();
             if let Some(p) = props.iter().find(|p| p.identifier == "PL") {
                 if let Some(v) = p.values.first() {
                     if v == "B" { return StoneColor::Black; }
@@ -795,7 +803,7 @@ impl Game {
 
         // 2. Check if current node is a move
         {
-            let props = state.current_node.properties.lock().unwrap();
+            let props = node.properties.lock().unwrap();
             for prop in props.iter() {
                 if prop.identifier == "B" { return StoneColor::White; }
                 if prop.identifier == "W" { return StoneColor::Black; }

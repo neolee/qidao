@@ -999,6 +999,8 @@ public protocol GameProtocol: AnyObject, Sendable {
     
     func getCurrentVariationIndex()  -> UInt32
     
+    func getInitialColor()  -> StoneColor
+    
     func getInitialStones()  -> [[String]]
     
     func getLastMove()  -> SgfProperty?
@@ -1012,6 +1014,8 @@ public protocol GameProtocol: AnyObject, Sendable {
     func getMoveCount()  -> UInt32
     
     func getNextColor()  -> StoneColor
+    
+    func getNextColorForNode(node: SgfNode)  -> StoneColor
     
     func getRootNode()  -> SgfNode
     
@@ -1231,6 +1235,14 @@ open func getCurrentVariationIndex() -> UInt32  {
 })
 }
     
+open func getInitialColor() -> StoneColor  {
+    return try!  FfiConverterTypeStoneColor_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_initial_color(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
 open func getInitialStones() -> [[String]]  {
     return try!  FfiConverterSequenceSequenceString.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_initial_stones(
@@ -1283,6 +1295,15 @@ open func getNextColor() -> StoneColor  {
     return try!  FfiConverterTypeStoneColor_lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_next_color(
             self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getNextColorForNode(node: SgfNode) -> StoneColor  {
+    return try!  FfiConverterTypeStoneColor_lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_next_color_for_node(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeSgfNode_lower(node),$0
     )
 })
 }
@@ -2770,6 +2791,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_game_get_current_variation_index() != 3639) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_get_initial_color() != 48254) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_get_initial_stones() != 28328) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2789,6 +2813,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_get_next_color() != 59788) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_get_next_color_for_node() != 50367) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_get_root_node() != 23784) {

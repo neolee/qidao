@@ -59,6 +59,7 @@
 "SGF Preview" = "SGF 预览";
 "Copied!" = "已复制!";
 "Copy" = "复制";
+"Write some game comment" = "输入着法解说";
 
 /* Game Metadata */
 "Event" = "赛事";

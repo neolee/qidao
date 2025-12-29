@@ -7,25 +7,28 @@ struct GameCommentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            TextEditor(text: $commentText)
-                .font(.system(size: 12))
-                .padding(4)
-                .background(Color.black.opacity(0.03))
-                .cornerRadius(4)
-                .focused($isFocused)
-                .onChange(of: viewModel.currentNodeId) {
-                    commentText = viewModel.nodeComment
-                }
-                .onChange(of: commentText) { old, new in
-                    if new != viewModel.nodeComment {
-                        DispatchQueue.main.async {
-                            viewModel.updateNodeComment(new)
+            ScrollView {
+                TextField("Write some game comment".localized, text: $commentText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .focused($isFocused)
+                    .onChange(of: viewModel.currentNodeId) {
+                        commentText = viewModel.nodeComment
+                    }
+                    .onChange(of: commentText) { old, new in
+                        if new != viewModel.nodeComment {
+                            DispatchQueue.main.async {
+                                viewModel.updateNodeComment(new)
+                            }
                         }
                     }
-                }
-                .onAppear {
-                    commentText = viewModel.nodeComment
-                }
+                    .onAppear {
+                        commentText = viewModel.nodeComment
+                    }
+            }
+            .padding(8)
+            .background(Color.black.opacity(0.03))
+            .cornerRadius(4)
 
             if isFocused {
                 HStack {

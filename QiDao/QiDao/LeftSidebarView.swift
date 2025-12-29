@@ -42,9 +42,9 @@ struct LeftSidebarView: View {
 
             case .play:
                 AIEngineView(viewModel: viewModel, showAIConfig: $showAIConfig)
-                
+
                 PlayControlView(viewModel: viewModel)
-                
+
                 Spacer()
             }
         }

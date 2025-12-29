@@ -23,7 +23,7 @@ struct PlayControlView: View {
                     Text("AI Role".localized)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
+
                     Picker("AI Role".localized, selection: roleBinding) {
                         ForEach(AIRole.allCases) { role in
                             Label(role.label, systemImage: role.icon).tag(role)
@@ -93,7 +93,7 @@ struct NewGameDialog: View {
                 }
 
                 TextField("Komi".localized, value: $komi, format: .number)
-                
+
                 Stepper("Handicap".localized + ": \(handicap)", value: $handicap, in: 0...9)
             }
             .formStyle(.grouped)

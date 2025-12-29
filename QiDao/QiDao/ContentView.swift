@@ -40,7 +40,7 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 300)
                 .padding(.vertical, 4)
-                
+
                 Spacer()
 
                 Menu {

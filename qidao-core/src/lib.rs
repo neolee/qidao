@@ -618,7 +618,7 @@ impl Game {
         let board = self.get_board();
         let size = board.get_size();
         let mut out = String::from("(;");
-        
+
         // 1. Size
         out.push_str(&format!("SZ[{}]", size));
 

@@ -4,6 +4,17 @@ struct PlayControlView: View {
     @ObservedObject var viewModel: BoardViewModel
     @State private var showNewGameDialog = false
 
+    private var roleBinding: Binding<AIRole> {
+        Binding(
+            get: { viewModel.aiRole },
+            set: { newValue in
+                DispatchQueue.main.async {
+                    viewModel.aiRole = newValue
+                }
+            }
+        )
+    }
+
     var body: some View {
         GroupBox(label: Label("Play Control".localized, systemImage: "gamecontroller")) {
             VStack(spacing: 12) {
@@ -13,7 +24,7 @@ struct PlayControlView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Picker("AI Role".localized, selection: $viewModel.aiRole) {
+                    Picker("AI Role".localized, selection: roleBinding) {
                         ForEach(AIRole.allCases) { role in
                             Label(role.label, systemImage: role.icon).tag(role)
                         }

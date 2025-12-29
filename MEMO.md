@@ -74,6 +74,23 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - **Lifecycle Control**: The GUI explicitly sends `terminate_all` when reaching `maxVisits` or switching moves. This forces KataGo to drop pending GPU batches and clear its internal queue immediately.
 - **Logging Optimization**: Communication logs (`>>>`/`<<<`) are truncated to 500 chars in the core and completely skipped (including string formatting/serialization) when `logging_enabled` is false.
 
+### SwiftUI State Management & UI Updates
+- **Avoiding "Publishing changes from within view updates"**: When binding a `@Published` property from a ViewModel to a SwiftUI control (like `Picker` or `Toggle`), it may trigger a state change during the view's rendering cycle, leading to runtime warnings or undefined behavior. 
+  - **Solution**: Use a custom `Binding` to wrap the property. In the `set` block, perform the update inside `DispatchQueue.main.async`.
+  - **Example**:
+    ```swift
+    private var modeBinding: Binding<AppMode> {
+        Binding(
+            get: { viewModel.appMode },
+            set: { newValue in
+                DispatchQueue.main.async {
+                    viewModel.appMode = newValue
+                }
+            }
+        )
+    }
+    ```
+
 ## 8. Immediate TODOs
 
 1. **Multi-Mode Support**: Implement `AppMode` (Analysis, Edit, Play) with dynamic sidebars.

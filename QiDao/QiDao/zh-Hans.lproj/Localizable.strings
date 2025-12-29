@@ -86,18 +86,15 @@
 "Stop AI" = "停止 AI";
 "AI Engine" = "AI 引擎";
 "Blunder Threshold" = "失误阈值";
-"Score Lead" = "目数领先";
 "Win %" = "胜率%";
 "Lead" = "目数";
 "Visits" = "计算量";
-"No Data" = "无数据";
 "No logs..." = "暂无日志...";
 "No errors..." = "暂无错误...";
 "Show All Logs" = "显示全部日志";
 "Comments" = "解说";
 "AI Engine Logs" = "AI 引擎日志";
 "Auto-saving..." = "自动保存中...";
-"Ownership Map" = "形势分布图";
 "Show Ownership Map" = "显示形势分布图 (领地图)";
 "Show Win Rate Graph" = "显示胜率走势图";
 "Waiting for AI..." = "正在等待 AI...";
@@ -138,7 +135,7 @@
 "Current Player" = "当前方";
 "Engine Profiles" = "引擎方案";
 "Analysis Config" = "分析设置";
-"Display Config" = "显示设置";
+"Display Config" = "界面设置";
 
 /* Updates */
 "Check for Updates..." = "检查更新...";

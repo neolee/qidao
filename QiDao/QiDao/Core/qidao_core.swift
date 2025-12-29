@@ -995,6 +995,8 @@ public protocol GameProtocol: AnyObject, Sendable {
     
     func getCurrentPathMoves()  -> [SgfProperty]
     
+    func getCurrentStateSgf()  -> String
+    
     func getCurrentVariationIndex()  -> UInt32
     
     func getInitialStones()  -> [[String]]
@@ -1208,6 +1210,14 @@ open func getCurrentNode() -> SgfNode  {
 open func getCurrentPathMoves() -> [SgfProperty]  {
     return try!  FfiConverterSequenceTypeSgfProperty.lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_current_path_moves(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getCurrentStateSgf() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_current_state_sgf(
             self.uniffiCloneHandle(),$0
     )
 })
@@ -2752,6 +2762,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_get_current_path_moves() != 52188) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_get_current_state_sgf() != 775) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_get_current_variation_index() != 3639) {

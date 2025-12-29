@@ -346,6 +346,9 @@ fn serialize_node(node: &Arc<SgfNode>, out: &mut String) {
     out.push(';');
     let props = node.properties.lock().unwrap();
     for prop in props.iter() {
+        if prop.values.is_empty() {
+            continue;
+        }
         out.push_str(&prop.identifier);
         for val in &prop.values {
             out.push('[');
@@ -608,6 +611,70 @@ impl Game {
         let mut out = String::from("(");
         serialize_node(&state.root, &mut out);
         out.push(')');
+        out
+    }
+
+    pub fn get_current_state_sgf(&self) -> String {
+        let board = self.get_board();
+        let size = board.get_size();
+        let mut out = String::from("(;");
+        
+        // 1. Size
+        out.push_str(&format!("SZ[{}]", size));
+
+        // 2. Stones
+        let mut black_stones = Vec::new();
+        let mut white_stones = Vec::new();
+        for y in 0..size {
+            for x in 0..size {
+                if let Some(color) = board.get_stone(x, y) {
+                    let coords = format!("{}{}", (b'a' + x as u8) as char, (b'a' + y as u8) as char);
+                    match color {
+                        StoneColor::Black => black_stones.push(coords),
+                        StoneColor::White => white_stones.push(coords),
+                    }
+                }
+            }
+        }
+
+        if !black_stones.is_empty() {
+            out.push_str("AB");
+            for s in black_stones {
+                out.push('[');
+                out.push_str(&s);
+                out.push(']');
+            }
+        }
+        if !white_stones.is_empty() {
+            out.push_str("AW");
+            for s in white_stones {
+                out.push('[');
+                out.push_str(&s);
+                out.push(']');
+            }
+        }
+
+        // 3. Other properties from current node (markers, labels, comments)
+        let state = self.state.lock().unwrap();
+        let props = state.current_node.properties.lock().unwrap();
+        for prop in props.iter() {
+            // Skip stone/move properties as we already handled them via board state
+            if ["B", "W", "AB", "AW", "AE", "SZ"].contains(&prop.identifier.as_str()) {
+                continue;
+            }
+            if prop.values.is_empty() {
+                continue;
+            }
+            out.push_str(&prop.identifier);
+            for val in &prop.values {
+                out.push('[');
+                let escaped = val.replace('\\', "\\\\").replace(']', "\\]");
+                out.push_str(&escaped);
+                out.push(']');
+            }
+        }
+
+        out.push_str(")");
         out
     }
 
@@ -1021,6 +1088,7 @@ impl Game {
                     p.values.retain(|v| v != &coords);
                 }
             }
+            props.retain(|p| !p.values.is_empty() || !["AB", "AW", "AE"].contains(&p.identifier.as_str()));
 
             if let Some(p) = props.iter_mut().find(|p| p.identifier == prop_id) {
                 if !p.values.contains(&coords) {
@@ -1050,6 +1118,7 @@ impl Game {
                     p.values.retain(|v| v != &coords);
                 }
             }
+            props.retain(|p| !p.values.is_empty() || !["AB", "AW"].contains(&p.identifier.as_str()));
 
             // Add to AE (Add Empty)
             if let Some(p) = props.iter_mut().find(|p| p.identifier == "AE") {

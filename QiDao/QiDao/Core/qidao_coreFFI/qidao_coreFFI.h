@@ -424,6 +424,11 @@ uint64_t uniffi_qidao_core_fn_method_game_get_current_node(uint64_t ptr, RustCal
 RustBuffer uniffi_qidao_core_fn_method_game_get_current_path_moves(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_STATE_SGF
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_STATE_SGF
+RustBuffer uniffi_qidao_core_fn_method_game_get_current_state_sgf(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_VARIATION_INDEX
 uint32_t uniffi_qidao_core_fn_method_game_get_current_variation_index(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -1035,6 +1040,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_current_node(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_PATH_MOVES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_PATH_MOVES
 uint16_t uniffi_qidao_core_checksum_method_game_get_current_path_moves(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_STATE_SGF
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_STATE_SGF
+uint16_t uniffi_qidao_core_checksum_method_game_get_current_state_sgf(void
     
 );
 #endif

@@ -384,6 +384,11 @@ RustBuffer uniffi_qidao_core_fn_method_game_get_analysis_moves(uint64_t ptr, Rus
 uint64_t uniffi_qidao_core_fn_method_game_get_board(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_COMMENT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_COMMENT
+RustBuffer uniffi_qidao_core_fn_method_game_get_comment(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_BOARD_STONES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_GET_CURRENT_BOARD_STONES
 RustBuffer uniffi_qidao_core_fn_method_game_get_current_board_stones(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -472,6 +477,11 @@ void uniffi_qidao_core_fn_method_game_jump_to_node(uint64_t ptr, uint64_t target
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_PLACE_STONE
 void uniffi_qidao_core_fn_method_game_place_stone(uint64_t ptr, uint32_t x, uint32_t y, RustBuffer color, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_COMMENT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_COMMENT
+void uniffi_qidao_core_fn_method_game_set_comment(uint64_t ptr, RustBuffer comment, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_FN_METHOD_GAME_SET_METADATA
@@ -945,6 +955,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_get_board(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_COMMENT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_COMMENT
+uint16_t uniffi_qidao_core_checksum_method_game_get_comment(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_BOARD_STONES
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_GET_CURRENT_BOARD_STONES
 uint16_t uniffi_qidao_core_checksum_method_game_get_current_board_stones(void
@@ -1050,6 +1066,12 @@ uint16_t uniffi_qidao_core_checksum_method_game_jump_to_node(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PLACE_STONE
 #define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_PLACE_STONE
 uint16_t uniffi_qidao_core_checksum_method_game_place_stone(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_COMMENT
+#define UNIFFI_FFIDEF_UNIFFI_QIDAO_CORE_CHECKSUM_METHOD_GAME_SET_COMMENT
+uint16_t uniffi_qidao_core_checksum_method_game_set_comment(void
     
 );
 #endif

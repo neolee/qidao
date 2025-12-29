@@ -6,6 +6,7 @@ struct LeftSidebarView: View {
     @Binding var showInfoEditor: Bool
     @Binding var showAIConfig: Bool
     @ObservedObject private var langManager = LanguageManager.shared
+    @State private var selectedTab = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
@@ -14,6 +15,22 @@ struct LeftSidebarView: View {
             WinRateView(viewModel: viewModel)
 
             AIEngineView(viewModel: viewModel, showAIConfig: $showAIConfig)
+
+            VStack(spacing: 10) {
+                Picker("", selection: $selectedTab) {
+                    Text("Comments".localized).tag(0)
+                    Text("AI Engine Logs".localized).tag(1)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                if selectedTab == 0 {
+                    GameCommentView(viewModel: viewModel)
+                } else {
+                    AIEngineLogView(viewModel: viewModel)
+                }
+            }
+            .frame(maxHeight: .infinity)
         }
         .padding()
         .frame(minWidth: 250, maxWidth: 350)

@@ -979,6 +979,8 @@ public protocol GameProtocol: AnyObject, Sendable {
     
     func getBoard()  -> Board
     
+    func getComment()  -> String
+    
     func getCurrentBoardStones()  -> [[String]]
     
     func getCurrentNode()  -> SgfNode
@@ -1014,6 +1016,8 @@ public protocol GameProtocol: AnyObject, Sendable {
     func jumpToNode(target: SgfNode) 
     
     func placeStone(x: UInt32, y: UInt32, color: StoneColor) throws 
+    
+    func setComment(comment: String) 
     
     func setMetadata(metadata: GameMetadata) 
     
@@ -1119,6 +1123,14 @@ open func getAnalysisMoves() -> [[String]]  {
 open func getBoard() -> Board  {
     return try!  FfiConverterTypeBoard_lift(try! rustCall() {
     uniffi_qidao_core_fn_method_game_get_board(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+open func getComment() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_qidao_core_fn_method_game_get_comment(
             self.uniffiCloneHandle(),$0
     )
 })
@@ -1267,6 +1279,14 @@ open func placeStone(x: UInt32, y: UInt32, color: StoneColor)throws   {try rustC
         FfiConverterUInt32.lower(x),
         FfiConverterUInt32.lower(y),
         FfiConverterTypeStoneColor_lower(color),$0
+    )
+}
+}
+    
+open func setComment(comment: String)  {try! rustCall() {
+    uniffi_qidao_core_fn_method_game_set_comment(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(comment),$0
     )
 }
 }
@@ -2622,6 +2642,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_qidao_core_checksum_method_game_get_board() != 38261) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_qidao_core_checksum_method_game_get_comment() != 63894) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_qidao_core_checksum_method_game_get_current_board_stones() != 43448) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2674,6 +2697,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_place_stone() != 19675) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_qidao_core_checksum_method_game_set_comment() != 54713) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_qidao_core_checksum_method_game_set_metadata() != 11810) {

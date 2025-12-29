@@ -27,6 +27,7 @@ class BoardViewModel: ObservableObject {
     var treeNodes: [TreeVisualNode] { gameState.treeNodes }
     var treeEdges: [TreeVisualEdge] { gameState.treeEdges }
     var currentNodeId: String { gameState.currentNodeId }
+    var nodeComment: String { gameState.nodeComment }
     var moveNumbers: [String: Int] { gameState.moveNumbers }
     var metadata: GameMetadata { gameState.metadata }
 
@@ -419,6 +420,11 @@ class BoardViewModel: ObservableObject {
 
     func updateMetadata(_ newMetadata: GameMetadata) {
         gameManager.updateMetadata(newMetadata)
+    }
+
+    func updateNodeComment(_ comment: String) {
+        gameManager.getGame().setComment(comment: comment)
+        gameManager.syncState()
     }
 
     func loadSgf(url: URL) {

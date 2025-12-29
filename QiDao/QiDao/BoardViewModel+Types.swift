@@ -42,6 +42,7 @@ struct GameState {
     var treeNodes: [TreeVisualNode] = []
     var treeEdges: [TreeVisualEdge] = []
     var currentNodeId: String = ""
+    var nodeComment: String = ""
     var moveNumbers: [String: Int] = [:]
     var metadata: GameMetadata = GameMetadata(
         blackName: "", blackRank: "",

@@ -519,6 +519,30 @@ impl Game {
         meta
     }
 
+    pub fn get_comment(&self) -> String {
+        let state = self.state.lock().unwrap();
+        let props = state.current_node.properties.lock().unwrap();
+        if let Some(prop) = props.iter().find(|p| p.identifier == "C") {
+            if let Some(val) = prop.values.first() {
+                return val.clone();
+            }
+        }
+        "".to_string()
+    }
+
+    pub fn set_comment(&self, comment: String) {
+        let state = self.state.lock().unwrap();
+        let mut props = state.current_node.properties.lock().unwrap();
+        if let Some(prop) = props.iter_mut().find(|p| p.identifier == "C") {
+            prop.values = vec![comment];
+        } else {
+            props.push(SgfProperty {
+                identifier: "C".to_string(),
+                values: vec![comment],
+            });
+        }
+    }
+
     pub fn get_current_node(&self) -> Arc<SgfNode> {
         self.state.lock().unwrap().current_node.clone()
     }

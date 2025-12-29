@@ -41,46 +41,9 @@ struct AIEngineView: View {
                         .textSelection(.enabled)
                 }
                 .padding(.horizontal, 5)
-
-                Divider()
-
-                ScrollViewReader { proxy in
-                    VStack(alignment: .leading, spacing: 5) {
-                        ScrollView {
-                            // Render logs as a single selectable text block so user can select multiple lines
-                            let filteredEntries = viewModel.logEntries.filter { entry in
-                                if viewModel.showAllLogs { return true }
-                                return entry.isError || !entry.isCommunication
-                            }
-                            let combined = filteredEntries.map { $0.message }.joined(separator: "\n")
-
-                            Text(combined.isEmpty ? (viewModel.showAllLogs ? "No logs...".localized : "No errors...".localized) : combined)
-                                .font(.system(size: 10, design: .monospaced))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
-
-                            Color.clear
-                                .frame(height: 1)
-                                .id("logEnd")
-                        }
-                        .frame(maxHeight: .infinity)
-                        .onChange(of: viewModel.logEntries.count) {
-                            withAnimation {
-                                proxy.scrollTo("logEnd", anchor: .bottom)
-                            }
-                        }
-
-                        Toggle("Show All Logs".localized, isOn: $viewModel.showAllLogs)
-                            .font(.caption)
-                            .padding(.horizontal, 4)
-                            .padding(.bottom, 4)
-                    }
-                }
-                .background(Color.black.opacity(0.03))
-                .cornerRadius(4)
             }
             .padding(5)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
         }
         .textSelection(.enabled)
     }

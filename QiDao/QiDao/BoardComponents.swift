@@ -52,7 +52,7 @@ struct StoneView: View {
             // 5. Move Number or Marker
             if let num = moveNumber {
                 Text("\(num)")
-                    .font(.system(size: fontSize ?? (size * 0.4), weight: .bold))
+                    .font(.system(size: fontSize ?? (size * 0.4), weight: .medium))
                     .foregroundColor(style.textColor)
             } else if let marker = markerType {
                 switch marker {
@@ -263,23 +263,23 @@ struct MarkerView: View {
                 case "TR":
                     Triangle()
                         .stroke(color, lineWidth: 2)
-                        .frame(width: size * 0.5, height: size * 0.43) // Closer to equilateral
+                        .frame(width: size * 0.4, height: size * 0.34) // Closer to equilateral
                 case "CR":
                     Circle()
                         .stroke(color, lineWidth: 2)
-                        .frame(width: size * 0.5, height: size * 0.5)
+                        .frame(width: size * 0.4, height: size * 0.4)
                 case "SQ":
                     Rectangle()
                         .stroke(color, lineWidth: 2)
-                        .frame(width: size * 0.45, height: size * 0.45)
+                        .frame(width: size * 0.35, height: size * 0.35)
                 case "MA":
                     Cross()
                         .stroke(color, lineWidth: 2)
-                        .frame(width: size * 0.45, height: size * 0.45)
+                        .frame(width: size * 0.35, height: size * 0.35)
                 case "LB":
                     if let label = label {
                         Text(label)
-                            .font(.system(size: size * 0.5, weight: .bold))
+                            .font(.system(size: size * 0.4, weight: .medium))
                             .foregroundColor(color)
                     }
                 default:

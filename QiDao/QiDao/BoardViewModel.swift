@@ -51,7 +51,7 @@ class BoardViewModel: ObservableObject {
     }
 
     @Published var activeEditTool: EditTool = .stoneAuto
-    @Published var editLabelText: String = "1"
+    @Published var editLabelText: String = "A"
 
     var nextSgfMove: (x: Int, y: Int)? {
         let children = gameManager.getGame().getCurrentNode().getChildren()

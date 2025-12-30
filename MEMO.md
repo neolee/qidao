@@ -103,52 +103,29 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 
 ## 8. Immediate TODOs
 
-1. **Multi-Mode Support**: Implement `AppMode` (Analysis, Edit, Play) with dynamic sidebars.
-2. **Edit Mode**: Add/remove stones and notations (Triangle, Circle, Square, Cross, Label), export to SGF.
-3. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
-4. **SGF Comments**: Display and edit node comments in the sidebar.
-5. **AI Status & Logging**: Implement `AIStatus` enum and event-based logging system.
+1. **Edit Mode Enhancements**: Add more notation types and improve the UX for adding/removing marks.
+2. **Gameplay Enhancements**: Implement handicap and komi settings in a "New Game" dialog.
+3. **SGF Export**: Support exporting the current tree to an SGF file.
+4. **Clock System**: Add basic timing support for Play Mode.
 
-## 9. Implementation Plan (Dec 29, 2025)
+## 9. Implementation Plan (Dec 30, 2025)
 
-### Phase 13: Multi-Mode Support
-- **AppMode State**: Define `AppMode` enum in `BoardViewModel` and implement a `Segmented Picker` in the top toolbar for switching.
-- **Dynamic Sidebars**:
-    - **Left Sidebar**: 
-      - Common: `GameInfoView` at the top, and
-      - Analysis Mode: `WinRateView`, `AIEngineView`, `AIEngineLogView`, `GameCommentView`.
-      - Edit Mode: `EditToolboxView`.
-      - Play Mode: `PlayControlView`.
-    - **Right Sidebar**:
-      - Common: `VariationTreeView` at the top, and
-      - Analysis Mode: `MoveEvaluationView`, `EvaluationBoardView`.
-      - Edit Mode: `GameCommentView`.
-      - Play Mode: `PlayLogView`.
-- **Edit Mode Logic**:
-    - Implement tools for placing stones (Black, White, Auto) and marks (TR, CR, SQ, MA, LB).
-    - Update Rust core to handle SGF property updates for marks and comments.
-- **Play Mode Logic**:
-    - Disable all AI overlays and real-time analysis.
-    - Implement `genmove` flow: Player moves -> Engine generates move -> Update board.
-    - Add game controls: Pass, Resign, Score, Undo.
-    - **Bug Fix: AI Play Logic (Dec 30)**: Fixed AI "double-playing" or playing on wrong turns during navigation by implementing `initialPlayer` tracking and node-ID validation before applying AI moves.
-    - **UX Refinement (Dec 30)**:
-        - Integrate `AIEngineLogView` into the Play mode sidebar (left).
-        - Redirect useful play-mode logs (e.g., "AI is thinking", "Found move") from console to `AIEngineLogView`.
-        - Redesign `AIEngineView`'s message area for better consistency and localization.
-        - Filter analysis logs to show only high-value information.
+### Phase 13: Multi-Mode Support (Completed)
+- **AppMode State**: Defined `AppMode` enum and implemented a `Segmented Picker` in the toolbar.
+- **Dynamic Sidebars**: Implemented context-aware sidebars for Analysis, Edit, and Play modes.
+- **Edit Mode Logic**: Added tools for stone placement and basic marks (TR, CR, SQ, MA, LB).
+- **Play Mode Logic**: Implemented Human-vs-AI flow with game controls (Pass, Resign, Undo).
 
-### **Phase 14: AI Status & Logging Implementation**:
-- Define `AIStatus` enum and update `AIManager` state machine.
-- Implement `addEventLog` in `AIManager` for human-readable events.
--Refactor `AIEngineView` to use the new status-driven icons and messages.
-- Refactor `AIEngineLogView` to display event logs with timestamps.
-- Add "Developer Mode" toggle to `AIConfig` and hide raw communication logs.
+### Phase 14: AI Status & Logging Implementation (Completed)
+- **AIStatus Enum**: Implemented a state machine for AI lifecycle (idle, starting, ready, analyzing, thinking, error).
+- **Event-Based Logging**: Refactored logging to use human-readable events with color coding for different tasks (Play, Analysis, Full Scan).
+- **Modular AIManager**: Split `AIManager` into functional extensions for better maintainability.
+- **Full Game Analysis**: Added progress tracking and configurable visit limits for background analysis.
 
 ### Phase 15: Advanced Edit & Play Features
 - **SGF Export**: Support exporting the current tree (including marks and comments) to SGF string/file.
 - **Game Setup**: Implement a "New Game" dialog for Play Mode to set board size, handicap, and komi.
-- **Clock System**: (Optional) Add basic timing support for Play Mode.
+- **Clock System**: (Optional) Add basic timing (or max visits limit) support for Play Mode.
 
 ## 10. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
@@ -166,3 +143,4 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - [x] **Phase 11: Refactoring and Enhancements**: Improved code organization in views and view model. Win rate graph and ownership map toggles, incremental full game analysis, etc.
 - [x] **Phase 12: View Improvement**: Separated logs and comments into a tabbed view; implemented `GameCommentView` for SGF comment editing.
 - [x] **Phase 13: Multi-Mode Support**: Implemented `AppMode` with dynamic sidebars for Analysis, Edit, and Play modes. Added stone placement and mark tools in Edit mode. Implemented basic Human-vs-AI gameplay flow in Play mode with game controls.
+- [x] **Phase 14: AI Status & Logging Implementation**: Implemented `AIStatus` state machine and event-based logging system. Modularized `AIManager` into functional extensions. Added color-coded logs for different AI tasks (Play, Analysis, Full Scan). Implemented background analysis progress tracking and configurable visit limits.

@@ -98,9 +98,8 @@ QiDao (Tao of Go) is a modern Go (Weiqi) tool targeted primarily for macOS, insp
   - Use `cat` to create or edit files.
 
 ## Immediate TODOs and Phases
-Refer to MEMO.md for detailed progress and plans. Current focus (Dec 29, 2025):
-- Phase 12: Separate logs/comments into tabbed views.
-- Phase 13: Implement multi-mode (Analysis/Edit/Play) with dynamic sidebars.
-- Phase 14: Add advanced features like SGF export and game setup dialogs.
+Refer to MEMO.md for detailed progress and plans. Current focus (Dec 30, 2025):
+- Phase 14: AI Status & Logging Implementation (Completed).
+- Phase 15: Advanced Edit & Play Features (SGF Export, Game Setup, Clock).
 
 This document is a living reference—update as the project evolves. For contributions, prioritize TODOs and maintain macOS-native performance.

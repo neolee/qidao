@@ -54,12 +54,6 @@ extension AIManager {
             self.engineMessage = trimmed
         } else if finalIsError {
             self.engineMessage = String(format: "AI Error: %@".localized, trimmed)
-        } else if !isComm && aiStatus == .starting {
-            // Update engineMessage with general logs during startup
-            self.engineMessage = trimmed
-        } else if !isComm && aiStatus == .ready {
-            // Update engineMessage with general logs when idle
-            self.engineMessage = trimmed
         }
     }
 

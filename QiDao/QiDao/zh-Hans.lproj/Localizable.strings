@@ -173,3 +173,23 @@
 /* Errors */
 "Failed to decode SGF file" = "无法解码 SGF 文件";
 "Error: Config file is required for analysis mode" = "错误：分析模式需要配置文件";
+
+/* AI Status & Logs */
+"AI Engine" = "AI 引擎";
+"Start AI" = "启动 AI";
+"Stop AI" = "停止 AI";
+"AI Not Started" = "AI 未启动";
+"Starting AI..." = "正在启动 AI...";
+"AI Started" = "AI 已启动";
+"AI Error: %@" = "AI 错误: %@";
+"AI is thinking..." = "AI 正在思考...";
+"AI played" = "AI 落子";
+"AI passed" = "AI 停一手";
+"AI Thinking Cancelled" = "AI 思考已取消";
+"Analysis started" = "分析已开始";
+"AI Engine Ready" = "AI 引擎就绪";
+"Developer Mode" = "开发者模式";
+"Show All Logs" = "显示所有日志";
+"No logs..." = "暂无日志...";
+"No errors..." = "暂无错误...";
+"AI is thinking... (%@)" = "AI 正在思考... (%@)";

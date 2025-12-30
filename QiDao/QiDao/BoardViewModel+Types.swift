@@ -160,11 +160,50 @@ enum MarkerType {
     case last3 // -3
 }
 
-enum AIState {
-    case idle       // Engine not started
-    case ready      // Engine ready, waiting for tasks
-    case analyzing  // Analyzing (Slot B/C)
-    case thinking   // Thinking for a move (Slot A)
+enum AIStatus: String {
+    case idle
+    case starting
+    case ready
+    case analyzing
+    case thinking
+    case error
+
+    var icon: String {
+        switch self {
+        case .idle: return "power"
+        case .starting: return "arrow.clockwise.circle"
+        case .ready: return "checkmark.circle"
+        case .analyzing: return "magnifyingglass.circle"
+        case .thinking: return "brain.head.profile"
+        case .error: return "exclamationmark.triangle"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .idle: return .secondary
+        case .starting: return .blue
+        case .ready: return .green
+        case .analyzing: return .blue
+        case .thinking: return .orange
+        case .error: return .red
+        }
+    }
+}
+
+enum LogType: String {
+    case info
+    case warning
+    case error
+    case ai
+    case raw // For developer mode
+}
+
+struct EngineLog: Identifiable {
+    let id = UUID()
+    let timestamp = Date()
+    let message: String
+    let type: LogType
 }
 
 enum AIRole: String, CaseIterable, Identifiable {
@@ -195,14 +234,6 @@ enum AIRole: String, CaseIterable, Identifiable {
 }
 
 extension BoardViewModel {
-    struct LogEntry: Identifiable {
-        let id = UUID()
-        let timestamp = Date()
-        let message: String
-        let isError: Bool
-        let isCommunication: Bool
-    }
-
     enum BlunderType: String {
         case blunder // > 15% drop
     }

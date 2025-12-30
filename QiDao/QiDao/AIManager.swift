@@ -6,17 +6,17 @@ import Combine
 class AIManager: ObservableObject {
     @Published var isAnalyzing: Bool = false
     @Published var isEngineStarted: Bool = false
-    @Published var aiState: AIState = .idle
+    @Published var aiStatus: AIStatus = .idle
     @Published var engineMessage: String = "AI Not Started".localized
     @Published var analysisResult: AnalysisResult? = nil
-    @Published var logEntries: [BoardViewModel.LogEntry] = []
+    @Published var logEntries: [EngineLog] = []
     @Published var showAllLogs: Bool = false {
         didSet {
             Task {
                 await analysisEngine?.setLoggingEnabled(enabled: showAllLogs)
             }
             if !showAllLogs {
-                self.logEntries.removeAll { $0.isCommunication }
+                self.logEntries.removeAll { $0.type == .raw }
             }
         }
     }
@@ -51,7 +51,7 @@ class AIManager: ObservableObject {
         guard analysisEngine == nil else { return }
 
         isAnalyzing = true
-        aiState = .idle
+        aiStatus = .starting
         isEngineReady = false
         engineMessage = "Starting AI...".localized
         logEntries = []
@@ -64,13 +64,13 @@ class AIManager: ObservableObject {
                 try await engine.start(executable: executable, args: args)
                 self.analysisEngine = engine
                 self.isEngineStarted = true
-                self.aiState = .ready
+                self.aiStatus = .ready
                 self.startLogPolling()
                 self.startResultPolling()
             } catch {
                 self.isAnalyzing = false
                 self.isEngineStarted = false
-                self.aiState = .idle
+                self.aiStatus = .idle
                 self.engineMessage = "AI Error: \(error)".localized
                 self.addLog("AI Error: \(error)", isError: true)
             }
@@ -80,7 +80,7 @@ class AIManager: ObservableObject {
     func stop() {
         isAnalyzing = false
         isEngineStarted = false
-        aiState = .idle
+        aiStatus = .idle
         isEngineReady = false
         analysisResult = nil
         winRateHistory = [:]
@@ -115,7 +115,7 @@ class AIManager: ObservableObject {
         metadata: GameMetadata,
         config: AIConfig
     ) {
-        guard isAnalyzing, let engine = analysisEngine, aiState != .thinking else {
+        guard isAnalyzing, let engine = analysisEngine, aiStatus != .thinking else {
             if !isAnalyzing { analysisResult = nil }
             return
         }
@@ -188,12 +188,13 @@ class AIManager: ObservableObject {
                 let jsonData = try JSONSerialization.data(withJSONObject: query)
                 let jsonString = String(data: jsonData, encoding: .utf8)!
 
-                self.aiState = .analyzing
+                self.aiStatus = .analyzing
+                self.addEventLog("Analysis started".localized, type: .info)
                 try await engine.analyze(queryJson: jsonString)
             } catch is CancellationError {
             } catch {
                 print("Analysis error: \(error)")
-                self.aiState = .ready
+                self.aiStatus = .ready
             }
         }
     }
@@ -333,8 +334,9 @@ class AIManager: ObservableObject {
         interactiveTask?.cancel()
         stopFullGameAnalysis()
 
-        aiState = .thinking
+        aiStatus = .thinking
         engineMessage = "AI is thinking...".localized
+        addEventLog("\("AI is thinking...".localized) (\(nextPlayer))", type: .ai)
 
         let playId = "play-\(self.analysisSessionId)-\(moves.count)"
         print("AI Play: Requesting move for \(nextPlayer), turn \(moves.count), ID \(playId)")
@@ -379,7 +381,7 @@ class AIManager: ObservableObject {
             var attempts = 0
             while attempts < 400 { // 20 seconds timeout
                 if Task.isCancelled {
-                    self.aiState = .ready
+                    self.aiStatus = .ready
                     return nil
                 }
                 if let result = self.resultsById[playId] {
@@ -389,13 +391,15 @@ class AIManager: ObservableObject {
                         if let bestMoveStr = result.moveInfos.first?.moveStr {
                             print("AI Play: Found move \(bestMoveStr) for ID \(playId) after \(attempts) attempts")
                             if let coords = decodeKataGoMove(bestMoveStr, size: Int(metadata.size)) {
-                                self.aiState = .ready
+                                self.aiStatus = .ready
                                 self.engineMessage = "\("AI played".localized) \(bestMoveStr)"
+                                self.addEventLog("\("AI played".localized) \(bestMoveStr)", type: .ai)
                                 return coords
                             } else if bestMoveStr.uppercased() == "PASS" {
                                 print("AI Play: AI passed for ID \(playId)")
-                                self.aiState = .ready
+                                self.aiStatus = .ready
                                 self.engineMessage = "AI passed".localized
+                                self.addEventLog("AI passed".localized, type: .ai)
                                 return nil
                             }
                         }
@@ -405,15 +409,16 @@ class AIManager: ObservableObject {
                 attempts += 1
             }
             print("AI Play: Timeout or no move found for ID \(playId)")
-            self.aiState = .ready
+            self.aiStatus = .ready
             return nil
         } catch is CancellationError {
-            self.aiState = .ready
+            self.aiStatus = .ready
             self.engineMessage = "AI Thinking Cancelled".localized
+            self.addEventLog("AI Thinking Cancelled".localized, type: .info)
             return nil
         } catch {
             print("AI Play error: \(error)")
-            aiState = .ready
+            aiStatus = .ready
             return nil
         }
     }
@@ -459,6 +464,14 @@ class AIManager: ObservableObject {
         self.mainLineColors = colors
     }
 
+    func addEventLog(_ message: String, type: LogType) {
+        let entry = EngineLog(message: message, type: type)
+        logEntries.append(entry)
+        if logEntries.count > 1000 {
+            logEntries.removeFirst(200)
+        }
+    }
+
     private func addLog(_ message: String, isError: Bool = false) {
         var displayMessage = message
         if message.hasPrefix("[STDERR] ") {
@@ -480,7 +493,8 @@ class AIManager: ObservableObject {
                                  lowerTrimmed.contains(" error: ")
 
         let finalIsError = isError || containsErrorMarker
-        let entry = BoardViewModel.LogEntry(message: displayMessage, isError: finalIsError, isCommunication: isComm)
+        let type: LogType = finalIsError ? .error : (isComm ? .raw : .info)
+        let entry = EngineLog(message: trimmed, type: type)
 
         self.logEntries.append(entry)
         if self.logEntries.count > 2000 {
@@ -491,6 +505,7 @@ class AIManager: ObservableObject {
             if !self.isEngineReady {
                 self.isEngineReady = true
                 self.engineMessage = "AI Started".localized
+                self.addEventLog("AI Engine Ready", type: .info)
             }
         } else if trimmed.contains("info: visits") {
             self.isEngineReady = true

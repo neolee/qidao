@@ -174,3 +174,23 @@
 /* Errors */
 "Failed to decode SGF file" = "Failed to decode SGF file";
 "Error: Config file is required for analysis mode" = "Error: Config file is required for analysis mode";
+
+/* AI Status & Logs */
+"AI Engine" = "AI Engine";
+"Start AI" = "Start AI";
+"Stop AI" = "Stop AI";
+"AI Not Started" = "AI Not Started";
+"Starting AI..." = "Starting AI...";
+"AI Started" = "AI Started";
+"AI Error: %@" = "AI Error: %@";
+"AI is thinking..." = "AI is thinking...";
+"AI played" = "AI played";
+"AI passed" = "AI passed";
+"AI Thinking Cancelled" = "AI Thinking Cancelled";
+"Analysis started" = "Analysis started";
+"AI Engine Ready" = "AI Engine Ready";
+"Developer Mode" = "Developer Mode";
+"Show All Logs" = "Show All Logs";
+"No logs..." = "No logs...";
+"No errors..." = "No errors...";
+"AI is thinking... (%@)" = "AI is thinking... (%@)";

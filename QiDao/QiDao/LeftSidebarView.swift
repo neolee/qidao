@@ -45,7 +45,8 @@ struct LeftSidebarView: View {
 
                 PlayControlView(viewModel: viewModel)
 
-                Spacer()
+                AIEngineLogView(viewModel: viewModel)
+                    .frame(maxHeight: .infinity)
             }
         }
         .padding()

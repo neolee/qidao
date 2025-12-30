@@ -247,10 +247,10 @@ class BoardViewModel: ObservableObject {
 
     // AI Analysis
     @Published var isAnalyzing: Bool = false
-    @Published var aiState: AIState = .idle
+    @Published var aiStatus: AIStatus = .idle
     @Published var engineMessage: String = "AI Not Started".localized
     @Published var analysisResult: AnalysisResult? = nil
-    @Published var logEntries: [LogEntry] = []
+    @Published var logEntries: [EngineLog] = []
     @Published var showAllLogs: Bool = false {
         didSet {
             aiManager.showAllLogs = showAllLogs
@@ -367,7 +367,7 @@ class BoardViewModel: ObservableObject {
             .store(in: &cancellables)
 
         aiManager.$isAnalyzing.assign(to: &$isAnalyzing)
-        aiManager.$aiState.assign(to: &$aiState)
+        aiManager.$aiStatus.assign(to: &$aiStatus)
         aiManager.$isEngineStarted
             .receive(on: RunLoop.main)
             .sink { [weak self] started in
@@ -415,7 +415,7 @@ class BoardViewModel: ObservableObject {
     }
 
     private func checkAIMove() {
-        guard appMode == .play, isAnalyzing, aiState != .thinking else { return }
+        guard appMode == .play, isAnalyzing, aiStatus != .thinking else { return }
 
         let shouldAIPlay: Bool
         switch aiRole {

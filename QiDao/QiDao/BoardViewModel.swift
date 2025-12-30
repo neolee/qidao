@@ -54,6 +54,7 @@ class BoardViewModel: ObservableObject {
             } else {
                 aiPlayTask?.cancel()
                 aiPlayTask = nil
+                aiManager.clearAnalysisResult()
             }
         }
     }
@@ -601,7 +602,7 @@ class BoardViewModel: ObservableObject {
     }
 
     func startFullGameAnalysis() {
-        guard config.display.showWinRateGraph else { return }
+        guard appMode == .analysis, config.display.showWinRateGraph else { return }
         let game = gameManager.getGame()
 
         let mainLineMoves = game.getMainLineMoves()

@@ -311,7 +311,7 @@ class AIManager: ObservableObject {
 
     func clearAnalysisResult() {
         interactiveTask?.cancel()
-        fullScanTask?.cancel()
+        stopFullGameAnalysis()
         currentAnalysisId = nil
         self.analysisResult = nil
     }
@@ -331,7 +331,7 @@ class AIManager: ObservableObject {
 
         // Cancel analysis tasks to focus on thinking
         interactiveTask?.cancel()
-        fullScanTask?.cancel()
+        stopFullGameAnalysis()
 
         aiState = .thinking
         engineMessage = "AI is thinking...".localized
@@ -585,7 +585,7 @@ class AIManager: ObservableObject {
                 detectBlunder(at: currentTurnNumber)
             }
         } else if result.id.hasPrefix("fullscan-") {
-            if !result.isDuringSearch {
+            if isFullGameScanning && !result.isDuringSearch {
                 let turn = Int(result.turnNumber)
                 // We use .black perspective for history, so isWhiteTurn is not strictly needed
                 // for the conversion if reportedAs and target are both .black.

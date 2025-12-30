@@ -24,6 +24,7 @@ class AIManager: ObservableObject {
     @Published var scoreLeadHistory: [Int: Double] = [:]
     @Published var blunders: [Int: BoardViewModel.BlunderType] = [:]
     @Published var isFullGameScanning: Bool = false
+    @Published var fullScanProgress: (completed: Int, total: Int) = (0, 0)
     var blunderThreshold: Double = 15.0
 
     var analysisEngine: AnalysisEngine? = nil
@@ -191,7 +192,7 @@ class AIManager: ObservableObject {
 
                 self.aiStatus = .analyzing
                 self.engineMessage = "Analysis started".localized
-                self.addEventLog("Analysis started".localized, type: .info)
+                self.addEventLog("Analysis started".localized, type: .analysis)
                 try await engine.analyze(queryJson: jsonString)
             } catch is CancellationError {
             } catch {
@@ -257,6 +258,10 @@ class AIManager: ObservableObject {
 
         fullScanTask?.cancel()
         isFullGameScanning = true
+        let totalPositions = totalTurns + 1
+        let alreadyAnalyzed = totalPositions - missingTurns.count
+        fullScanProgress = (alreadyAnalyzed, totalPositions)
+        self.addEventLog(String(format: "Full game analysis started: %d moves to analyze".localized, missingTurns.count), type: .fullScan)
 
         fullScanTask = Task {
             do {
@@ -284,12 +289,13 @@ class AIManager: ObservableObject {
                         "boardXSize": metadata.size,
                         "boardYSize": metadata.size,
                         "analyzeTurns": analyzeTurns,
-                        "maxVisits": 40,
+                        "maxVisits": config.analysis.effectiveFullScanMaxVisits,
                         "priority": -10,
                         "includeOwnership": false,
                         "includePolicy": false,
                         "overrideSettings": [
-                            "reportAnalysisWinratesAs": "BLACK"
+                            "reportAnalysisWinratesAs": "BLACK",
+                            "maxVisits": config.analysis.effectiveFullScanMaxVisits // Ensure it's also in overrideSettings
                         ]
                     ]
 
@@ -297,7 +303,30 @@ class AIManager: ObservableObject {
                     let jsonString = String(data: jsonData, encoding: .utf8)!
 
                     try await engine.analyze(queryJson: jsonString)
-                    try? await Task.sleep(nanoseconds: 500_000_000)
+
+                    // Wait for this batch to complete before sending next one
+                    // to avoid overwhelming the engine's queue
+                    var batchCompleted = false
+                    var waitAttempts = 0
+                    while !batchCompleted && waitAttempts < 60 { // 30s timeout per batch
+                        if Task.isCancelled { break }
+
+                        let allDone = analyzeTurns.allSatisfy { self.winRateHistory[$0] != nil }
+                        if allDone {
+                            batchCompleted = true
+                        } else {
+                            try? await Task.sleep(nanoseconds: 500_000_000)
+                            waitAttempts += 1
+                        }
+                    }
+                }
+
+                if !Task.isCancelled {
+                    let finalMsg = String(format: "Full game analysis progress: %d/%d moves".localized,
+                                           self.fullScanProgress.total,
+                                           self.fullScanProgress.total)
+                    self.addEventLog(finalMsg, type: .fullScan)
+                    self.addEventLog("Full game analysis completed".localized, type: .fullScan)
                 }
             } catch {
                 print("Full game analysis failed: \(error)")
@@ -349,10 +378,11 @@ class AIManager: ObservableObject {
 
         aiStatus = .thinking
         engineMessage = "AI is thinking...".localized
-        addEventLog("\("AI is thinking...".localized) (\(nextPlayer))", type: .ai)
+        addEventLog("\("AI is thinking...".localized) (\(nextPlayer))", type: .play)
 
         let playId = "play-\(self.analysisSessionId)-\(moves.count)"
-        self.addLog("Requesting move (\(nextPlayer), \(moves.count)) for id(\(playId))")
+        let reqMsg = String(format: "Requesting AI move (%@, %d)".localized, nextPlayer, moves.count)
+        self.addLog("\(reqMsg) [id: \(playId)]", type: .play)
 
         do {
             // Terminate any previous play or analysis to free GPU
@@ -402,17 +432,18 @@ class AIManager: ObservableObject {
                     // or at least one with enough visits if it's taking too long
                     if !result.isDuringSearch || (attempts > 100 && result.rootInfo.visits > 10) {
                         if let bestMoveStr = result.moveInfos.first?.moveStr {
-                            self.addLog("Found move \(bestMoveStr) for id(\(playId))")
+                            let foundMsg = String(format: "Found AI move %@".localized, bestMoveStr)
+                            self.addLog("\(foundMsg) [id: \(playId)]", type: .play)
                             if let coords = decodeKataGoMove(bestMoveStr, size: Int(metadata.size)) {
                                 self.aiStatus = .ready
                                 self.engineMessage = "\("AI played".localized) \(bestMoveStr)"
-                                self.addEventLog("\("AI played".localized) \(bestMoveStr)", type: .ai)
+                                self.addEventLog("\("AI played".localized) \(bestMoveStr)", type: .play)
                                 return coords
                             } else if bestMoveStr.uppercased() == "PASS" {
-                                self.addLog("AI Play: AI passed for ID \(playId)")
+                                self.addLog("AI Play: AI passed for ID \(playId)", type: .play)
                                 self.aiStatus = .ready
                                 self.engineMessage = "AI passed".localized
-                                self.addEventLog("AI passed".localized, type: .ai)
+                                self.addEventLog("AI passed".localized, type: .play)
                                 return nil
                             }
                         }
@@ -421,16 +452,16 @@ class AIManager: ObservableObject {
                 try await Task.sleep(nanoseconds: checkInterval)
                 attempts += 1
             }
-            self.addLog("AI Play: Timeout or no move found for ID \(playId)", isError: true)
+            self.addLog("AI Play: Timeout or no move found for ID \(playId)", type: .play, isError: true)
             self.aiStatus = .ready
             return nil
         } catch is CancellationError {
             self.aiStatus = .ready
             self.engineMessage = "AI Thinking Cancelled".localized
-            self.addEventLog("AI Thinking Cancelled".localized, type: .info)
+            self.addEventLog("AI Thinking Cancelled".localized, type: .play)
             return nil
         } catch {
-            self.addLog("AI Play error: \(error)", isError: true)
+            self.addLog("AI Play error: \(error)", type: .play, isError: true)
             aiStatus = .ready
             return nil
         }

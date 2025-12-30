@@ -10,7 +10,7 @@ extension AIManager {
         }
     }
 
-    func addLog(_ message: String, isError: Bool = false) {
+    func addLog(_ message: String, type: LogType? = nil, isError: Bool = false) {
         var displayMessage = message
         if message.hasPrefix("[STDERR] ") {
             displayMessage = String(message.dropFirst(9))
@@ -31,8 +31,10 @@ extension AIManager {
                                  lowerTrimmed.contains(" error: ")
 
         let finalIsError = isError || containsErrorMarker
-        let type: LogType = finalIsError ? .error : (isComm ? .raw : .info)
-        let entry = EngineLog(message: trimmed, type: type)
+
+        // Use provided type, or fallback to error/raw/info
+        let finalType: LogType = type ?? (finalIsError ? .error : (isComm ? .raw : .info))
+        let entry = EngineLog(message: trimmed, type: finalType)
 
         self.logEntries.append(entry)
         if self.logEntries.count > 2000 {

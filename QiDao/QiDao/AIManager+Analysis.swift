@@ -74,7 +74,7 @@ extension AIManager {
                 } else {
                     let msg = "\("Analysis completed".localized) (\(result.rootInfo.visits) \("Visits".localized))"
                     self.engineMessage = msg
-                    self.addEventLog(msg, type: .info)
+                    self.addEventLog(msg, type: .analysis)
                 }
             }
         } else if result.id.hasPrefix("fullscan-") {
@@ -98,6 +98,17 @@ extension AIManager {
                 self.winRateHistory[turn] = normalizedWinRate
                 self.scoreLeadHistory[turn] = normalizedScoreLead
                 detectBlunder(at: turn)
+
+                // Update progress
+                self.fullScanProgress.completed += 1
+
+                // Log every 10 moves
+                if self.fullScanProgress.completed % 10 == 0 {
+                    let progressMsg = String(format: "Full game analysis progress: %d/%d moves".localized,
+                                           self.fullScanProgress.completed,
+                                           self.fullScanProgress.total)
+                    self.addEventLog(progressMsg, type: .fullScan)
+                }
             }
         }
     }

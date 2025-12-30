@@ -148,6 +148,18 @@ struct AIConfigView: View {
                 }
 
                 HStack {
+                    Text("Full Game Analysis Max Visits".localized)
+                        .frame(width: 200, alignment: .leading)
+                    Spacer()
+                    TextField("", value: Binding(
+                        get: { localConfig.analysis.fullScanMaxVisits ?? 40 },
+                        set: { localConfig.analysis.fullScanMaxVisits = $0 }
+                    ), formatter: NumberFormatter())
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 100)
+                }
+
+                HStack {
                     Text("Max Time (seconds)".localized)
                         .frame(width: 160, alignment: .leading)
                     Spacer()

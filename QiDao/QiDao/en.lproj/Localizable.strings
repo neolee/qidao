@@ -135,6 +135,11 @@
 "Analysis completed" = "Analysis completed";
 "AI Engine Ready" = "AI Engine Ready";
 "Developer Mode" = "Developer Mode";
+"Requesting AI move (%@, %d)" = "Requesting AI move (%@, %d)";
+"Found AI move %@" = "Found AI move %@";
+"Full game analysis started: %d moves to analyze" = "Full game analysis started: %d moves to analyze";
+"Full game analysis progress: %d/%d moves" = "Full game analysis progress: %d/%d moves";
+"Full game analysis completed" = "Full game analysis completed";
 
 /* Engine Configuration */
 "Select Profile" = "Select Profile";
@@ -155,6 +160,7 @@
 "Extra Arguments" = "Extra Arguments";
 "Basic Settings" = "Basic Settings";
 "Max Visits" = "Max Visits";
+"Full Game Analysis Max Visits" = "Full Game Analysis Max Visits";
 "Max Time (seconds)" = "Max Time (seconds)";
 "Iterative Deepening" = "Iterative Deepening";
 "Report Interval (s)" = "Report Interval (s)";

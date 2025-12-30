@@ -134,6 +134,11 @@
 "Analysis completed" = "分析已完成";
 "AI Engine Ready" = "AI 引擎就绪";
 "Developer Mode" = "开发者模式";
+"Requesting AI move (%@, %d)" = "请求 AI 着法 (%@, %d)";
+"Found AI move %@" = "找到 AI 着法 %@";
+"Full game analysis started: %d moves to analyze" = "全量分析已开始：共 %d 手";
+"Full game analysis progress: %d/%d moves" = "全量分析进度：%d/%d 手";
+"Full game analysis completed" = "全量分析已完成";
 
 /* Engine Configuration */
 "Select Profile" = "选择方案";
@@ -154,6 +159,7 @@
 "Extra Arguments" = "额外参数";
 "Basic Settings" = "基础设置";
 "Max Visits" = "最大计算量 (Visits)";
+"Full Game Analysis Max Visits" = "全量分析最大计算量";
 "Max Time (seconds)" = "最大计算时间 (秒)";
 "Iterative Deepening" = "迭代加深 (逐步增加计算量)";
 "Report Interval (s)" = "报告间隔 (秒)";

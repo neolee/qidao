@@ -31,11 +31,16 @@ struct EngineProfile: Identifiable, Codable, Equatable {
 
 struct AnalysisSettings: Codable, Equatable {
     var maxVisits: Int? = 1000
+    var fullScanMaxVisits: Int? = 40
     var maxTime: Double? = nil
     var iterativeDeepening: Bool = true
     var reportDuringSearchEvery: Double? = 1.0
     var includePolicy: Bool = true
     var advancedParams: [String: String] = [:]
+
+    var effectiveFullScanMaxVisits: Int {
+        fullScanMaxVisits ?? 40
+    }
 }
 
 enum WinRatePerspective: String, Codable, CaseIterable {

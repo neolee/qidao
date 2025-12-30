@@ -195,8 +195,10 @@ enum LogType: String {
     case info
     case warning
     case error
-    case ai
-    case raw // For developer mode
+    case play      // Slot A: Play mode
+    case analysis  // Slot B: Interactive analysis
+    case fullScan  // Slot C: Background full game scan
+    case raw       // For developer mode
 }
 
 struct EngineLog: Identifiable {

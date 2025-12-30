@@ -47,7 +47,9 @@ struct AIEngineLogView: View {
         case .info: return .primary
         case .warning: return .orange
         case .error: return .red
-        case .ai: return .blue
+        case .play: return .blue
+        case .analysis: return .green
+        case .fullScan: return .purple
         case .raw: return .secondary
         }
     }

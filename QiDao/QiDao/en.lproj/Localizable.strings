@@ -188,6 +188,7 @@
 "AI passed" = "AI passed";
 "AI Thinking Cancelled" = "AI Thinking Cancelled";
 "Analysis started" = "Analysis started";
+"Analysis completed" = "Analysis completed";
 "AI Engine Ready" = "AI Engine Ready";
 "Developer Mode" = "Developer Mode";
 "Show All Logs" = "Show All Logs";

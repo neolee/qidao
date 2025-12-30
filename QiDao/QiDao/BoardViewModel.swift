@@ -50,10 +50,12 @@ class BoardViewModel: ObservableObject {
             } else if appMode == .analysis {
                 aiPlayTask?.cancel()
                 aiPlayTask = nil
+                aiManager.cancelPlay()
                 updateAnalysis()
             } else {
                 aiPlayTask?.cancel()
                 aiPlayTask = nil
+                aiManager.cancelPlay()
                 aiManager.clearAnalysisResult()
             }
         }
@@ -368,10 +370,10 @@ class BoardViewModel: ObservableObject {
 
         aiManager.$isAnalyzing.assign(to: &$isAnalyzing)
         aiManager.$aiStatus.assign(to: &$aiStatus)
-        aiManager.$isEngineStarted
+        aiManager.$isEngineReady
             .receive(on: RunLoop.main)
-            .sink { [weak self] started in
-                if started {
+            .sink { [weak self] ready in
+                if ready {
                     self?.updateAnalysis()
                     self?.startFullGameAnalysis()
                 }

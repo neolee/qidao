@@ -38,7 +38,7 @@ class AIManager: ObservableObject {
     private var resultTask: Task<Void, Never>? = nil
     private var logTask: Task<Void, Never>? = nil
 
-    private var isEngineReady: Bool = false
+    @Published var isEngineReady: Bool = false
     private var currentAnalysisId: String? = nil
     private var analysisSessionId: Int = 0
     private var mainLineColors: [Int: String] = [:]
@@ -64,7 +64,7 @@ class AIManager: ObservableObject {
                 try await engine.start(executable: executable, args: args)
                 self.analysisEngine = engine
                 self.isEngineStarted = true
-                self.aiStatus = .ready
+                // aiStatus stays .starting until we see the "ready" log in addLog
                 self.startLogPolling()
                 self.startResultPolling()
             } catch {
@@ -189,6 +189,7 @@ class AIManager: ObservableObject {
                 let jsonString = String(data: jsonData, encoding: .utf8)!
 
                 self.aiStatus = .analyzing
+                self.engineMessage = "Analysis started".localized
                 self.addEventLog("Analysis started".localized, type: .info)
                 try await engine.analyze(queryJson: jsonString)
             } catch is CancellationError {
@@ -315,6 +316,17 @@ class AIManager: ObservableObject {
         stopFullGameAnalysis()
         currentAnalysisId = nil
         self.analysisResult = nil
+        if isEngineReady && aiStatus == .analyzing {
+            aiStatus = .ready
+            engineMessage = "AI Engine Ready".localized
+        }
+    }
+
+    func cancelPlay() {
+        if aiStatus == .thinking {
+            aiStatus = .ready
+            engineMessage = "AI Engine Ready".localized
+        }
     }
 
     func requestAIMove(
@@ -339,7 +351,7 @@ class AIManager: ObservableObject {
         addEventLog("\("AI is thinking...".localized) (\(nextPlayer))", type: .ai)
 
         let playId = "play-\(self.analysisSessionId)-\(moves.count)"
-        print("AI Play: Requesting move for \(nextPlayer), turn \(moves.count), ID \(playId)")
+        self.addLog("Requesting move (\(nextPlayer), \(moves.count)) for id(\(playId))")
 
         do {
             // Terminate any previous play or analysis to free GPU
@@ -389,14 +401,14 @@ class AIManager: ObservableObject {
                     // or at least one with enough visits if it's taking too long
                     if !result.isDuringSearch || (attempts > 100 && result.rootInfo.visits > 10) {
                         if let bestMoveStr = result.moveInfos.first?.moveStr {
-                            print("AI Play: Found move \(bestMoveStr) for ID \(playId) after \(attempts) attempts")
+                            self.addLog("Found move \(bestMoveStr) for id(\(playId))")
                             if let coords = decodeKataGoMove(bestMoveStr, size: Int(metadata.size)) {
                                 self.aiStatus = .ready
                                 self.engineMessage = "\("AI played".localized) \(bestMoveStr)"
                                 self.addEventLog("\("AI played".localized) \(bestMoveStr)", type: .ai)
                                 return coords
                             } else if bestMoveStr.uppercased() == "PASS" {
-                                print("AI Play: AI passed for ID \(playId)")
+                                self.addLog("AI Play: AI passed for ID \(playId)")
                                 self.aiStatus = .ready
                                 self.engineMessage = "AI passed".localized
                                 self.addEventLog("AI passed".localized, type: .ai)
@@ -408,7 +420,7 @@ class AIManager: ObservableObject {
                 try await Task.sleep(nanoseconds: checkInterval)
                 attempts += 1
             }
-            print("AI Play: Timeout or no move found for ID \(playId)")
+            self.addLog("AI Play: Timeout or no move found for ID \(playId)", isError: true)
             self.aiStatus = .ready
             return nil
         } catch is CancellationError {
@@ -417,7 +429,7 @@ class AIManager: ObservableObject {
             self.addEventLog("AI Thinking Cancelled".localized, type: .info)
             return nil
         } catch {
-            print("AI Play error: \(error)")
+            self.addLog("AI Play error: \(error)", isError: true)
             aiStatus = .ready
             return nil
         }
@@ -504,16 +516,24 @@ class AIManager: ObservableObject {
         if trimmed.contains("Started, ready to begin handling requests") {
             if !self.isEngineReady {
                 self.isEngineReady = true
-                self.engineMessage = "AI Started".localized
-                self.addEventLog("AI Engine Ready", type: .info)
+                // Only set to .ready if we are not already analyzing or thinking
+                if self.aiStatus == .starting {
+                    self.aiStatus = .ready
+                    self.engineMessage = "AI Engine Ready".localized
+                }
+                self.addEventLog("AI Engine Ready".localized, type: .info)
             }
         } else if trimmed.contains("info: visits") {
             self.isEngineReady = true
             self.engineMessage = trimmed
-        } else if self.isEngineReady && !isComm && !finalIsError {
-            self.engineMessage = trimmed
         } else if finalIsError {
             self.engineMessage = "AI Error".localized + ": " + trimmed
+        } else if !isComm && aiStatus == .starting {
+            // Update engineMessage with general logs during startup
+            self.engineMessage = trimmed
+        } else if !isComm && aiStatus == .ready {
+            // Update engineMessage with general logs when idle
+            self.engineMessage = trimmed
         }
     }
 
@@ -598,6 +618,14 @@ class AIManager: ObservableObject {
                 self.winRateHistory[currentTurnNumber] = normalizedWinRate
                 self.scoreLeadHistory[currentTurnNumber] = normalizedScoreLead
                 detectBlunder(at: currentTurnNumber)
+
+                if result.isDuringSearch {
+                    self.engineMessage = "\("Visits".localized): \(result.rootInfo.visits)"
+                } else {
+                    let msg = "\("Analysis completed".localized) (\(result.rootInfo.visits) \("Visits".localized))"
+                    self.engineMessage = msg
+                    self.addEventLog(msg, type: .info)
+                }
             }
         } else if result.id.hasPrefix("fullscan-") {
             if isFullGameScanning && !result.isDuringSearch {

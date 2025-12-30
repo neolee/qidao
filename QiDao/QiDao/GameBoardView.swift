@@ -66,7 +66,7 @@ struct GameBoardView: View {
                 }
 
                 // 7. Variation Markers
-                if viewModel.variations.count > 1 {
+                if viewModel.appMode == .analysis, viewModel.variations.count > 1 {
                     ForEach(viewModel.variations, id: \.id) { variation in
                         if let vx = variation.x, let vy = variation.y {
                             VariationMarker(
@@ -86,8 +86,8 @@ struct GameBoardView: View {
                 }
 
                 // 7. Next Move Highlight (SGF)
-                // Only show when AI is active, and make it a large thin circle
-                if viewModel.isAnalyzing, let nextMove = viewModel.nextSgfMove {
+                // Only show when AI is active in analysis mode, and make it a large thin circle
+                if viewModel.appMode == .analysis, viewModel.isAnalyzing, let nextMove = viewModel.nextSgfMove {
                     Circle()
                         .stroke(viewModel.theme.nextMoveMarkerColor.opacity(0.7), lineWidth: 2)
                         .frame(width: spacing * 0.98, height: spacing * 0.98)
@@ -98,8 +98,8 @@ struct GameBoardView: View {
                 }
 
                 // 8. AI Analysis Overlay
-                // Only show if the result matches the current board state
-                if viewModel.isAnalyzing, let result = viewModel.analysisResult, result.id.hasSuffix("-\(viewModel.currentNodeId)") {
+                // Only show if the result matches the current board state and in analysis mode
+                if viewModel.appMode == .analysis, viewModel.isAnalyzing, let result = viewModel.analysisResult, result.id.hasSuffix("-\(viewModel.currentNodeId)") {
                     let sortedMoves = result.moveInfos.sorted { $0.visits > $1.visits }
                     let displayCount = min(sortedMoves.count, viewModel.config.display.maxCandidates)
                     let isWhiteTurn = viewModel.nextColor == .white
@@ -169,7 +169,8 @@ struct GameBoardView: View {
                 }
 
                 // 9. Hovered Variation Preview
-                if let hoveredMove = viewModel.hoveredMoveStr,
+                if viewModel.appMode == .analysis,
+                   let hoveredMove = viewModel.hoveredMoveStr,
                    let result = viewModel.analysisResult,
                    let info = result.moveInfos.first(where: { $0.moveStr == hoveredMove }) {
                     let pv = info.pv

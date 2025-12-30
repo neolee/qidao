@@ -187,6 +187,7 @@
 "AI passed" = "AI 停一手";
 "AI Thinking Cancelled" = "AI 思考已取消";
 "Analysis started" = "分析已开始";
+"Analysis completed" = "分析已完成";
 "AI Engine Ready" = "AI 引擎就绪";
 "Developer Mode" = "开发者模式";
 "Show All Logs" = "显示所有日志";

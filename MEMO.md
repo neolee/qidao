@@ -91,17 +91,28 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
     }
     ```
 
+### AI Status & Logging Design (Dec 30, 2025)
+- **Status-Driven UI**: Replace `AIState` with a more expressive `AIStatus` enum that drives the icon, color, and localized message in `AIEngineView`.
+    - States: `idle`, `starting`, `ready`, `analyzing` (Analysis mode), `thinking` (Play mode), `error`.
+- **Event-Based Logging**: `AIManager` generates human-readable "Event Logs" instead of raw stdout/stderr.
+    - Examples: "Engine started successfully", "Analyzing move 42", "AI found move D4 (1.2k visits)".
+- **Developer Mode**: Raw JSON communication (`>>>`/`<<<`) is hidden by default and only accessible via a "Developer Mode" toggle in settings (output to Xcode console or a hidden view).
+- **Separation of Concerns**:
+    - `AIEngineView`: Instantaneous status ("What is AI doing now?").
+    - `AIEngineLogView`: Historical context ("What just happened?").
+
 ## 8. Immediate TODOs
 
 1. **Multi-Mode Support**: Implement `AppMode` (Analysis, Edit, Play) with dynamic sidebars.
 2. **Edit Mode**: Add/remove stones and notations (Triangle, Circle, Square, Cross, Label), export to SGF.
 3. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
 4. **SGF Comments**: Display and edit node comments in the sidebar.
-5. **AI Play UX Refinement**:
-    - Move play-mode console logs to `AIEngineLogView`.
-    - Add `AIEngineLogView` to Play mode sidebar.
-    - Redesign engine message and log display for consistency and localization.
-    - Disable AI analysis and play in Edit mode.
+5. **Phase 15: AI Status & Logging Implementation**:
+    - [ ] Define `AIStatus` enum and update `AIManager` state machine.
+    - [ ] Implement `addEventLog` in `AIManager` for human-readable events.
+    - [ ] Refactor `AIEngineView` to use the new status-driven icons and messages.
+    - [ ] Refactor `AIEngineLogView` to display event logs with timestamps.
+    - [ ] Add "Developer Mode" toggle to `AIConfig` and hide raw communication logs.
 
 ## 9. Implementation Plan (Dec 29, 2025)
 

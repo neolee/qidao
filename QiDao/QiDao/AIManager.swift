@@ -26,26 +26,26 @@ class AIManager: ObservableObject {
     @Published var isFullGameScanning: Bool = false
     var blunderThreshold: Double = 15.0
 
-    private var analysisEngine: AnalysisEngine? = nil
-    private var resultsById: [String: AnalysisResult] = [:]
+    var analysisEngine: AnalysisEngine? = nil
+    var resultsById: [String: AnalysisResult] = [:]
 
     // Task Slots
-    private var playTask: Task<Void, Never>? = nil          // Slot A: Play
-    private var interactiveTask: Task<Void, Never>? = nil   // Slot B: Interactive Analysis
-    private var fullScanTask: Task<Void, Never>? = nil      // Slot C: Full Game Analysis
+    var playTask: Task<Void, Never>? = nil          // Slot A: Play
+    var interactiveTask: Task<Void, Never>? = nil   // Slot B: Interactive Analysis
+    var fullScanTask: Task<Void, Never>? = nil      // Slot C: Full Game Analysis
 
     // Infrastructure Tasks
-    private var resultTask: Task<Void, Never>? = nil
-    private var logTask: Task<Void, Never>? = nil
+    var resultTask: Task<Void, Never>? = nil
+    var logTask: Task<Void, Never>? = nil
 
     @Published var isEngineReady: Bool = false
-    private var currentAnalysisId: String? = nil
-    private var analysisSessionId: Int = 0
-    private var mainLineColors: [Int: String] = [:]
-    private var currentTurnColorIsWhite: Bool = false
-    private var currentTurnNumber: Int = 0
-    private var currentNodeId: String = ""
-    private var lastMainLineMoves: [[String]] = []
+    var currentAnalysisId: String? = nil
+    var analysisSessionId: Int = 0
+    var mainLineColors: [Int: String] = [:]
+    var currentTurnColorIsWhite: Bool = false
+    var currentTurnNumber: Int = 0
+    var currentNodeId: String = ""
+    var lastMainLineMoves: [[String]] = []
 
     func start(executable: String, args: [String], config: AIConfig) {
         guard analysisEngine == nil else { return }
@@ -71,8 +71,9 @@ class AIManager: ObservableObject {
                 self.isAnalyzing = false
                 self.isEngineStarted = false
                 self.aiStatus = .idle
-                self.engineMessage = "AI Error: \(error)".localized
-                self.addLog("AI Error: \(error)", isError: true)
+                let errorMsg = String(format: "AI Error: %@".localized, error.localizedDescription)
+                self.engineMessage = errorMsg
+                self.addLog(errorMsg, isError: true)
             }
         }
     }
@@ -474,199 +475,5 @@ class AIManager: ObservableObject {
 
     func setMainLineColors(_ colors: [Int: String]) {
         self.mainLineColors = colors
-    }
-
-    func addEventLog(_ message: String, type: LogType) {
-        let entry = EngineLog(message: message, type: type)
-        logEntries.append(entry)
-        if logEntries.count > 1000 {
-            logEntries.removeFirst(200)
-        }
-    }
-
-    private func addLog(_ message: String, isError: Bool = false) {
-        var displayMessage = message
-        if message.hasPrefix("[STDERR] ") {
-            displayMessage = String(message.dropFirst(9))
-        } else if message.hasPrefix("[STDERR]") {
-            displayMessage = String(message.dropFirst(8))
-        }
-
-        let trimmed = displayMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return }
-
-        let isComm = trimmed.hasPrefix(">>>") || trimmed.hasPrefix("<<<")
-        if isComm && !showAllLogs { return }
-
-        let lowerTrimmed = trimmed.lowercased()
-        let containsErrorMarker = lowerTrimmed.contains("[error]") ||
-                                 lowerTrimmed.contains("fatal error") ||
-                                 lowerTrimmed.hasPrefix("error:") ||
-                                 lowerTrimmed.contains(" error: ")
-
-        let finalIsError = isError || containsErrorMarker
-        let type: LogType = finalIsError ? .error : (isComm ? .raw : .info)
-        let entry = EngineLog(message: trimmed, type: type)
-
-        self.logEntries.append(entry)
-        if self.logEntries.count > 2000 {
-            self.logEntries.removeFirst(500)
-        }
-
-        if trimmed.contains("Started, ready to begin handling requests") {
-            if !self.isEngineReady {
-                self.isEngineReady = true
-                // Only set to .ready if we are not already analyzing or thinking
-                if self.aiStatus == .starting {
-                    self.aiStatus = .ready
-                    self.engineMessage = "AI Engine Ready".localized
-                }
-                self.addEventLog("AI Engine Ready".localized, type: .info)
-            }
-        } else if trimmed.contains("info: visits") {
-            self.isEngineReady = true
-            self.engineMessage = trimmed
-        } else if finalIsError {
-            self.engineMessage = "AI Error".localized + ": " + trimmed
-        } else if !isComm && aiStatus == .starting {
-            // Update engineMessage with general logs during startup
-            self.engineMessage = trimmed
-        } else if !isComm && aiStatus == .ready {
-            // Update engineMessage with general logs when idle
-            self.engineMessage = trimmed
-        }
-    }
-
-    private func startLogPolling() {
-        logTask?.cancel()
-        logTask = Task {
-            while !Task.isCancelled {
-                if let engine = analysisEngine {
-                    let logs = await engine.getLogs()
-                    for log in logs {
-                        self.addLog(log)
-                    }
-                }
-                try? await Task.sleep(nanoseconds: 500_000_000)
-            }
-        }
-    }
-
-    private func startResultPolling() {
-        resultTask?.cancel()
-        resultTask = Task {
-            while !Task.isCancelled {
-                guard let engine = analysisEngine else {
-                    try? await Task.sleep(nanoseconds: 100_000_000)
-                    continue
-                }
-
-                do {
-                    let result = try await engine.getNextResult()
-                    if Task.isCancelled { break }
-                    self.handleAnalysisResult(result)
-                } catch {
-                    try? await Task.sleep(nanoseconds: 10_000_000)
-                }
-            }
-        }
-    }
-
-    private func handleAnalysisResult(_ result: AnalysisResult) {
-        if result.noResults { return }
-
-        // Store result by ID for requestAIMove to find
-        self.resultsById[result.id] = result
-
-        let parts = result.id.split(separator: "-")
-        if result.id.hasPrefix("qidao-") || result.id.hasPrefix("fullscan-") || result.id.hasPrefix("play-") {
-            if parts.count >= 2, let resultSessionId = Int(parts[1]) {
-                if resultSessionId != self.analysisSessionId { return }
-            }
-        }
-
-        if result.id.hasPrefix("qidao-") {
-            if result.id == currentAnalysisId && result.id.hasSuffix("-\(currentNodeId)") {
-                let normalizedWinRate = WinRateConverter.convertWinRate(
-                    result.rootInfo.winrate,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: currentTurnColorIsWhite
-                )
-                let normalizedScoreLead = WinRateConverter.convertScoreLead(
-                    result.rootInfo.scoreLead,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: currentTurnColorIsWhite
-                )
-
-                let normalizedResult = AnalysisResult(
-                    id: result.id,
-                    turnNumber: result.turnNumber,
-                    isDuringSearch: result.isDuringSearch,
-                    noResults: result.noResults,
-                    rootInfo: AnalysisRootInfo(
-                        winrate: normalizedWinRate,
-                        scoreLead: normalizedScoreLead,
-                        visits: result.rootInfo.visits
-                    ),
-                    moveInfos: result.moveInfos,
-                    ownership: result.ownership
-                )
-
-                self.analysisResult = normalizedResult
-                self.winRateHistory[currentTurnNumber] = normalizedWinRate
-                self.scoreLeadHistory[currentTurnNumber] = normalizedScoreLead
-                detectBlunder(at: currentTurnNumber)
-
-                if result.isDuringSearch {
-                    self.engineMessage = "\("Visits".localized): \(result.rootInfo.visits)"
-                } else {
-                    let msg = "\("Analysis completed".localized) (\(result.rootInfo.visits) \("Visits".localized))"
-                    self.engineMessage = msg
-                    self.addEventLog(msg, type: .info)
-                }
-            }
-        } else if result.id.hasPrefix("fullscan-") {
-            if isFullGameScanning && !result.isDuringSearch {
-                let turn = Int(result.turnNumber)
-                // We use .black perspective for history, so isWhiteTurn is not strictly needed
-                // for the conversion if reportedAs and target are both .black.
-                // But for correctness, we calculate it:
-                let isWhiteNext = (turn == 0) ? false : (self.mainLineColors[turn + 1] == "W")
-
-                let normalizedWinRate = WinRateConverter.convertWinRate(
-                    result.rootInfo.winrate,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: isWhiteNext
-                )
-                let normalizedScoreLead = WinRateConverter.convertScoreLead(
-                    result.rootInfo.scoreLead,
-                    reportedAs: .black,
-                    target: .black,
-                    isWhiteTurn: isWhiteNext
-                )
-
-                self.winRateHistory[turn] = normalizedWinRate
-                self.scoreLeadHistory[turn] = normalizedScoreLead
-                detectBlunder(at: turn)
-            }
-        }
-    }
-
-    private func detectBlunder(at turn: Int) {
-        guard turn > 0,
-              let currentWR = winRateHistory[turn],
-              let prevWR = winRateHistory[turn - 1] else { return }
-
-        let diff = currentWR - prevWR
-        let absDiff = abs(diff)
-
-        if absDiff >= blunderThreshold {
-            blunders[turn] = .blunder
-        } else {
-            blunders.removeValue(forKey: turn)
-        }
     }
 }

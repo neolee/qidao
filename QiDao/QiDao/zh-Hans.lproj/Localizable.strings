@@ -108,9 +108,7 @@
 
 /* AI Engine */
 "AI Analysis Inactive" = "AI 分析未启动";
-"AI Started" = "AI 已启动";
 "AI Not Started" = "AI 未启动";
-"AI Error" = "AI 错误";
 "AI Error: %@" = "AI 错误: %@";
 "Starting AI..." = "正在启动 AI...";
 "Start AI" = "启动 AI";
@@ -122,12 +120,20 @@
 "Visits" = "计算量";
 "No logs..." = "暂无日志...";
 "No errors..." = "暂无错误...";
-"Show All Logs" = "显示全部日志";
+"Show All Logs" = "显示所有日志";
 "Comments" = "解说";
 "AI Engine Logs" = "AI 引擎日志";
 "Show Ownership Map" = "显示形势分布图 (领地图)";
 "Show Win Rate Graph" = "显示胜率走势图";
 "Waiting for AI..." = "正在等待 AI...";
+"AI is thinking..." = "AI 正在思考...";
+"AI played" = "AI 落子";
+"AI passed" = "AI 停一手";
+"AI Thinking Cancelled" = "AI 思考已取消";
+"Analysis started" = "分析已开始";
+"Analysis completed" = "分析已完成";
+"AI Engine Ready" = "AI 引擎就绪";
+"Developer Mode" = "开发者模式";
 
 /* Engine Configuration */
 "Select Profile" = "选择方案";
@@ -173,24 +179,3 @@
 /* Errors */
 "Failed to decode SGF file" = "无法解码 SGF 文件";
 "Error: Config file is required for analysis mode" = "错误：分析模式需要配置文件";
-
-/* AI Status & Logs */
-"AI Engine" = "AI 引擎";
-"Start AI" = "启动 AI";
-"Stop AI" = "停止 AI";
-"AI Not Started" = "AI 未启动";
-"Starting AI..." = "正在启动 AI...";
-"AI Started" = "AI 已启动";
-"AI Error: %@" = "AI 错误: %@";
-"AI is thinking..." = "AI 正在思考...";
-"AI played" = "AI 落子";
-"AI passed" = "AI 停一手";
-"AI Thinking Cancelled" = "AI 思考已取消";
-"Analysis started" = "分析已开始";
-"Analysis completed" = "分析已完成";
-"AI Engine Ready" = "AI 引擎就绪";
-"Developer Mode" = "开发者模式";
-"Show All Logs" = "显示所有日志";
-"No logs..." = "暂无日志...";
-"No errors..." = "暂无错误...";
-"AI is thinking... (%@)" = "AI 正在思考... (%@)";

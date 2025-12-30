@@ -107,12 +107,7 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 2. **Edit Mode**: Add/remove stones and notations (Triangle, Circle, Square, Cross, Label), export to SGF.
 3. **Gameplay**: Implement Human-vs-AI (Play against Engine) mode with handicap and komi settings.
 4. **SGF Comments**: Display and edit node comments in the sidebar.
-5. **Phase 15: AI Status & Logging Implementation**:
-    - [ ] Define `AIStatus` enum and update `AIManager` state machine.
-    - [ ] Implement `addEventLog` in `AIManager` for human-readable events.
-    - [ ] Refactor `AIEngineView` to use the new status-driven icons and messages.
-    - [ ] Refactor `AIEngineLogView` to display event logs with timestamps.
-    - [ ] Add "Developer Mode" toggle to `AIConfig` and hide raw communication logs.
+5. **AI Status & Logging**: Implement `AIStatus` enum and event-based logging system.
 
 ## 9. Implementation Plan (Dec 29, 2025)
 
@@ -136,13 +131,21 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
     - Disable all AI overlays and real-time analysis.
     - Implement `genmove` flow: Player moves -> Engine generates move -> Update board.
     - Add game controls: Pass, Resign, Score, Undo.
+    - **Bug Fix: AI Play Logic (Dec 30)**: Fixed AI "double-playing" or playing on wrong turns during navigation by implementing `initialPlayer` tracking and node-ID validation before applying AI moves.
     - **UX Refinement (Dec 30)**:
         - Integrate `AIEngineLogView` into the Play mode sidebar (left).
         - Redirect useful play-mode logs (e.g., "AI is thinking", "Found move") from console to `AIEngineLogView`.
         - Redesign `AIEngineView`'s message area for better consistency and localization.
         - Filter analysis logs to show only high-value information.
 
-### Phase 14: Advanced Edit & Play Features
+### **Phase 14: AI Status & Logging Implementation**:
+- Define `AIStatus` enum and update `AIManager` state machine.
+- Implement `addEventLog` in `AIManager` for human-readable events.
+-Refactor `AIEngineView` to use the new status-driven icons and messages.
+- Refactor `AIEngineLogView` to display event logs with timestamps.
+- Add "Developer Mode" toggle to `AIConfig` and hide raw communication logs.
+
+### Phase 15: Advanced Edit & Play Features
 - **SGF Export**: Support exporting the current tree (including marks and comments) to SGF string/file.
 - **Game Setup**: Implement a "New Game" dialog for Play Mode to set board size, handicap, and komi.
 - **Clock System**: (Optional) Add basic timing support for Play Mode.
@@ -162,4 +165,4 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - [x] **Phase 10: 13x13 and 9x9 Board Support**.
 - [x] **Phase 11: Refactoring and Enhancements**: Improved code organization in views and view model. Win rate graph and ownership map toggles, incremental full game analysis, etc.
 - [x] **Phase 12: View Improvement**: Separated logs and comments into a tabbed view; implemented `GameCommentView` for SGF comment editing.
-- [x] **Bug Fix: AI Play Logic (Dec 30)**: Fixed AI "double-playing" or playing on wrong turns during navigation by implementing `initialPlayer` tracking and node-ID validation before applying AI moves.
+- [x] **Phase 13: Multi-Mode Support**: Implemented `AppMode` with dynamic sidebars for Analysis, Edit, and Play modes. Added stone placement and mark tools in Edit mode. Implemented basic Human-vs-AI gameplay flow in Play mode with game controls.

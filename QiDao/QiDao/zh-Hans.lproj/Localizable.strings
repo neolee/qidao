@@ -71,6 +71,27 @@
 "Handicap" = "让子";
 "Start" = "开始";
 "New Game Started" = "新对局已开始";
+
+/* Time Control */
+"Enable Time Control" = "启用限时";
+"Human" = "人类";
+"Reserve" = "备用时间";
+"Byo-yomi" = "每步用时";
+"min" = "分";
+"sec" = "秒";
+"AI" = "AI";
+"Limit Type" = "限制方式";
+"Global Config" = "全局配置";
+"Fixed Visits" = "固定算力";
+"Fixed Time" = "固定时间";
+"Value" = "数值";
+"visits" = "计算量";
+"Timeout" = "超时";
+"End Game" = "结束对局";
+"Continue" = "继续对局";
+"Time is up. Do you want to end the game?" = "时间已到。是否结束对局？";
+"Thinking..." = "思考中...";
+
 /* Game Metadata */
 "Event" = "赛事";
 "Date" = "日期";

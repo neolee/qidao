@@ -44,22 +44,31 @@ class BoardViewModel: ObservableObject {
             if appMode == .play {
                 aiManager.clearAnalysisResult()
                 checkAIMove()
+                startClock()
             } else if appMode == .analysis {
                 aiPlayTask?.cancel()
                 aiPlayTask = nil
                 aiManager.cancelPlay()
                 updateAnalysis()
+                stopClock()
             } else {
                 aiPlayTask?.cancel()
                 aiPlayTask = nil
                 aiManager.cancelPlay()
                 aiManager.clearAnalysisResult()
+                stopClock()
             }
         }
     }
 
     @Published var activeEditTool: EditTool = .stoneAuto
     @Published var editLabelText: String = "A"
+
+    // MARK: - Play Mode Clock
+    @Published var playTimeSettings = PlayTimeSettings()
+    @Published var clockState: PlayClockState? = nil
+    @Published var showTimeoutDialog = false
+    private var clockTimer: Timer? = nil
 
     @Published var aiRole: AIRole = .manual {
         didSet {
@@ -184,6 +193,7 @@ class BoardViewModel: ObservableObject {
     func pass() {
         try? gameManager.getGame().pass(color: nextColor)
         gameManager.syncState()
+        updateClockOnMove()
         if isAnalyzing {
             updateAnalysis()
         }
@@ -207,6 +217,7 @@ class BoardViewModel: ObservableObject {
             size: currentMeta.size
         ))
         gameManager.syncState()
+        stopClock()
     }
 
     func deleteCurrentBranch() {
@@ -335,6 +346,7 @@ class BoardViewModel: ObservableObject {
     func placeStone(x: Int, y: Int) {
         do {
             let captures = try gameManager.placeStone(x: x, y: y, color: nextColor)
+            updateClockOnMove()
             if captures == 0 {
                 SoundManager.shared.play(name: "stone")
             } else if captures == 1 {
@@ -381,7 +393,8 @@ class BoardViewModel: ObservableObject {
                     nextPlayer: nextPlayer,
                     initialPlayer: initialPlayer,
                     metadata: currentMetadata,
-                    config: currentConfig
+                    config: currentConfig,
+                    timeSettings: playTimeSettings
                 )
 
                 if Task.isCancelled { return }
@@ -565,7 +578,7 @@ class BoardViewModel: ObservableObject {
         gameManager.reset(size: boardSize)
     }
 
-    func startNewGame(size: Int, komi: Double, handicap: Int) {
+    func startNewGame(size: Int, komi: Double, handicap: Int, timeSettings: PlayTimeSettings = PlayTimeSettings()) {
         aiManager.resetSession()
         gameManager.reset(size: size)
         let game = gameManager.getGame()
@@ -593,6 +606,7 @@ class BoardViewModel: ObservableObject {
         }
 
         gameManager.syncState(rebuildTree: true)
+        resetClock(settings: timeSettings)
     }
 
     func changeBoardSize(_ newSize: Int) {
@@ -674,5 +688,125 @@ class BoardViewModel: ObservableObject {
         let y = Int(metadata.size) - row
 
         return (x, y)
+    }
+
+    // MARK: - Clock Logic
+
+    func startClock() {
+        guard appMode == .play, playTimeSettings.isEnabled else { return }
+        if clockState == nil {
+            clockState = PlayClockState(humanReserveRemaining: playTimeSettings.humanReserveTime)
+        }
+        clockState?.currentMoveStartTime = Date()
+        
+        clockTimer?.invalidate()
+        clockTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            if let strongSelf = self {
+                Task { @MainActor in
+                    strongSelf.tickClock()
+                }
+            }
+        }
+    }
+
+    func stopClock() {
+        clockTimer?.invalidate()
+        clockTimer = nil
+    }
+
+    func resetClock(settings: PlayTimeSettings) {
+        self.playTimeSettings = settings
+        if settings.isEnabled {
+            clockState = PlayClockState(humanReserveRemaining: settings.humanReserveTime)
+            if appMode == .play {
+                startClock()
+            }
+        } else {
+            clockState = nil
+            stopClock()
+        }
+    }
+
+    private func tickClock() {
+        guard let state = clockState, !state.isTimeout, appMode == .play else { return }
+        
+        let isHumanTurn: Bool
+        switch aiRole {
+        case .manual: isHumanTurn = true
+        case .white: isHumanTurn = (nextColor == .black)
+        case .black: isHumanTurn = (nextColor == .white)
+        case .both: isHumanTurn = false
+        }
+        
+        if isHumanTurn && aiManager.aiStatus != .thinking {
+            if let startTime = state.currentMoveStartTime {
+                let elapsed = Date().timeIntervalSince(startTime)
+                let remainingInMove = playTimeSettings.humanSecondsPerMove - elapsed
+                
+                // Sound feedback for last 5 seconds
+                if remainingInMove <= 5.0 && remainingInMove > 0 {
+                    let second = Int(ceil(remainingInMove))
+                    if second != state.lastBeepSecond {
+                        clockState?.lastBeepSecond = second
+                        if playSound {
+                            SoundManager.shared.playSystemBeep()
+                        }
+                    }
+                }
+                
+                if remainingInMove < 0 {
+                    let over = -remainingInMove
+                    if over >= state.humanReserveRemaining {
+                        clockState?.humanReserveRemaining = 0
+                        clockState?.isTimeout = true
+                        showTimeoutDialog = true
+                        stopClock()
+                    }
+                }
+            }
+        }
+    }
+
+    func handleTimeout(endGame: Bool) {
+        showTimeoutDialog = false
+        if endGame {
+            // Stop play mode logic but stay in the mode
+            playTimeSettings.isEnabled = false
+            aiRole = .manual
+            clockState = nil
+            stopClock()
+        } else {
+            // Continue in untimed mode
+            playTimeSettings.isEnabled = false
+            clockState = nil
+            stopClock()
+        }
+    }
+
+    private func updateClockOnMove() {
+        guard let state = clockState, playTimeSettings.isEnabled else { return }
+        
+        // If we have a startTime, it means someone just moved.
+        if let startTime = state.currentMoveStartTime {
+            let elapsed = Date().timeIntervalSince(startTime)
+            
+            // We only deduct from reserve if it's human's turn
+            let wasHumanTurn: Bool
+            switch aiRole {
+            case .manual: wasHumanTurn = true
+            case .white: wasHumanTurn = (nextColor == .white) // nextColor is already toggled
+            case .black: wasHumanTurn = (nextColor == .black)
+            case .both: wasHumanTurn = false
+            }
+
+            if wasHumanTurn && elapsed > playTimeSettings.humanSecondsPerMove {
+                let over = elapsed - playTimeSettings.humanSecondsPerMove
+                clockState?.humanReserveRemaining = max(0, state.humanReserveRemaining - over)
+            }
+        }
+        
+        // Reset move start time for the next player
+        clockState?.currentMoveStartTime = Date()
+        clockState?.lastBeepSecond = -1
     }
 }

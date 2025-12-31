@@ -365,7 +365,8 @@ class AIManager: ObservableObject {
         nextPlayer: String,
         initialPlayer: String,
         metadata: GameMetadata,
-        config: AIConfig
+        config: AIConfig,
+        timeSettings: PlayTimeSettings? = nil
     ) async -> (x: Int, y: Int)? {
         guard isAnalyzing, let engine = analysisEngine else {
             print("AI Play: Engine not ready or analysis disabled")
@@ -394,6 +395,29 @@ class AIManager: ObservableObject {
             try? await engine.terminate(id: "play-\(self.analysisSessionId)-\(moves.count - 1)")
             try? await engine.terminate(id: "fullscan-\(self.analysisSessionId)")
 
+            var maxVisits = config.analysis.maxVisits ?? 1000
+            var maxTime = config.analysis.maxTime
+            
+            if let settings = timeSettings, settings.isEnabled {
+                switch settings.aiLimitType {
+                case .global:
+                    // Already initialized with global config
+                    break
+                case .visits:
+                    maxVisits = Int(settings.aiLimitValue)
+                    maxTime = nil // Priority to visits
+                case .time:
+                    maxTime = settings.aiLimitValue
+                }
+            }
+
+            var overrideSettings: [String: Any] = [
+                "reportAnalysisWinratesAs": "BLACK"
+            ]
+            if let time = maxTime {
+                overrideSettings["maxTime"] = time
+            }
+
             let query: [String: Any] = [
                 "id": playId,
                 "initialStones": initialStones,
@@ -404,11 +428,9 @@ class AIManager: ObservableObject {
                 "boardXSize": metadata.size,
                 "boardYSize": metadata.size,
                 "analyzeTurns": [moves.count],
-                "maxVisits": config.analysis.maxVisits ?? 1000,
+                "maxVisits": maxVisits,
                 "priority": 100, // Highest priority
-                "overrideSettings": [
-                    "reportAnalysisWinratesAs": "BLACK"
-                ]
+                "overrideSettings": overrideSettings
             ]
 
             let jsonData = try JSONSerialization.data(withJSONObject: query)
@@ -422,7 +444,7 @@ class AIManager: ObservableObject {
             // Wait for the result of this specific ID
             let checkInterval: UInt64 = 50_000_000 // 0.05s
             var attempts = 0
-            while attempts < 400 { // 20 seconds timeout
+            while attempts < 6000 { // 5 minutes timeout
                 if Task.isCancelled {
                     self.aiStatus = .ready
                     return nil

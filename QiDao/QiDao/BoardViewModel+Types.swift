@@ -99,6 +99,41 @@ struct TreeVisualEdge: Identifiable {
     let to: CGPoint
 }
 
+// MARK: - Play Mode Time Settings
+
+struct PlayTimeSettings: Codable, Equatable {
+    var isEnabled: Bool = false
+    
+    // Human settings
+    var humanReserveTime: TimeInterval = 300 // 5 minutes reserve
+    var humanSecondsPerMove: TimeInterval = 30 // 30 seconds per move
+    
+    // AI settings
+    enum AILimitType: String, Codable, CaseIterable, Identifiable {
+        case global = "Global"
+        case visits = "Visits"
+        case time = "Time"
+        
+        var id: String { self.rawValue }
+        var label: String {
+            switch self {
+            case .global: return "Global Config".localized
+            case .visits: return "Fixed Visits".localized
+            case .time: return "Fixed Time".localized
+            }
+        }
+    }
+    var aiLimitType: AILimitType = .global
+    var aiLimitValue: Double = 1000 // visits or seconds
+}
+
+struct PlayClockState {
+    var humanReserveRemaining: TimeInterval
+    var currentMoveStartTime: Date?
+    var isTimeout: Bool = false
+    var lastBeepSecond: Int = -1
+}
+
 struct BoardMark: Identifiable {
     let id = UUID()
     let x: Int

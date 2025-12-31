@@ -125,7 +125,13 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 ### Phase 15: Advanced Edit & Play Features
 - **SGF Export**: Support exporting the current tree (including marks and comments) to SGF string/file.
 - **Game Setup**: Implement a "New Game" dialog for Play Mode to set board size, handicap, and komi.
-- **Clock System**: (Optional) Add basic timing (or max visits limit) support for Play Mode.
+- **Clock System**: Implement a flexible timing system for Play Mode.
+    - **Human Side**: "Reserve Time + Seconds per Move" (Byo-yomi style).
+    - **AI Side**: Configurable limits (Global Config, Fixed Visits, or Fixed Time).
+    - **Timeout Handling**: Show dialog "Timed out, end game?". "End" stops play; "Continue" switches to untimed mode.
+    - **Untimed Mode**: No limits for human, global config for AI.
+    - **Audio**: Beep sound for the last 5 seconds of countdown.
+    - **Isolation**: Settings are per-game and isolated from global AIConfig.
 
 ## 10. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.

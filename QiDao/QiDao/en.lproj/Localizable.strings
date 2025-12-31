@@ -72,6 +72,26 @@
 "Start" = "Start";
 "New Game Started" = "New Game Started";
 
+/* Time Control */
+"Enable Time Control" = "Enable Time Control";
+"Human" = "Human";
+"Reserve" = "Reserve";
+"Byo-yomi" = "Byo-yomi";
+"min" = "min";
+"sec" = "sec";
+"AI" = "AI";
+"Limit Type" = "Limit Type";
+"Global Config" = "Global Config";
+"Fixed Visits" = "Fixed Visits";
+"Fixed Time" = "Fixed Time";
+"Value" = "Value";
+"visits" = "visits";
+"Timeout" = "Timeout";
+"End Game" = "End Game";
+"Continue" = "Continue";
+"Time is up. Do you want to end the game?" = "Time is up. Do you want to end the game?";
+"Thinking..." = "Thinking...";
+
 /* Game Metadata */
 "Event" = "Event";
 "Date" = "Date";

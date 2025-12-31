@@ -41,6 +41,12 @@ class SoundManager {
         AudioServicesPlaySystemSound(kSystemSoundID_UserPreferredAlert)
     }
 
+    func playSystemBeep() {
+        guard UserDefaults.standard.bool(forKey: "playSound") else { return }
+        // 1052 is a standard system beep on macOS
+        AudioServicesPlaySystemSound(1052)
+    }
+
     deinit {
         for soundID in soundIDs.values {
             AudioServicesDisposeSystemSoundID(soundID)

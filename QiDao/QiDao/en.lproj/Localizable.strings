@@ -58,6 +58,9 @@
 "SGF Preview" = "SGF Preview";
 "Copied!" = "Copied!";
 "Copy" = "Copy";
+"Export" = "Export";
+"Export SGF" = "Export SGF";
+"Choose where to save the SGF file" = "Choose where to save the SGF file";
 "Write some game comment" = "Write some game comment";
 "AI Role" = "AI Role";
 "Manual" = "Manual";

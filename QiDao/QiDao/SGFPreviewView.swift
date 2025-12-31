@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SGFPreviewView: View {
     @ObservedObject var viewModel: BoardViewModel
@@ -35,6 +36,13 @@ struct SGFPreviewView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+
+                    Button(action: exportSgf) {
+                        Label("Export".localized, systemImage: "square.and.arrow.up")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
             }
             .padding(4)
@@ -52,6 +60,26 @@ struct SGFPreviewView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation {
                 showCopiedMessage = false
+            }
+        }
+    }
+
+    private func exportSgf() {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.init(filenameExtension: "sgf")!]
+        savePanel.canCreateDirectories = true
+        savePanel.isExtensionHidden = false
+        savePanel.title = "Export SGF".localized
+        savePanel.message = "Choose where to save the SGF file".localized
+        savePanel.nameFieldStringValue = "current_position.sgf"
+
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                do {
+                    try viewModel.gameState.sgf.write(to: url, atomically: true, encoding: .utf8)
+                } catch {
+                    print("Failed to save SGF: \(error)")
+                }
             }
         }
     }

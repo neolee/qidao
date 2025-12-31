@@ -58,6 +58,9 @@
 "SGF Preview" = "SGF 预览";
 "Copied!" = "已复制!";
 "Copy" = "复制";
+"Export" = "导出";
+"Export SGF" = "导出 SGF";
+"Choose where to save the SGF file" = "选择 SGF 文件保存位置";
 "Write some game comment" = "输入着法解说";
 "AI Role" = "AI 角色";
 "Manual" = "手动";

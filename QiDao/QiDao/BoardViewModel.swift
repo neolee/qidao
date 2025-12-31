@@ -205,6 +205,7 @@ class BoardViewModel: ObservableObject {
             whiteName: currentMeta.whiteName,
             whiteRank: currentMeta.whiteRank,
             komi: currentMeta.komi,
+            handicap: currentMeta.handicap,
             result: "\(winner.first!)+R",
             date: currentMeta.date,
             event: currentMeta.event,
@@ -226,25 +227,6 @@ class BoardViewModel: ObservableObject {
     func setNextPlayer(_ color: StoneColor) {
         gameManager.getGame().setNextPlayer(color: color)
         gameManager.syncState()
-    }
-
-    func getMoveText(at moveNumber: Int) -> String {
-        let pathMoves = gameManager.getGame().getCurrentPathMoves()
-        if moveNumber > 0 && moveNumber <= pathMoves.count {
-            let prop = pathMoves[moveNumber - 1]
-            let color = prop.identifier == "B" ? "Black".localized : "White".localized
-            if let coords = prop.values.first, coords.count == 2 {
-                let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))
-                let y = Int(coords.last!.asciiValue! - UInt8(ascii: "a"))
-                // Skip 'I' in Go coordinates
-                let colChar = Character(UnicodeScalar(UInt8(ascii: "A") + UInt8(x >= 8 ? x + 1 : x)))
-                let rowNum = boardSize - y
-                return "\(color) \(colChar)\(rowNum)"
-            } else {
-                return "\(color) \("Pass".localized)"
-            }
-        }
-        return ""
     }
 
     // AI Analysis
@@ -273,10 +255,10 @@ class BoardViewModel: ObservableObject {
     }
     @Published var isFullGameScanning: Bool = false
 
-    private var gameManager: GameManager
-    private var aiManager: AIManager
-    private var aiPlayTask: Task<Void, Never>? = nil
-    private var sgfManager = SgfManager()
+    var gameManager: GameManager
+    var aiManager: AIManager
+    var aiPlayTask: Task<Void, Never>? = nil
+    var sgfManager = SgfManager()
     private var cancellables = Set<AnyCancellable>()
 
     var treeWidth: CGFloat {
@@ -287,37 +269,6 @@ class BoardViewModel: ObservableObject {
     var treeHeight: CGFloat {
         let maxY = treeNodes.map { $0.y }.max() ?? 0
         return maxY
-    }
-
-    var formattedResult: String {
-        let res = metadata.result.trimmingCharacters(in: .whitespacesAndNewlines)
-        if res.isEmpty { return "" }
-
-        let upperRes = res.uppercased()
-        if upperRes.hasPrefix("B+") {
-            let score = res.dropFirst(2)
-            if score.uppercased() == "R" || score.uppercased() == "RESIGN" {
-                return "Black wins by resignation".localized
-            }
-            if score.uppercased() == "T" || score.uppercased() == "TIME" {
-                return "Black wins by time".localized
-            }
-            return "\("Black wins by".localized) \(score) \("points".localized)"
-        } else if upperRes.hasPrefix("W+") {
-            let score = res.dropFirst(2)
-            if score.uppercased() == "R" || score.uppercased() == "RESIGN" {
-                return "White wins by resignation".localized
-            }
-            if score.uppercased() == "T" || score.uppercased() == "TIME" {
-                return "White wins by time".localized
-            }
-            return "\("White wins by".localized) \(score) \("points".localized)"
-        } else if upperRes == "DRAW" {
-            return "Draw".localized
-        } else if upperRes == "VOID" {
-            return "Void".localized
-        }
-        return res
     }
 
     var langManager = LanguageManager.shared
@@ -640,9 +591,27 @@ class BoardViewModel: ObservableObject {
         gameManager.reset(size: size)
         let game = gameManager.getGame()
         var meta = game.getMetadata()
-        meta.komi = komi
-        // TODO: Handle handicap stones
-        game.setMetadata(metadata: meta)
+
+        if handicap > 0 {
+            // For handicap games, komi is usually 0.5 in most systems to avoid draws.
+            // In Chinese rules "还子" (returning stones), it's effectively 0.5 or 0.
+            // We'll use 0.5 as a default for handicap games.
+            meta.komi = 0.5
+            meta.handicap = UInt32(handicap)
+            game.setMetadata(metadata: meta)
+
+            let stones = getHandicapStones(size: size, count: handicap)
+            for (x, y) in stones {
+                game.addStone(x: UInt32(x), y: UInt32(y), color: .black)
+            }
+
+            game.setNextPlayer(color: .white)
+        } else {
+            meta.komi = komi
+            meta.handicap = 0
+            game.setMetadata(metadata: meta)
+        }
+
         gameManager.syncState(rebuildTree: true)
         self.message = "New Game Started".localized
     }

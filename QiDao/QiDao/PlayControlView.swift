@@ -93,6 +93,8 @@ struct NewGameDialog: View {
                 }
 
                 TextField("Komi".localized, value: $komi, format: .number)
+                    .disabled(handicap > 0)
+                    .opacity(handicap > 0 ? 0.5 : 1.0)
 
                 Stepper("Handicap".localized + ": \(handicap)", value: $handicap, in: 0...9)
             }

@@ -126,7 +126,7 @@ struct GameState {
     var metadata: GameMetadata = GameMetadata(
         blackName: "", blackRank: "",
         whiteName: "", whiteRank: "",
-        komi: 7.5, result: "",
+        komi: 7.5, handicap: 0, result: "",
         date: "", event: "",
         gameName: "", place: "",
         size: 19

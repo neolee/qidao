@@ -2069,6 +2069,7 @@ public struct GameMetadata: Equatable, Hashable {
     public var whiteName: String
     public var whiteRank: String
     public var komi: Double
+    public var handicap: UInt32
     public var result: String
     public var date: String
     public var event: String
@@ -2078,12 +2079,13 @@ public struct GameMetadata: Equatable, Hashable {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(blackName: String, blackRank: String, whiteName: String, whiteRank: String, komi: Double, result: String, date: String, event: String, gameName: String, place: String, size: UInt32) {
+    public init(blackName: String, blackRank: String, whiteName: String, whiteRank: String, komi: Double, handicap: UInt32, result: String, date: String, event: String, gameName: String, place: String, size: UInt32) {
         self.blackName = blackName
         self.blackRank = blackRank
         self.whiteName = whiteName
         self.whiteRank = whiteRank
         self.komi = komi
+        self.handicap = handicap
         self.result = result
         self.date = date
         self.event = event
@@ -2111,6 +2113,7 @@ public struct FfiConverterTypeGameMetadata: FfiConverterRustBuffer {
                 whiteName: FfiConverterString.read(from: &buf), 
                 whiteRank: FfiConverterString.read(from: &buf), 
                 komi: FfiConverterDouble.read(from: &buf), 
+                handicap: FfiConverterUInt32.read(from: &buf), 
                 result: FfiConverterString.read(from: &buf), 
                 date: FfiConverterString.read(from: &buf), 
                 event: FfiConverterString.read(from: &buf), 
@@ -2126,6 +2129,7 @@ public struct FfiConverterTypeGameMetadata: FfiConverterRustBuffer {
         FfiConverterString.write(value.whiteName, into: &buf)
         FfiConverterString.write(value.whiteRank, into: &buf)
         FfiConverterDouble.write(value.komi, into: &buf)
+        FfiConverterUInt32.write(value.handicap, into: &buf)
         FfiConverterString.write(value.result, into: &buf)
         FfiConverterString.write(value.date, into: &buf)
         FfiConverterString.write(value.event, into: &buf)

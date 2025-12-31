@@ -149,7 +149,7 @@ enum MoveNumberDisplay: Int, CaseIterable, Identifiable {
         case .last10: return "Last 10".localized
         case .last5: return "Last 5".localized
         case .last1: return "Last 1".localized
-        case .none: return "None".localized
+        case .none: return "None_Display".localized
         }
     }
 }
@@ -218,9 +218,9 @@ enum AIRole: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .manual: return "Manual".localized
-        case .black: return "AI Black".localized
-        case .white: return "AI White".localized
+        case .manual: return "None_AI".localized
+        case .black: return "Black".localized
+        case .white: return "White".localized
         case .both: return "Both".localized
         }
     }

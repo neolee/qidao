@@ -30,7 +30,8 @@
 "Last 10" = "Last 10";
 "Last 5" = "Last 5";
 "Last 1" = "Last 1";
-"None" = "None";
+"None_Display" = "None";
+"None_AI" = "None";
 "Analysis Mode" = "Analysis";
 "Edit Mode" = "Edit";
 "Play Mode" = "Play";
@@ -63,9 +64,6 @@
 "Choose where to save the SGF file" = "Choose where to save the SGF file";
 "Write some game comment" = "Write some game comment";
 "AI Role" = "AI Role";
-"Manual" = "Manual";
-"AI Black" = "AI Black";
-"AI White" = "AI White";
 "Both" = "Both";
 "New Game" = "New Game";
 "Start New Game" = "Start New Game";

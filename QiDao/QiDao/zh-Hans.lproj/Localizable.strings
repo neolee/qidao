@@ -30,7 +30,8 @@
 "Last 10" = "最近10手";
 "Last 5" = "最近5手";
 "Last 1" = "最近1手";
-"None" = "不显示";
+"None_Display" = "不显示";
+"None_AI" = "无";
 "Analysis Mode" = "分析";
 "Edit Mode" = "编辑";
 "Play Mode" = "练习";
@@ -63,10 +64,7 @@
 "Choose where to save the SGF file" = "选择 SGF 文件保存位置";
 "Write some game comment" = "输入着法解说";
 "AI Role" = "AI 角色";
-"Manual" = "手动";
-"AI Black" = "AI 执黑";
-"AI White" = "AI 执白";
-"Both" = "AI 对弈";
+"Both" = "两方";
 "New Game" = "开始新对局";
 "Start New Game" = "创建新对局";
 "Board Size" = "棋盘大小";

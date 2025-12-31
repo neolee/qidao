@@ -22,44 +22,68 @@ struct PlayControlView: View {
                 // 0. Clock Display
                 if viewModel.playTimeSettings.isEnabled, let clock = viewModel.clockState {
                     VStack(spacing: 8) {
-                        HStack {
-                            VStack(alignment: .leading) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 Text("Human".localized)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
-                                
+
                                 let isHumanTurn = viewModel.isHumanTurn
                                 let elapsed = (clock.currentMoveStartTime.map { Date().timeIntervalSince($0) } ?? 0) + clock.elapsedTimeBeforePause
                                 let remainingInMove = max(0, viewModel.playTimeSettings.humanSecondsPerMove - elapsed)
-                                
-                                HStack(alignment: .bottom, spacing: 4) {
+
+                                HStack(alignment: .center, spacing: 4) {
                                     let reserveRemaining = max(0, clock.humanReserveRemaining - (remainingInMove == 0 ? (elapsed - viewModel.playTimeSettings.humanSecondsPerMove) : 0))
+                                    let isCountingStep = isHumanTurn && remainingInMove > 0
+                                    let isCountingReserve = isHumanTurn && remainingInMove == 0
+
+                                    Text(String(format: "%02d", Int(ceil(remainingInMove))))
+                                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                                        .foregroundColor(remainingInMove <= 5 && isCountingStep ? .red : .primary)
+                                        .opacity(isCountingStep ? 1.0 : 0.6)
+
+                                    Text("+")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.secondary)
+
                                     Text(formatTime(reserveRemaining))
                                         .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                    Text(String(format: "%02d", Int(ceil(remainingInMove))))
-                                        .font(.system(size: 24, weight: .bold, design: .monospaced))
-                                        .foregroundColor(remainingInMove <= 5 ? .red : (isHumanTurn ? .primary : .secondary))
+                                        .opacity(isCountingReserve ? 1.0 : 0.6)
                                 }
+                                .frame(height: 20)
                             }
-                            
+
                             Spacer()
-                            
-                            VStack(alignment: .trailing) {
+
+                            VStack(alignment: .trailing, spacing: 4) {
                                 Text("AI".localized)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
-                                
-                                if viewModel.aiManager.aiStatus == .thinking {
-                                    HStack(spacing: 4) {
-                                        CustomSpinner()
-                                        Text("Thinking...".localized)
-                                            .font(.system(size: 14, weight: .medium))
+
+                                Group {
+                                    switch viewModel.aiManager.aiStatus {
+                                    case .thinking:
+                                        HStack(spacing: 4) {
+                                            CustomSpinner()
+                                                .frame(width: 16, height: 16)
+                                            Text("Thinking...".localized)
+                                        }
+                                    case .idle:
+                                        Text("Not Started".localized)
+                                            .foregroundColor(.secondary)
+                                    case .starting:
+                                        Text("Starting...".localized)
+                                            .foregroundColor(.secondary)
+                                    case .error:
+                                        Text("Error".localized)
+                                            .foregroundColor(.red)
+                                    default:
+                                        Text("Ready".localized)
+                                            .foregroundColor(.secondary)
                                     }
-                                } else {
-                                    Text("Ready".localized)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.secondary)
                                 }
+                                .font(.system(size: 14, weight: .medium))
+                                .frame(height: 20)
                             }
                         }
                         .padding(8)
@@ -205,10 +229,10 @@ struct NewGameDialog: View {
                                 }
                             ))
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            
+
                             if timeSettings.isEnabled {
                                 Divider()
-                                
+
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text("Human".localized).font(.caption).foregroundColor(.secondary)
                                     HStack {
@@ -229,9 +253,9 @@ struct NewGameDialog: View {
                                             .frame(width: 50)
                                         Text("min".localized)
                                     }
-                                    
+
                                     Divider()
-                                    
+
                                     Text("AI".localized).font(.caption).foregroundColor(.secondary)
                                     HStack {
                                         Text("Limit Type".localized)
@@ -256,7 +280,7 @@ struct NewGameDialog: View {
                                         }
                                         .frame(width: 120)
                                     }
-                                    
+
                                     if timeSettings.aiLimitType != .global {
                                         HStack {
                                             Text("Value".localized)

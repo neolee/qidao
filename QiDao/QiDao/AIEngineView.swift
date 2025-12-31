@@ -39,6 +39,7 @@ struct AIEngineView: View {
                         .textSelection(.enabled)
                 }
                 .padding(.horizontal, 5)
+                .frame(height: 20)
             }
             .padding(5)
             .frame(maxWidth: .infinity)

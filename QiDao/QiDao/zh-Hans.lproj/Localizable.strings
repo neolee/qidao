@@ -82,6 +82,10 @@
 "min" = "分";
 "sec" = "秒";
 "AI" = "AI";
+"Thinking..." = "思考中...";
+"Not Started" = "未启动";
+"Starting..." = "正在启动...";
+"Error" = "出错";
 "Limit Type" = "限制方式";
 "Global Config" = "全局配置";
 "Fixed Visits" = "固定算力";
@@ -92,7 +96,6 @@
 "End Game" = "结束对局";
 "Continue" = "继续对局";
 "Time is up. Do you want to end the game?" = "时间已到。是否结束对局？";
-"Thinking..." = "思考中...";
 
 /* Game Metadata */
 "Event" = "赛事";

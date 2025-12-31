@@ -4,9 +4,6 @@ import qidao_coreFFI
 
 @MainActor
 class BoardViewModel: ObservableObject {
-    @Published var message: String = "Ready".localized
-    @Published var gameInfo: String = ""
-
     @Published private(set) var gameState = GameState()
 
     // Computed properties for backward compatibility with views and engine
@@ -185,14 +182,10 @@ class BoardViewModel: ObservableObject {
     }
 
     func pass() {
-        do {
-            try gameManager.getGame().pass(color: nextColor)
-            gameManager.syncState()
-            if isAnalyzing {
-                updateAnalysis()
-            }
-        } catch {
-            message = "Error: \(error.localizedDescription)"
+        try? gameManager.getGame().pass(color: nextColor)
+        gameManager.syncState()
+        if isAnalyzing {
+            updateAnalysis()
         }
     }
 
@@ -214,13 +207,11 @@ class BoardViewModel: ObservableObject {
             size: currentMeta.size
         ))
         gameManager.syncState()
-        message = "\(winner) wins by resignation".localized
     }
 
     func deleteCurrentBranch() {
         if gameManager.deleteCurrentBranch() {
             SoundManager.shared.play(name: "stone")
-            message = "Branch deleted".localized
         }
     }
 
@@ -296,14 +287,6 @@ class BoardViewModel: ObservableObject {
         self.theme = (themeId == "bw") ? .bwPrint : .defaultWood
 
         setupBindings()
-
-        // Observe language changes to refresh message
-        LanguageManager.shared.$selectedLanguage
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.refreshMessage()
-            }
-            .store(in: &cancellables)
     }
 
     private func setupBindings() {
@@ -311,7 +294,6 @@ class BoardViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] in
                 self?.gameState = $0
-                self?.refreshMessage()
                 self?.updateAnalysis()
                 if self?.appMode == .play {
                     self?.checkAIMove()
@@ -350,19 +332,6 @@ class BoardViewModel: ObservableObject {
         aiManager.$isFullGameScanning.assign(to: &$isFullGameScanning)
     }
 
-    private func refreshMessage() {
-        if moveCount == 0 {
-            message = "Ready".localized
-        } else if let last = lastMove {
-            // The last move was made by the color opposite to nextColor
-            let lastColor = (nextColor == .black) ? "White" : "Black"
-            let colorStr = lastColor.localized
-            message = "\("Move".localized) \(moveCount): \(colorStr) at (\(last.x), \(last.y))"
-        } else {
-            message = "Board Reset".localized
-        }
-    }
-
     func placeStone(x: Int, y: Int) {
         do {
             let captures = try gameManager.placeStone(x: x, y: y, color: nextColor)
@@ -374,7 +343,7 @@ class BoardViewModel: ObservableObject {
                 SoundManager.shared.play(name: "dead-stones")
             }
         } catch {
-            self.message = "\("Invalid Move".localized): \(error)"
+            SoundManager.shared.playAlert()
         }
     }
 
@@ -530,7 +499,7 @@ class BoardViewModel: ObservableObject {
         }
 
         if args.contains("analysis") && profile.config.isEmpty {
-            self.message = "Error: Config file is required for analysis mode".localized
+            aiManager.addLog("Error: Config file is required for analysis mode".localized, isError: true)
             return
         }
 
@@ -594,7 +563,6 @@ class BoardViewModel: ObservableObject {
     func resetBoard() {
         aiManager.resetSession()
         gameManager.reset(size: boardSize)
-        self.message = "Board Reset".localized
     }
 
     func startNewGame(size: Int, komi: Double, handicap: Int) {
@@ -625,7 +593,6 @@ class BoardViewModel: ObservableObject {
         }
 
         gameManager.syncState(rebuildTree: true)
-        self.message = "New Game Started".localized
     }
 
     func changeBoardSize(_ newSize: Int) {
@@ -664,7 +631,6 @@ class BoardViewModel: ObservableObject {
             }
             aiManager.setMainLineColors(colors)
 
-            self.message = "\("Loaded".localized): \(url.lastPathComponent)"
             if isAnalyzing {
                 // Use the newGame's data directly to avoid stale metadata from self.metadata
                 let initialPlayer = newGame.getNextColor() == .black ? "B" : "W"
@@ -677,16 +643,15 @@ class BoardViewModel: ObservableObject {
                 )
             }
         } catch {
-            self.message = "\("Load Failed".localized): \(error.localizedDescription)"
+            aiManager.addLog("\("Load Failed".localized): \(error.localizedDescription)", isError: true)
         }
     }
 
     func saveSgf(url: URL) {
         do {
             try sgfManager.saveSgf(game: gameManager.getGame(), url: url)
-            self.message = "\("Saved".localized): \(url.lastPathComponent)"
         } catch {
-            self.message = "\("Save Failed".localized): \(error.localizedDescription)"
+            aiManager.addLog("\("Save Failed".localized): \(error.localizedDescription)", isError: true)
         }
     }
 

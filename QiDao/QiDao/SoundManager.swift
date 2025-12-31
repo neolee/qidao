@@ -36,6 +36,11 @@ class SoundManager {
         }
     }
 
+    func playAlert() {
+        guard UserDefaults.standard.bool(forKey: "playSound") else { return }
+        AudioServicesPlaySystemSound(kSystemSoundID_UserPreferredAlert)
+    }
+
     deinit {
         for soundID in soundIDs.values {
             AudioServicesDisposeSystemSoundID(soundID)

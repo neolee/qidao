@@ -401,7 +401,7 @@ class BoardViewModel: ObservableObject {
 
                 // Re-check if we are still on the same node after AI finished thinking
                 guard self.gameState.currentNodeId == startNodeId else {
-                    print("AI Play: Node changed from \(startNodeId) to \(self.gameState.currentNodeId), ignoring move")
+                    self.aiManager.addLog("AI Play: Node changed from \(startNodeId) to \(self.gameState.currentNodeId), ignoring move", type: .play)
                     return
                 }
 

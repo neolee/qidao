@@ -196,7 +196,7 @@ class AIManager: ObservableObject {
                 try await engine.analyze(queryJson: jsonString)
             } catch is CancellationError {
             } catch {
-                print("Analysis error: \(error)")
+                self.addLog("Analysis error: \(error)", isError: true)
                 self.aiStatus = .ready
             }
         }
@@ -329,7 +329,7 @@ class AIManager: ObservableObject {
                     self.addEventLog("Full game analysis completed".localized, type: .fullScan)
                 }
             } catch {
-                print("Full game analysis failed: \(error)")
+                self.addLog("Full game analysis failed: \(error)", isError: true)
             }
             isFullGameScanning = false
         }
@@ -369,7 +369,7 @@ class AIManager: ObservableObject {
         timeSettings: PlayTimeSettings? = nil
     ) async -> (x: Int, y: Int)? {
         guard isAnalyzing, let engine = analysisEngine else {
-            print("AI Play: Engine not ready or analysis disabled")
+            self.addLog("AI Play: Engine not ready or analysis disabled", type: .play)
             return nil
         }
 

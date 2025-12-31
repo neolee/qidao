@@ -103,10 +103,9 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 
 ## 8. Immediate TODOs
 
-1. **Edit Mode Enhancements**: Add more notation types and improve the UX for adding/removing marks.
-2. **Gameplay Enhancements**: Implement handicap and komi settings in a "New Game" dialog.
-3. **SGF Export**: Support exporting the current tree to an SGF file.
-4. **Clock System**: Add basic timing support for Play Mode.
+1. **Performance Optimization**: Profile the board rendering and engine communication for potential bottlenecks.
+2. **UI Polish**: Refine the visual feedback for stone placement and AI suggestions.
+3. **User Documentation**: Create a basic user guide for the new Play and Edit modes.
 
 ## 9. Implementation Plan (Dec 30, 2025)
 
@@ -122,16 +121,16 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - **Modular AIManager**: Split `AIManager` into functional extensions for better maintainability.
 - **Full Game Analysis**: Added progress tracking and configurable visit limits for background analysis.
 
-### Phase 15: Advanced Edit & Play Features
-- **SGF Export**: Support exporting the current tree (including marks and comments) to SGF string/file.
-- **Game Setup**: Implement a "New Game" dialog for Play Mode to set board size, handicap, and komi.
-- **Clock System**: Implement a flexible timing system for Play Mode.
-    - **Human Side**: "Reserve Time + Seconds per Move" (Byo-yomi style).
-    - **AI Side**: Configurable limits (Global Config, Fixed Visits, or Fixed Time).
-    - **Timeout Handling**: Show dialog "Timed out, end game?". "End" stops play; "Continue" switches to untimed mode.
-    - **Untimed Mode**: No limits for human, global config for AI.
-    - **Audio**: Beep sound for the last 5 seconds of countdown.
-    - **Isolation**: Settings are per-game and isolated from global AIConfig.
+### Phase 15: Advanced Edit & Play Features (Completed)
+- **SGF Export**: Implemented SGF string generation and file export with support for marks and comments.
+- **Game Setup**: Added "New Game" dialog with board size, handicap, and komi settings.
+- **Clock System**: Implemented a robust timing system for Play Mode.
+    - **UI**: Redesigned human clock to `30 + 5:00` format (Seconds per move + Reserve time).
+    - **Logic**: Automatic reset on turn change, immediate stop on human move, and skip on first move.
+- **AI Robustness**: 
+    - **Unique PlayID**: Implemented a `playCounter` to ensure every AI request has a unique ID, preventing "ghost moves" from outdated tasks.
+    - **Smart Undo**: Context-aware undo that backtracks 1 or 2 steps to maintain human-to-move state.
+- **UI Stability**: Fixed layout glitches (height jumps) by using fixed-height frames for status indicators.
 
 ## 10. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
@@ -150,3 +149,4 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - [x] **Phase 12: View Improvement**: Separated logs and comments into a tabbed view; implemented `GameCommentView` for SGF comment editing.
 - [x] **Phase 13: Multi-Mode Support**: Implemented `AppMode` with dynamic sidebars for Analysis, Edit, and Play modes. Added stone placement and mark tools in Edit mode. Implemented basic Human-vs-AI gameplay flow in Play mode with game controls.
 - [x] **Phase 14: AI Status & Logging Implementation**: Implemented `AIStatus` state machine and event-based logging system. Modularized `AIManager` into functional extensions. Added color-coded logs for different AI tasks (Play, Analysis, Full Scan). Implemented background analysis progress tracking and configurable visit limits.
+- [x] **Phase 15: Advanced Edit & Play Features**: Implemented SGF export, "New Game" setup, and a robust clock system. Refined Play mode logic with unique PlayIDs and smart undo to prevent ghost moves and state desync. Fixed UI layout glitches during AI transitions.

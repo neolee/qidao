@@ -321,6 +321,17 @@ class BoardViewModel: ObservableObject {
 
         aiManager.$isAnalyzing.assign(to: &$isAnalyzing)
         aiManager.$aiStatus.assign(to: &$aiStatus)
+
+        // Trigger AI move check when engine becomes ready or analysis starts
+        Publishers.CombineLatest(aiManager.$isAnalyzing, aiManager.$isEngineReady)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] analyzing, ready in
+                if analyzing && ready && self?.appMode == .play {
+                    self?.checkAIMove()
+                }
+            }
+            .store(in: &cancellables)
+
         aiManager.$isEngineReady
             .receive(on: RunLoop.main)
             .sink { [weak self] ready in
@@ -368,17 +379,17 @@ class BoardViewModel: ObservableObject {
     }
 
     private func checkAIMove() {
-        guard appMode == .play, isAnalyzing, aiStatus != .thinking else { return }
+        guard appMode == .play, isAnalyzing, aiStatus == .ready else { return }
 
-        let shouldAIPlay: Bool
+        let isAITurn: Bool
         switch aiRole {
-        case .manual: shouldAIPlay = false
-        case .black: shouldAIPlay = (nextColor == .black)
-        case .white: shouldAIPlay = (nextColor == .white)
-        case .both: shouldAIPlay = true
+        case .manual: isAITurn = false
+        case .black: isAITurn = (nextColor == .black)
+        case .white: isAITurn = (nextColor == .white)
+        case .both: isAITurn = true
         }
 
-        if shouldAIPlay {
+        if isAITurn {
             let game = gameManager.getGame()
             let initialStones = game.getInitialStones()
             let moves = game.getAnalysisMoves()
@@ -610,6 +621,7 @@ class BoardViewModel: ObservableObject {
             meta.komi = komi
             meta.handicap = 0
             game.setMetadata(metadata: meta)
+            game.setNextPlayer(color: .black)
         }
 
         gameManager.syncState(rebuildTree: true)

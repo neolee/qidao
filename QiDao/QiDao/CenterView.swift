@@ -140,6 +140,10 @@ struct CenterView: View {
                                 isEditingMoveNumber = false
                                 isBoardFocused = true
                             }
+                            .onExitCommand {
+                                isEditingMoveNumber = false
+                                isBoardFocused = true
+                            }
                     } else {
                         Button(action: {
                             jumpToMoveInput = ""
@@ -155,6 +159,7 @@ struct CenterView: View {
                         .help("Jump to Move".localized)
                     }
                 }
+                .frame(height: 32)
 
                 Button(action: { viewModel.goForward() }) {
                     Image(systemName: "chevron.right.circle")
@@ -172,8 +177,8 @@ struct CenterView: View {
                 .focusable(false)
                 .help("Go to End".localized)
             }
-            .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
+            .frame(height: 40)
             .background(Color.black.opacity(0.05))
         }
         .focusable()

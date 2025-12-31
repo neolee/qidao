@@ -3,7 +3,8 @@ import qidao_coreFFI
 
 extension BoardViewModel {
     func resetBoard(size: Int? = nil) {
-        if size == nil && appMode == .play && (moveCount > 0 || maxMoveCount > 0) {
+        let isPlayActive = playTimeSettings.isEnabled && (moveCount > 0 || maxMoveCount > 0)
+        if size == nil && (appMode == .play || isPlayActive) && (moveCount > 0 || maxMoveCount > 0) {
             showResetConfirmation = true
             return
         }
@@ -13,9 +14,10 @@ extension BoardViewModel {
     func performReset(size: Int? = nil) {
         aiManager.resetSession()
         gameManager.reset(size: size ?? boardSize)
-        if appMode == .play {
-            aiRole = .manual
-        }
+        aiRole = .manual
+        playTimeSettings.isEnabled = false
+        clockState = nil
+        stopClock()
     }
 
     func changeBoardSize(_ newSize: Int) {

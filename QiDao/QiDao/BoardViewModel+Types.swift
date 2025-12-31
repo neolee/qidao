@@ -99,6 +99,12 @@ struct TreeVisualEdge: Identifiable {
     let to: CGPoint
 }
 
+extension StoneColor {
+    var opponent: StoneColor {
+        self == .black ? .white : .black
+    }
+}
+
 // MARK: - Play Mode Time Settings
 
 struct PlayTimeSettings: Codable, Equatable {
@@ -130,6 +136,7 @@ struct PlayTimeSettings: Codable, Equatable {
 struct PlayClockState {
     var humanReserveRemaining: TimeInterval
     var currentMoveStartTime: Date?
+    var elapsedTimeBeforePause: TimeInterval = 0
     var isTimeout: Bool = false
     var lastBeepSecond: Int = -1
 }

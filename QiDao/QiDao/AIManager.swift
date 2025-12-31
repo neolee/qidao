@@ -397,7 +397,7 @@ class AIManager: ObservableObject {
 
             var maxVisits = config.analysis.maxVisits ?? 1000
             var maxTime = config.analysis.maxTime
-            
+
             if let settings = timeSettings, settings.isEnabled {
                 switch settings.aiLimitType {
                 case .global:

@@ -28,12 +28,13 @@ struct PlayControlView: View {
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 
-                                let isHumanTurn = isHumanTurn()
-                                let elapsed = clock.currentMoveStartTime.map { Date().timeIntervalSince($0) } ?? 0
+                                let isHumanTurn = viewModel.isHumanTurn
+                                let elapsed = (clock.currentMoveStartTime.map { Date().timeIntervalSince($0) } ?? 0) + clock.elapsedTimeBeforePause
                                 let remainingInMove = max(0, viewModel.playTimeSettings.humanSecondsPerMove - elapsed)
                                 
                                 HStack(alignment: .bottom, spacing: 4) {
-                                    Text(formatTime(clock.humanReserveRemaining))
+                                    let reserveRemaining = max(0, clock.humanReserveRemaining - (remainingInMove == 0 ? (elapsed - viewModel.playTimeSettings.humanSecondsPerMove) : 0))
+                                    Text(formatTime(reserveRemaining))
                                         .font(.system(size: 20, weight: .bold, design: .monospaced))
                                     Text(String(format: "%02d", Int(ceil(remainingInMove))))
                                         .font(.system(size: 24, weight: .bold, design: .monospaced))
@@ -129,15 +130,6 @@ struct PlayControlView: View {
             }
         } message: {
             Text("Time is up. Do you want to end the game?".localized)
-        }
-    }
-
-    private func isHumanTurn() -> Bool {
-        switch viewModel.aiRole {
-        case .manual: return true
-        case .white: return viewModel.nextColor == .black
-        case .black: return viewModel.nextColor == .white
-        case .both: return false
         }
     }
 

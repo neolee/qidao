@@ -7,26 +7,26 @@ class BoardViewModel: ObservableObject {
     @Published private(set) var gameState = GameState()
 
     // Computed properties for backward compatibility with views and engine
-    var board: Board { gameState.board }
+    var board: Board { gameManager.internalState.board }
     var boardSize: Int {
-        get { gameState.boardSize }
+        get { gameManager.internalState.boardSize }
         set { changeBoardSize(newValue) }
     }
     var isSizeLocked: Bool {
-        get { gameState.isSizeLocked }
+        get { gameManager.internalState.isSizeLocked }
         set { gameManager.internalState.isSizeLocked = newValue }
     }
-    var nextColor: StoneColor { gameState.nextColor }
-    var lastMove: (x: Int, y: Int)? { gameState.lastMove }
-    var moveCount: Int { gameState.moveCount }
-    var maxMoveCount: Int { gameState.maxMoveCount }
-    var variations: [Variation] { gameState.variations }
-    var treeNodes: [TreeVisualNode] { gameState.treeNodes }
-    var treeEdges: [TreeVisualEdge] { gameState.treeEdges }
-    var currentNodeId: String { gameState.currentNodeId }
-    var nodeComment: String { gameState.nodeComment }
-    var moveNumbers: [String: Int] { gameState.moveNumbers }
-    var metadata: GameMetadata { gameState.metadata }
+    var nextColor: StoneColor { gameManager.internalState.nextColor }
+    var lastMove: (x: Int, y: Int)? { gameManager.internalState.lastMove }
+    var moveCount: Int { gameManager.internalState.moveCount }
+    var maxMoveCount: Int { gameManager.internalState.maxMoveCount }
+    var variations: [Variation] { gameManager.internalState.variations }
+    var treeNodes: [TreeVisualNode] { gameManager.internalState.treeNodes }
+    var treeEdges: [TreeVisualEdge] { gameManager.internalState.treeEdges }
+    var currentNodeId: String { gameManager.internalState.currentNodeId }
+    var nodeComment: String { gameManager.internalState.nodeComment }
+    var moveNumbers: [String: Int] { gameManager.internalState.moveNumbers }
+    var metadata: GameMetadata { gameManager.internalState.metadata }
 
     @Published var theme: BoardTheme = .defaultWood
     @Published var moveNumberDisplay: MoveNumberDisplay = .all {
@@ -314,7 +314,14 @@ class BoardViewModel: ObservableObject {
         aiManager.$isFullGameScanning.assign(to: &$isFullGameScanning)
     }
 
-    func placeStone(x: Int, y: Int) {
+    func placeStone(x: Int, y: Int, isAI: Bool = false) {
+        if appMode == .play && !isAI {
+            guard isHumanTurn else {
+                SoundManager.shared.playAlert()
+                return
+            }
+        }
+
         do {
             let captures = try gameManager.placeStone(x: x, y: y, color: nextColor)
             updateClockOnMove()

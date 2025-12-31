@@ -28,23 +28,24 @@ class SoundManager {
         }
     }
 
-    func play(name: String) {
-        guard UserDefaults.standard.bool(forKey: "playSound") else { return }
+    func playByID(soundID: SystemSoundID) {
+        let playSound = UserDefaults.standard.object(forKey: "playSound") as? Bool ?? true
+        guard playSound else { return }
+        AudioServicesPlaySystemSound(soundID)
+    }
 
+    func play(name: String) {
         if let soundID = soundIDs[name] {
-            AudioServicesPlaySystemSound(soundID)
+            playByID(soundID: soundID)
         }
     }
 
     func playAlert() {
-        guard UserDefaults.standard.bool(forKey: "playSound") else { return }
-        AudioServicesPlaySystemSound(kSystemSoundID_UserPreferredAlert)
+        playByID(soundID: kSystemSoundID_UserPreferredAlert)
     }
 
     func playSystemBeep() {
-        guard UserDefaults.standard.bool(forKey: "playSound") else { return }
-        // 1052 is a standard system beep on macOS
-        AudioServicesPlaySystemSound(1052)
+        playByID(soundID: kSystemSoundID_UserPreferredAlert)
     }
 
     deinit {

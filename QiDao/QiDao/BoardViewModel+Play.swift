@@ -2,6 +2,25 @@ import Foundation
 import qidao_coreFFI
 
 extension BoardViewModel {
+    // MARK: - Turn Logic
+
+    func isHumanTurn(for color: StoneColor) -> Bool {
+        switch aiRole {
+        case .manual: return true
+        case .white: return color == .black
+        case .black: return color == .white
+        case .both: return false
+        }
+    }
+
+    var isHumanTurn: Bool {
+        isHumanTurn(for: nextColor)
+    }
+
+    var isAITurn: Bool {
+        !isHumanTurn
+    }
+
     // MARK: - Play Actions
 
     func startNewGame(size: Int, komi: Double, handicap: Int, timeSettings: PlayTimeSettings = PlayTimeSettings()) {
@@ -35,7 +54,11 @@ extension BoardViewModel {
         resetClock(settings: timeSettings)
     }
 
-    func pass() {
+    func pass(isAI: Bool = false) {
+        if appMode == .play && !isAI {
+            guard isHumanTurn else { return }
+        }
+
         try? gameManager.getGame().pass(color: nextColor)
         gameManager.syncState()
         updateClockOnMove()
@@ -44,7 +67,11 @@ extension BoardViewModel {
         }
     }
 
-    func resign() {
+    func resign(isAI: Bool = false) {
+        if appMode == .play && !isAI {
+            guard isHumanTurn else { return }
+        }
+
         let winner = nextColor == .black ? "White" : "Black"
         let currentMeta = gameManager.getGame().getMetadata()
         gameManager.getGame().setMetadata(metadata: GameMetadata(
@@ -69,14 +96,6 @@ extension BoardViewModel {
 
     func checkAIMove() {
         guard appMode == .play, isAnalyzing, aiStatus == .ready else { return }
-
-        let isAITurn: Bool
-        switch aiRole {
-        case .manual: isAITurn = false
-        case .black: isAITurn = (nextColor == .black)
-        case .white: isAITurn = (nextColor == .white)
-        case .both: isAITurn = true
-        }
 
         if isAITurn {
             let game = gameManager.getGame()
@@ -117,11 +136,11 @@ extension BoardViewModel {
                 guard self.isAnalyzing, self.appMode == .play else { return }
 
                 if let move = move {
-                    self.placeStone(x: move.x, y: move.y)
+                    self.placeStone(x: move.x, y: move.y, isAI: true)
                 } else {
                     // If AI returns nil, it could be a PASS or an error.
                     // For now we assume it's a PASS if the engine is still ready.
-                    self.pass()
+                    self.pass(isAI: true)
                 }
             }
         }
@@ -134,7 +153,13 @@ extension BoardViewModel {
         if clockState == nil {
             clockState = PlayClockState(humanReserveRemaining: playTimeSettings.humanReserveTime)
         }
-        clockState?.currentMoveStartTime = Date()
+
+        // Only set start time if it's not the first move and not already set (for resuming)
+        if moveCount > 0 && clockState?.currentMoveStartTime == nil {
+            if isHumanTurn {
+                clockState?.currentMoveStartTime = Date()
+            }
+        }
 
         clockTimer?.invalidate()
         clockTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
@@ -147,6 +172,10 @@ extension BoardViewModel {
     }
 
     func stopClock() {
+        if let startTime = clockState?.currentMoveStartTime {
+            clockState?.elapsedTimeBeforePause += Date().timeIntervalSince(startTime)
+            clockState?.currentMoveStartTime = nil
+        }
         clockTimer?.invalidate()
         clockTimer = nil
     }
@@ -165,26 +194,18 @@ extension BoardViewModel {
     }
 
     func tickClock() {
-        guard let state = clockState, !state.isTimeout, appMode == .play else { return }
-
-        let isHumanTurn: Bool
-        switch aiRole {
-        case .manual: isHumanTurn = true
-        case .white: isHumanTurn = (nextColor == .black)
-        case .black: isHumanTurn = (nextColor == .white)
-        case .both: isHumanTurn = false
-        }
+        guard var state = clockState, !state.isTimeout, appMode == .play else { return }
 
         if isHumanTurn && aiManager.aiStatus != .thinking {
             if let startTime = state.currentMoveStartTime {
-                let elapsed = Date().timeIntervalSince(startTime)
+                let elapsed = Date().timeIntervalSince(startTime) + state.elapsedTimeBeforePause
                 let remainingInMove = playTimeSettings.humanSecondsPerMove - elapsed
 
                 // Sound feedback for last 5 seconds
                 if remainingInMove <= 5.0 && remainingInMove > 0 {
                     let second = Int(ceil(remainingInMove))
                     if second != state.lastBeepSecond {
-                        clockState?.lastBeepSecond = second
+                        state.lastBeepSecond = second
                         if playSound {
                             SoundManager.shared.playSystemBeep()
                         }
@@ -194,14 +215,19 @@ extension BoardViewModel {
                 if remainingInMove < 0 {
                     let over = -remainingInMove
                     if over >= state.humanReserveRemaining {
-                        clockState?.humanReserveRemaining = 0
-                        clockState?.isTimeout = true
+                        state.humanReserveRemaining = 0
+                        state.isTimeout = true
                         showTimeoutDialog = true
+                        self.clockState = state
                         stopClock()
+                        return
                     }
                 }
             }
         }
+
+        // Always update clockState to trigger UI refresh for the countdown
+        self.clockState = state
     }
 
     func handleTimeout(endGame: Bool) {
@@ -225,16 +251,10 @@ extension BoardViewModel {
 
         // If we have a startTime, it means someone just moved.
         if let startTime = state.currentMoveStartTime {
-            let elapsed = Date().timeIntervalSince(startTime)
+            let elapsed = Date().timeIntervalSince(startTime) + state.elapsedTimeBeforePause
 
             // We only deduct from reserve if it's human's turn
-            let wasHumanTurn: Bool
-            switch aiRole {
-            case .manual: wasHumanTurn = true
-            case .white: wasHumanTurn = (nextColor == .white) // nextColor is already toggled
-            case .black: wasHumanTurn = (nextColor == .black)
-            case .both: wasHumanTurn = false
-            }
+            let wasHumanTurn = isHumanTurn(for: nextColor.opponent)
 
             if wasHumanTurn && elapsed > playTimeSettings.humanSecondsPerMove {
                 let over = elapsed - playTimeSettings.humanSecondsPerMove
@@ -242,8 +262,13 @@ extension BoardViewModel {
             }
         }
 
-        // Reset move start time for the next player
-        clockState?.currentMoveStartTime = Date()
+        // Reset move start time for the next player if it's human's turn
+        if isHumanTurn {
+            clockState?.currentMoveStartTime = Date()
+        } else {
+            clockState?.currentMoveStartTime = nil
+        }
+        clockState?.elapsedTimeBeforePause = 0
         clockState?.lastBeepSecond = -1
     }
 }

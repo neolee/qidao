@@ -109,7 +109,7 @@ struct PlayControlView: View {
 
                 HStack(spacing: 10) {
                     ActionButton(title: "Undo".localized, icon: "arrow.uturn.backward", color: .blue) {
-                        viewModel.goBack()
+                        viewModel.undo()
                     }
                     ActionButton(title: "Restart".localized, icon: "arrow.counterclockwise", color: .gray) {
                         viewModel.goToStart()

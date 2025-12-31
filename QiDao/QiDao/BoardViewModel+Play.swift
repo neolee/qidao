@@ -171,6 +171,33 @@ extension BoardViewModel {
         }
     }
 
+    func undo() {
+        guard appMode == .play else {
+            goBack()
+            return
+        }
+
+        // Cancel AI thinking immediately
+        aiPlayTask?.cancel()
+        aiPlayTask = nil
+        lastAIPlayNodeId = nil
+        aiManager.cancelPlay()
+
+        if isAITurn {
+            // Human just moved, AI is thinking or about to think.
+            // Go back 1 step to human's turn.
+            _ = gameManager.goBack()
+        } else {
+            // AI just moved, it's human's turn.
+            // Go back 2 steps to human's previous turn.
+            if gameManager.goBack() {
+                _ = gameManager.goBack()
+            }
+        }
+        gameManager.syncState()
+        SoundManager.shared.play(name: "stone")
+    }
+
     // MARK: - Clock Logic
 
     func startClock() {
@@ -221,7 +248,7 @@ extension BoardViewModel {
     func tickClock() {
         guard var state = clockState, !state.isTimeout, appMode == .play else { return }
 
-        if isHumanTurn && aiManager.aiStatus != .thinking {
+        if isHumanTurn && moveCount > 0 {
             if let startTime = state.currentMoveStartTime {
                 let elapsed = Date().timeIntervalSince(startTime) + state.elapsedTimeBeforePause
                 let remainingInMove = playTimeSettings.humanSecondsPerMove - elapsed
@@ -271,6 +298,19 @@ extension BoardViewModel {
         }
     }
 
+    func resetClockForCurrentTurn() {
+        guard var state = clockState, playTimeSettings.isEnabled else { return }
+
+        if isHumanTurn && moveCount > 0 {
+            state.currentMoveStartTime = Date()
+        } else {
+            state.currentMoveStartTime = nil
+        }
+        state.elapsedTimeBeforePause = 0
+        state.lastBeepSecond = -1
+        self.clockState = state
+    }
+
     func updateClockOnMove() {
         guard let state = clockState, playTimeSettings.isEnabled else { return }
 
@@ -288,7 +328,7 @@ extension BoardViewModel {
         }
 
         // Reset move start time for the next player if it's human's turn
-        if isHumanTurn {
+        if isHumanTurn && moveCount > 0 {
             clockState?.currentMoveStartTime = Date()
         } else {
             clockState?.currentMoveStartTime = nil

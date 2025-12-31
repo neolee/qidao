@@ -282,6 +282,7 @@ class BoardViewModel: ObservableObject {
                 self?.updateAnalysis()
                 if self?.appMode == .play {
                     self?.checkAIMove()
+                    self?.resetClockForCurrentTurn()
                 }
             }
             .store(in: &cancellables)

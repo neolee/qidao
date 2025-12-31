@@ -42,6 +42,8 @@ class AIManager: ObservableObject {
     @Published var isEngineReady: Bool = false
     var currentAnalysisId: String? = nil
     var analysisSessionId: Int = 0
+    private var playCounter: Int = 0
+    private var activeThinkingTasks: Int = 0
     var mainLineColors: [Int: String] = [:]
     var currentTurnColorIsWhite: Bool = false
     var currentTurnNumber: Int = 0
@@ -377,11 +379,21 @@ class AIManager: ObservableObject {
         interactiveTask?.cancel()
         stopFullGameAnalysis()
 
+        activeThinkingTasks += 1
         aiStatus = .thinking
         engineMessage = "AI is thinking...".localized
         addEventLog("\("AI is thinking...".localized) (\(nextPlayer))", type: .play)
 
-        let playId = "play-\(self.analysisSessionId)-\(moves.count)"
+        defer {
+            activeThinkingTasks -= 1
+            if activeThinkingTasks <= 0 {
+                activeThinkingTasks = 0
+                aiStatus = .ready
+            }
+        }
+
+        playCounter += 1
+        let playId = "play-\(self.analysisSessionId)-\(moves.count)-\(playCounter)"
         let reqMsg = String(format: "Requesting AI move (%@, %d)".localized, nextPlayer, moves.count)
         self.addLog("\(reqMsg) [id: \(playId)]", type: .play)
 
@@ -446,7 +458,7 @@ class AIManager: ObservableObject {
             var attempts = 0
             while attempts < 6000 { // 5 minutes timeout
                 if Task.isCancelled {
-                    self.aiStatus = .ready
+                    try? await engine.terminate(id: playId)
                     return nil
                 }
                 if let result = self.resultsById[playId] {
@@ -457,13 +469,11 @@ class AIManager: ObservableObject {
                             let foundMsg = String(format: "Found AI move %@".localized, bestMoveStr)
                             self.addLog("\(foundMsg) [id: \(playId)]", type: .play)
                             if let coords = decodeKataGoMove(bestMoveStr, size: Int(metadata.size)) {
-                                self.aiStatus = .ready
                                 self.engineMessage = "\("AI played".localized) \(bestMoveStr)"
                                 self.addEventLog("\("AI played".localized) \(bestMoveStr)", type: .play)
                                 return coords
                             } else if bestMoveStr.uppercased() == "PASS" {
                                 self.addLog("AI Play: AI passed for ID \(playId)", type: .play)
-                                self.aiStatus = .ready
                                 self.engineMessage = "AI passed".localized
                                 self.addEventLog("AI passed".localized, type: .play)
                                 return nil
@@ -475,16 +485,13 @@ class AIManager: ObservableObject {
                 attempts += 1
             }
             self.addLog("AI Play: Timeout or no move found for ID \(playId)", type: .play, isError: true)
-            self.aiStatus = .ready
             return nil
         } catch is CancellationError {
-            self.aiStatus = .ready
             self.engineMessage = "AI Thinking Cancelled".localized
             self.addEventLog("AI Thinking Cancelled".localized, type: .play)
             return nil
         } catch {
             self.addLog("AI Play error: \(error)", type: .play, isError: true)
-            aiStatus = .ready
             return nil
         }
     }
@@ -513,6 +520,7 @@ class AIManager: ObservableObject {
 
     func resetSession() {
         self.analysisSessionId += 1
+        self.playCounter = 0
         self.winRateHistory = [:]
         self.scoreLeadHistory = [:]
         self.blunders = [:]

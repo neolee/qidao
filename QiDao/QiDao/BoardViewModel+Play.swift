@@ -95,9 +95,27 @@ extension BoardViewModel {
     // MARK: - AI Play Logic
 
     func checkAIMove() {
-        guard appMode == .play, isAnalyzing, aiStatus == .ready else { return }
+        guard appMode == .play, isAnalyzing else {
+            aiPlayTask?.cancel()
+            aiPlayTask = nil
+            lastAIPlayNodeId = nil
+            return
+        }
+
+        // If engine is not ready (starting or error), we can't play yet.
+        // But if it's thinking, we might need to cancel it if the node changed.
+        guard aiStatus == .ready || aiStatus == .thinking || aiStatus == .analyzing else { return }
 
         if isAITurn {
+            let startNodeId = gameState.currentNodeId
+
+            // If we are already thinking for this node, don't restart
+            if aiStatus == .thinking && aiPlayTask != nil && lastAIPlayNodeId == startNodeId {
+                return
+            }
+
+            lastAIPlayNodeId = startNodeId
+
             let game = gameManager.getGame()
             let initialStones = game.getInitialStones()
             let moves = game.getAnalysisMoves()
@@ -105,7 +123,6 @@ extension BoardViewModel {
             let initialPlayer = gameState.initialColor == .black ? "B" : "W"
             let currentMetadata = metadata
             let currentConfig = config
-            let startNodeId = gameState.currentNodeId
 
             aiPlayTask?.cancel()
             aiPlayTask = Task {
@@ -128,7 +145,10 @@ extension BoardViewModel {
 
                 // Re-check if we are still on the same node after AI finished thinking
                 guard self.gameState.currentNodeId == startNodeId else {
-                    self.aiManager.addLog("AI Play: Node changed from \(startNodeId) to \(self.gameState.currentNodeId), ignoring move", type: .play)
+                    self.aiManager.addLog("AI Play: Node changed, ignoring old result", type: .play)
+                    // If the node changed, checkAIMove should have been called by the sink,
+                    // but we call it here as a safety measure to ensure AI doesn't stop.
+                    self.checkAIMove()
                     return
                 }
 
@@ -143,6 +163,11 @@ extension BoardViewModel {
                     self.pass(isAI: true)
                 }
             }
+        } else {
+            // If it's not AI's turn, cancel any pending AI play task
+            aiPlayTask?.cancel()
+            aiPlayTask = nil
+            lastAIPlayNodeId = nil
         }
     }
 

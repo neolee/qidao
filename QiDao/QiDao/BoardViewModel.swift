@@ -48,12 +48,14 @@ class BoardViewModel: ObservableObject {
             } else if appMode == .analysis {
                 aiPlayTask?.cancel()
                 aiPlayTask = nil
+                lastAIPlayNodeId = nil
                 aiManager.cancelPlay()
                 updateAnalysis()
                 stopClock()
             } else {
                 aiPlayTask?.cancel()
                 aiPlayTask = nil
+                lastAIPlayNodeId = nil
                 aiManager.cancelPlay()
                 aiManager.clearAnalysisResult()
                 stopClock()
@@ -231,6 +233,7 @@ class BoardViewModel: ObservableObject {
     var gameManager: GameManager
     var aiManager: AIManager
     var aiPlayTask: Task<Void, Never>? = nil
+    var lastAIPlayNodeId: String? = nil
     var sgfManager = SgfManager()
     private var cancellables = Set<AnyCancellable>()
 

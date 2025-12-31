@@ -2,15 +2,26 @@ import Foundation
 import qidao_coreFFI
 
 extension BoardViewModel {
-    func resetBoard() {
+    func resetBoard(size: Int? = nil) {
+        if size == nil && appMode == .play && (moveCount > 0 || maxMoveCount > 0) {
+            showResetConfirmation = true
+            return
+        }
+        performReset(size: size)
+    }
+
+    func performReset(size: Int? = nil) {
         aiManager.resetSession()
-        gameManager.reset(size: boardSize)
+        gameManager.reset(size: size ?? boardSize)
+        if appMode == .play {
+            aiRole = .manual
+        }
     }
 
     func changeBoardSize(_ newSize: Int) {
         guard !isSizeLocked else { return }
         UserDefaults.standard.set(newSize, forKey: "boardSize")
-        resetBoard()
+        performReset(size: newSize)
     }
 
     func updateMetadata(_ newMetadata: GameMetadata) {

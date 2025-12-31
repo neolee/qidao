@@ -55,6 +55,8 @@
 "No moves yet" = "No moves yet";
 "Next Player:" = "Next Player:";
 "Delete Branch" = "Delete Branch";
+"Reset Game" = "Reset Game";
+"The ongoing game will be reset. Confirm reset?" = "The ongoing game will be reset. Confirm reset?";
 "Branch deleted" = "Branch deleted";
 "SGF Preview" = "SGF Preview";
 "Copied!" = "Copied!";

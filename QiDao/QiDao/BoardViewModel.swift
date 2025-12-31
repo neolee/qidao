@@ -68,6 +68,7 @@ class BoardViewModel: ObservableObject {
     @Published var playTimeSettings = PlayTimeSettings()
     @Published var clockState: PlayClockState? = nil
     @Published var showTimeoutDialog = false
+    @Published var showResetConfirmation = false
     var clockTimer: Timer? = nil
 
     @Published var aiRole: AIRole = .manual {

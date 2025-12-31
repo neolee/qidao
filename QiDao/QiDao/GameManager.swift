@@ -20,6 +20,7 @@ class GameManager: ObservableObject {
     func getGame() -> Game { game }
     func setGame(_ newGame: Game) {
         self.game = newGame
+        self.internalState.isSizeLocked = false
         syncState(rebuildTree: true)
     }
 
@@ -80,6 +81,7 @@ class GameManager: ObservableObject {
 
     func reset(size: Int) {
         self.game = Game(size: UInt32(size))
+        self.internalState.isSizeLocked = false
         syncState(rebuildTree: true)
     }
 
@@ -101,7 +103,8 @@ class GameManager: ObservableObject {
         newState.sgf = self.game.getCurrentStateSgf()
 
         newState.boardSize = Int(newState.metadata.size)
-        newState.isSizeLocked = newState.isSizeLocked || newState.moveCount > 0 || self.game.getMaxMoveCount() > 0
+        let stoneCount = countStones(on: newState.board)
+        newState.isSizeLocked = newState.moveCount > 0 || newState.maxMoveCount > 0 || stoneCount > 0
 
         if let last = self.game.getLastMove(), let coords = last.values.first, coords.count == 2 {
             let x = Int(coords.first!.asciiValue! - UInt8(ascii: "a"))

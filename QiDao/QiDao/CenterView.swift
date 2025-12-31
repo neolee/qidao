@@ -39,7 +39,7 @@ struct CenterView: View {
                     Divider().frame(height: 20)
 
                     ToolbarButton(title: "Theme".localized, icon: "paintpalette", action: viewModel.toggleTheme)
-                    ToolbarButton(title: "Reset".localized, icon: "arrow.counterclockwise", action: viewModel.resetBoard)
+                    ToolbarButton(title: "Reset".localized, icon: "arrow.counterclockwise", action: { viewModel.resetBoard() })
                 }
 
                 Divider().frame(height: 20)
@@ -222,6 +222,17 @@ struct CenterView: View {
             }
         } message: {
             Text("Delete current move and subsequent branches?".localized)
+        }
+        .alert("Reset Game".localized, isPresented: $viewModel.showResetConfirmation) {
+            Button("Reset".localized, role: .destructive) {
+                viewModel.performReset()
+                isBoardFocused = true
+            }
+            Button("Cancel".localized, role: .cancel) {
+                isBoardFocused = true
+            }
+        } message: {
+            Text("The ongoing game will be reset. Confirm reset?".localized)
         }
     }
 

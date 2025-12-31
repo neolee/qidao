@@ -55,6 +55,8 @@
 "No moves yet" = "暂无落子";
 "Next Player:" = "下一手:";
 "Delete Branch" = "删除当前分支";
+"Reset Game" = "重置对局";
+"The ongoing game will be reset. Confirm reset?" = "正在进行的对局将被重置，确认重置？";
 "Branch deleted" = "分支已删除";
 "SGF Preview" = "SGF 预览";
 "Copied!" = "已复制!";

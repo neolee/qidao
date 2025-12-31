@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MoveEvaluationView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
         GroupBox(label: Label("Move Evaluation".localized, systemImage: "list.bullet.rectangle")) {

@@ -3,6 +3,7 @@ import SwiftUI
 struct GameInfoView: View {
     @ObservedObject var viewModel: BoardViewModel
     @Binding var showInfoEditor: Bool
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
         GroupBox(label: Label("Game Info".localized, systemImage: "info.circle")) {

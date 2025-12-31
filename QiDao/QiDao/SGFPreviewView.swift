@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct SGFPreviewView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
     @State private var showCopiedMessage = false
 
     var body: some View {

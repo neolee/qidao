@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PlayControlView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
     @State private var showNewGameDialog = false
 
     private var roleBinding: Binding<AIRole> {
@@ -31,6 +32,7 @@ struct PlayControlView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .id(langManager.selectedLanguage)
                 }
 
                 Divider()
@@ -76,6 +78,7 @@ struct PlayControlView: View {
 struct NewGameDialog: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
     @State private var size: Int = 19
     @State private var komi: Double = 7.5
     @State private var handicap: Int = 0
@@ -127,6 +130,7 @@ struct ActionButton: View {
     let icon: String
     let color: Color
     let action: () -> Void
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
         Button(action: action) {

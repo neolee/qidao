@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GameCommentView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
     @State private var commentText: String = ""
     @FocusState private var isFocused: Bool
 

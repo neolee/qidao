@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WinRateView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
         GroupBox(label: Label("Win Rate".localized, systemImage: "chart.line.uptrend.xyaxis")) {

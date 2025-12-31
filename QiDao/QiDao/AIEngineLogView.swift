@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AIEngineLogView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {

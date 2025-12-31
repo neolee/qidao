@@ -3,6 +3,7 @@ import SwiftUI
 struct AIEngineView: View {
     @ObservedObject var viewModel: BoardViewModel
     @Binding var showAIConfig: Bool
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
         GroupBox(label: Label("AI Engine".localized, systemImage: "cpu")) {

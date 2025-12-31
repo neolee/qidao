@@ -25,6 +25,7 @@ struct LeftSidebarView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .id(langManager.selectedLanguage)
 
                     if selectedTab == 0 {
                         GameCommentView(viewModel: viewModel)

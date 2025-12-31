@@ -3,6 +3,7 @@ import qidao_coreFFI
 
 struct EvaluationBoardView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
     let ownership: [Double]?
     let pv: [String]?
     var gridSize: Int { viewModel.boardSize }

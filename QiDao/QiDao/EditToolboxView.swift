@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditToolboxView: View {
     @ObservedObject var viewModel: BoardViewModel
+    @ObservedObject private var langManager = LanguageManager.shared
 
     let columns = [
         GridItem(.flexible()),
@@ -91,6 +92,7 @@ struct ToolButton: View {
     let tool: EditTool
     let isSelected: Bool
     let action: () -> Void
+    @ObservedObject private var langManager = LanguageManager.shared
 
     var body: some View {
         Button(action: action) {

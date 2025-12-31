@@ -55,6 +55,7 @@ struct CenterView: View {
                                 }
                             }
                             .labelsHidden()
+                            .id(langManager.selectedLanguage)
                         }
                         Picker("Numbers".localized, selection: $viewModel.moveNumberDisplay) {
                             ForEach(MoveNumberDisplay.allCases) { display in
@@ -62,6 +63,7 @@ struct CenterView: View {
                             }
                         }
                         .labelsHidden()
+                        .id(langManager.selectedLanguage)
                     }
                     .frame(minWidth: 100, maxWidth: 150)
                     .help("Move Numbers".localized)

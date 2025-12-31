@@ -4,6 +4,7 @@ struct AIConfigView: View {
     @ObservedObject var viewModel: BoardViewModel
     @Environment(\.dismiss) var dismiss
     @ObservedObject private var configManager = ConfigManager.shared
+    @ObservedObject private var langManager = LanguageManager.shared
 
     @State private var selectedTab: ConfigTab = .profiles
     @State private var localConfig: AIConfig = ConfigManager.shared.config
@@ -25,6 +26,7 @@ struct AIConfigView: View {
                 Text(tab.localized)
             }
             .navigationTitle("Settings".localized)
+            .id(langManager.selectedLanguage)
         } detail: {
             VStack(spacing: 0) {
                 ScrollView {

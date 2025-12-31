@@ -4,6 +4,7 @@ import qidao_coreFFI
 struct GameInfoEditorView: View {
     @ObservedObject var viewModel: BoardViewModel
     @Environment(\.dismiss) var dismiss
+    @ObservedObject private var langManager = LanguageManager.shared
     @State private var metadata: GameMetadata
 
     init(viewModel: BoardViewModel) {

@@ -278,7 +278,8 @@ struct NewGameDialog: View {
                                                 Text(type.label).tag(type)
                                             }
                                         }
-                                        .frame(width: 120)
+                                        .multilineTextAlignment(.trailing)
+                                        .frame(width: 140)
                                     }
 
                                     if timeSettings.aiLimitType != .global {

@@ -6,7 +6,7 @@
 
 > 分析模式 Analysis
 
-强大的 AI 实时分析功能，集成 KataGo 引擎，提供胜率走势图、AI 选点提示、后续着法预览和形势评估等功能，帮助用户深入理解对局。
+强大的 AI 实时分析功能，集成 KataGo 引擎，提供胜率走势图、AI 选点提示、后续着法预览和形势评估等功能，帮助棋友深入理解对局。
 
 ![QiDao](resource/screens/qidao-analysis-mode-1.png)
 
@@ -14,13 +14,13 @@
 
 > 编辑模式 Edit
 
-自由摆子与标记功能，支持添加三角、圆圈、字母等多种标记，支持局面 SGF 实时预览和导出、保存功能，方便用户进行棋谱注释、研究和[内容创作](https://github.com/neolee/sbs-ext)。
+自由摆子与标记功能，支持添加三角、圆圈、字母等多种标记，支持局面 SGF 实时预览和导出、保存功能，方便进行棋谱注释、研究和[内容创作](https://github.com/neolee/sbs-ext)。
 
 ![QiDao](resource/screens/qidao-edit-mode.png)
 
 > 练习模式 Play
 
-与 AI 对战功能，支持自定义让子与贴目，帮助用户提升实战水平。
+与 AI 对战功能，支持自定义让子与贴目，帮助棋友提升实战水平。
 
 ![QiDao](resource/screens/qidao-play-mode.png)
 
@@ -64,9 +64,9 @@
 2. 首次启动后，点击侧边栏 AI 引擎区域的“齿轮”图标进入设置。
 3. 在 **引擎方案 Engine Profiles** 中编辑默认方案：
    - **名称 Name**: 自定义方案名称。
-   - **引擎路径 Path**: 选择您的 KataGo 二进制文件路径。
-   - **权重路径 Model**: 选择您的 `.bin.gz` 权重文件路径。
-   - **配置文件路径 Config**: 选择您的 `.cfg` 配置文件路径（注意：请选择 `analysis.cfg` 文件而非 `gtp.cfg`）。
+   - **引擎路径 Path**: 选择 KataGo 二进制文件路径。
+   - **权重路径 Model**: 选择 `.bin.gz` 权重文件路径。
+   - **配置文件路径 Config**: 选择 `.cfg` 配置文件路径（注意：请选择 `analysis.cfg` 文件而非 `gtp.cfg`）。
 4. 点击 **保存 Save** 保存配置，然后点击“启动 AI”即可开始分析。
 
 ## 未来计划

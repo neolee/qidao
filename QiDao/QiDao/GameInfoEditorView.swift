@@ -59,7 +59,7 @@ struct GameInfoEditorView: View {
                     }
                 }
             }
-            .frame(minWidth: 400, minHeight: 500)
+            .frame(minWidth: 400)
         }
     }
 }

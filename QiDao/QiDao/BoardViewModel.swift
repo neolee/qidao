@@ -130,7 +130,6 @@ class BoardViewModel: ObservableObject {
         case .edit:
             handleEditClick(x: x, y: y)
         case .play:
-            // TODO: Implement play mode logic
             placeStone(x: x, y: y)
         }
     }

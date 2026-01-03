@@ -498,7 +498,7 @@ class AIManager: ObservableObject {
 
     private func decodeKataGoMove(_ move: String, size: Int) -> (x: Int, y: Int)? {
         let move = move.uppercased()
-        if move == "PASS" { return nil } // TODO: Handle pass
+        if move == "PASS" { return nil }
         guard move.count >= 2 else { return nil }
 
         let colChar = move.first!

@@ -5,6 +5,8 @@ struct SGFPreviewView: View {
     @ObservedObject var viewModel: BoardViewModel
     @ObservedObject private var langManager = LanguageManager.shared
     @State private var showCopiedMessage = false
+    @State private var isExportingSgf = false
+    @State private var sgfDocument = SgfDocument()
 
     var body: some View {
         GroupBox(label: Label("SGF Preview".localized, systemImage: "doc.text")) {
@@ -48,6 +50,20 @@ struct SGFPreviewView: View {
             }
             .padding(4)
         }
+        .fileExporter(
+            isPresented: $isExportingSgf,
+            document: sgfDocument,
+            contentType: .sgf,
+            defaultFilename: viewModel.currentFileUrl?.deletingPathExtension().lastPathComponent.appending("_pos.sgf") ?? "current_position.sgf"
+        ) { result in
+            switch result {
+            case .success(let url):
+                viewModel.lastSgfDirectory = url.deletingLastPathComponent()
+            case .failure(let error):
+                print("Failed to export SGF: \(error)")
+            }
+        }
+        .fileDialogDefaultDirectory(viewModel.lastSgfDirectory)
     }
 
     private func copyToClipboard() {
@@ -66,22 +82,7 @@ struct SGFPreviewView: View {
     }
 
     private func exportSgf() {
-        let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.init(filenameExtension: "sgf")!]
-        savePanel.canCreateDirectories = true
-        savePanel.isExtensionHidden = false
-        savePanel.title = "Export SGF".localized
-        savePanel.message = "Choose where to save the SGF file".localized
-        savePanel.nameFieldStringValue = "current_position.sgf"
-
-        savePanel.begin { response in
-            if response == .OK, let url = savePanel.url {
-                do {
-                    try viewModel.gameState.sgf.write(to: url, atomically: true, encoding: .utf8)
-                } catch {
-                    print("Failed to save SGF: \(error)")
-                }
-            }
-        }
+        sgfDocument.sgfContent = viewModel.gameState.sgf
+        isExportingSgf = true
     }
 }

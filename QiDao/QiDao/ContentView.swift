@@ -86,6 +86,9 @@ struct ContentView: View {
         .onAppear {
             isBoardFocused = true
         }
+        .onOpenURL { url in
+            viewModel.loadSgf(url: url)
+        }
     }
 }
 

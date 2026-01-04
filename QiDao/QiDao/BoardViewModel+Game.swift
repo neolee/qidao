@@ -17,6 +17,7 @@ extension BoardViewModel {
         aiRole = .manual
         playTimeSettings.isEnabled = false
         clockState = nil
+        currentFileUrl = nil
         stopClock()
     }
 
@@ -40,6 +41,8 @@ extension BoardViewModel {
             let newGame = try sgfManager.loadSgf(url: url)
             gameManager.setGame(newGame)
             aiManager.resetSession()
+            currentFileUrl = url
+            lastSgfDirectory = url.deletingLastPathComponent()
 
             // Update main line colors for win rate normalization
             let mainLine = newGame.getMainLineMoves()

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct AIConfigView: View {
     @ObservedObject var viewModel: BoardViewModel
@@ -11,6 +12,16 @@ struct AIConfigView: View {
     @State private var showAdvanced: Bool = false
     @State private var newParamKey: String = ""
     @State private var newParamValue: String = ""
+
+    @State private var isImportingFile = false
+    @State private var selectionTarget: ConfigSelectionTarget?
+    @State private var initialDirectory: URL?
+
+    enum ConfigSelectionTarget {
+        case executable
+        case model
+        case config
+    }
 
     enum ConfigTab: String, CaseIterable {
         case profiles = "Engine Profiles"
@@ -67,6 +78,26 @@ struct AIConfigView: View {
         .onAppear {
             localConfig = configManager.config
         }
+        .fileImporter(
+            isPresented: $isImportingFile,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: false
+        ) { result in
+            guard let target = selectionTarget,
+                  let index = localConfig.profiles.firstIndex(where: { $0.id == localConfig.currentProfileId }) else { return }
+
+            if case .success(let urls) = result, let url = urls.first {
+                switch target {
+                case .executable:
+                    localConfig.profiles[index].path = url.path
+                case .model:
+                    localConfig.profiles[index].model = url.path
+                case .config:
+                    localConfig.profiles[index].config = url.path
+                }
+            }
+        }
+        .fileDialogDefaultDirectory(initialDirectory)
     }
 
     private var profilesView: some View {
@@ -107,27 +138,27 @@ struct AIConfigView: View {
                     HStack {
                         TextField("Executable Path".localized, text: $localConfig.profiles[index].path)
                         Button("Browse...".localized) {
-                            selectFile(canChooseDirectories: false, initialPath: localConfig.profiles[index].path) { url in
-                                localConfig.profiles[index].path = url.path
-                            }
+                            selectionTarget = .executable
+                            initialDirectory = localConfig.profiles[index].path.isEmpty ? nil : URL(fileURLWithPath: localConfig.profiles[index].path).deletingLastPathComponent()
+                            isImportingFile = true
                         }
                     }
 
                     HStack {
                         TextField("Model Path".localized, text: $localConfig.profiles[index].model)
                         Button("Browse...".localized) {
-                            selectFile(canChooseDirectories: false, initialPath: localConfig.profiles[index].model) { url in
-                                localConfig.profiles[index].model = url.path
-                            }
+                            selectionTarget = .model
+                            initialDirectory = localConfig.profiles[index].model.isEmpty ? nil : URL(fileURLWithPath: localConfig.profiles[index].model).deletingLastPathComponent()
+                            isImportingFile = true
                         }
                     }
 
                     HStack {
                         TextField("Config Path".localized, text: $localConfig.profiles[index].config)
                         Button("Browse...".localized) {
-                            selectFile(canChooseDirectories: false, initialPath: localConfig.profiles[index].config) { url in
-                                localConfig.profiles[index].config = url.path
-                            }
+                            selectionTarget = .config
+                            initialDirectory = localConfig.profiles[index].config.isEmpty ? nil : URL(fileURLWithPath: localConfig.profiles[index].config).deletingLastPathComponent()
+                            isImportingFile = true
                         }
                     }
 
@@ -301,29 +332,6 @@ struct AIConfigView: View {
             }
         }
         .formStyle(.grouped)
-    }
-
-    private func selectFile(canChooseDirectories: Bool, initialPath: String? = nil, completion: @escaping (URL) -> Void) {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = canChooseDirectories
-        panel.canChooseFiles = !canChooseDirectories
-
-        if let path = initialPath, !path.isEmpty {
-            let url = URL(fileURLWithPath: path)
-            // If it's a file path, open the parent directory
-            if !canChooseDirectories {
-                panel.directoryURL = url.deletingLastPathComponent()
-            } else {
-                panel.directoryURL = url
-            }
-        }
-
-        panel.begin { response in
-            if response == .OK, let url = panel.url {
-                completion(url)
-            }
-        }
     }
 }
 

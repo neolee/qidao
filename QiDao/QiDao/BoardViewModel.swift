@@ -39,6 +39,18 @@ class BoardViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
     }
 
+    @Published var currentFileUrl: URL? = nil
+    @Published var lastSgfDirectory: URL? = {
+        if let path = UserDefaults.standard.string(forKey: "lastSgfDirectory") {
+            return URL(fileURLWithPath: path)
+        }
+        return nil
+    }() {
+        didSet {
+            UserDefaults.standard.set(lastSgfDirectory?.path, forKey: "lastSgfDirectory")
+        }
+    }
+
     @Published var appMode: AppMode = .analysis {
         didSet {
             if appMode == .play {

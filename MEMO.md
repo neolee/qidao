@@ -91,6 +91,12 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
     }
     ```
 
+### Modernizing AppKit/Foundation Usage (Jan 2026)
+- **UserDefaults to @AppStorage**: Prefer `@AppStorage` in ViewModels and Views for reactive and automatic persistence. This eliminates manual `didSet` and `init` loading logic.
+- **NSError to Swift Error**: Use custom `enum` conforming to `LocalizedError` instead of `NSError`. This provides better type safety and idiomatic Swift error handling.
+- **NSCursor Management**: Use `NSCursor.push()` and `NSCursor.pop()` instead of `set()` for more robust cursor state management, especially in hover scenarios.
+- **AppKit Colors**: Use `Color(NSColor.windowBackgroundColor)` for system-specific semantic colors that SwiftUI doesn't natively expose yet.
+
 ### AI Status & Logging Design (Dec 30, 2025)
 - **Status-Driven UI**: Replace `AIState` with a more expressive `AIStatus` enum that drives the icon, color, and localized message in `AIEngineView`.
     - States: `idle`, `starting`, `ready`, `analyzing` (Analysis mode), `thinking` (Play mode), `error`.

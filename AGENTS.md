@@ -30,6 +30,7 @@ QiDao (Tao of Go) is a modern Go (Weiqi) tool targeted primarily for macOS, insp
   - Swift language version 5+.
   - Follow SwiftUI best practices: Use `@State`, `@ObservedObject`, and `@FocusState` for reactive UI.
   - Prefer declarative views; avoid imperative loops in rendering.
+  - Prefer SwiftUI native solutions over AppKit/Foundation (e.g., `@AppStorage` over `UserDefaults`, `fileImporter` over `NSOpenPanel`).
   - Concurrency: Use `nonisolated` actors minimally; prefer `MainActor` for UI updates.
   - Localization: Use customized language manager (`Localization.swift`).
   - Performance: Optimize for 60/120fps rendering; use `Canvas` over heavy View hierarchies.

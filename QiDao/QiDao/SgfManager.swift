@@ -1,6 +1,20 @@
 import Foundation
 import qidao_coreFFI
 
+enum SgfManagerError: LocalizedError {
+    case decodeFailed
+    case parseFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .decodeFailed:
+            return "Failed to decode SGF file".localized
+        case .parseFailed(let reason):
+            return "\("Failed to parse SGF".localized): \(reason)"
+        }
+    }
+}
+
 class SgfManager {
     func loadSgf(url: URL) throws -> Game {
         let data = try Data(contentsOf: url)
@@ -21,10 +35,14 @@ class SgfManager {
         }
 
         guard let sgfContent = content else {
-            throw NSError(domain: "SgfManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to decode SGF file".localized])
+            throw SgfManagerError.decodeFailed
         }
 
-        return try Game.fromSgf(sgfContent: sgfContent)
+        do {
+            return try Game.fromSgf(sgfContent: sgfContent)
+        } catch {
+            throw SgfManagerError.parseFailed(error.localizedDescription)
+        }
     }
 
     func saveSgf(game: Game, url: URL) throws {

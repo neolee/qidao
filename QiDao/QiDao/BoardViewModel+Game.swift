@@ -23,7 +23,7 @@ extension BoardViewModel {
 
     func changeBoardSize(_ newSize: Int) {
         guard !isSizeLocked else { return }
-        UserDefaults.standard.set(newSize, forKey: "boardSize")
+        persistedBoardSize = newSize
         performReset(size: newSize)
     }
 

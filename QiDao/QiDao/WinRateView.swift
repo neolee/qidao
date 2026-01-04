@@ -179,10 +179,12 @@ struct WinRateGraph: View {
                 switch phase {
                 case .active(let location):
                     hoverLocation = location
-                    NSCursor.pointingHand.set()
+                    if NSCursor.current != .pointingHand {
+                        NSCursor.pointingHand.push()
+                    }
                 case .ended:
                     hoverLocation = nil
-                    NSCursor.arrow.set()
+                    NSCursor.pop()
                 }
             }
             .cornerRadius(4)

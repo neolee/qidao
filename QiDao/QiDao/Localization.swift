@@ -19,20 +19,11 @@ enum Language: String, CaseIterable, Identifiable {
 class LanguageManager: ObservableObject {
     static let shared = LanguageManager()
 
-    @Published var selectedLanguage: Language {
-        didSet {
-            if oldValue != selectedLanguage {
-                UserDefaults.standard.set(selectedLanguage.rawValue, forKey: "selectedLanguage")
-            }
-        }
-    }
+    @AppStorage("selectedLanguage") var selectedLanguage: Language = .english
 
     init() {
-        let stored = UserDefaults.standard.string(forKey: "selectedLanguage")
-        if let lang = stored.flatMap(Language.init) {
-            self.selectedLanguage = lang
-        } else {
-            // Default to system language
+        // If no value is stored, try to detect system language
+        if UserDefaults.standard.string(forKey: "selectedLanguage") == nil {
             let locale = Locale.current.language.languageCode?.identifier ?? "en"
             if locale.contains("zh") {
                 self.selectedLanguage = .chinese

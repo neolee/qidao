@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 import qidao_coreFFI
 
 @MainActor
@@ -28,26 +29,23 @@ class BoardViewModel: ObservableObject {
     var moveNumbers: [String: Int] { gameManager.internalState.moveNumbers }
     var metadata: GameMetadata { gameManager.internalState.metadata }
 
+    // Settings with AppStorage for automatic persistence and reactivity
+    @AppStorage("moveNumberDisplay") var moveNumberDisplay: MoveNumberDisplay = .all
+    @AppStorage("showCoordinates") var showCoordinates: Bool = true
+    @AppStorage("playSound") var playSound: Bool = true
+    @AppStorage("boardSize") var persistedBoardSize: Int = 19
+    @AppStorage("selectedThemeId") private var selectedThemeId: String = "wood"
+    @AppStorage("lastSgfDirectory") private var lastSgfDirectoryPath: String = ""
+
     @Published var theme: BoardTheme = .defaultWood
-    @Published var moveNumberDisplay: MoveNumberDisplay = .all {
-        didSet { UserDefaults.standard.set(moveNumberDisplay.rawValue, forKey: "moveNumberDisplay") }
-    }
-    @Published var showCoordinates: Bool = true {
-        didSet { UserDefaults.standard.set(showCoordinates, forKey: "showCoordinates") }
-    }
-    @Published var playSound: Bool = true {
-        didSet { UserDefaults.standard.set(playSound, forKey: "playSound") }
-    }
 
     @Published var currentFileUrl: URL? = nil
-    @Published var lastSgfDirectory: URL? = {
-        if let path = UserDefaults.standard.string(forKey: "lastSgfDirectory") {
-            return URL(fileURLWithPath: path)
+    var lastSgfDirectory: URL? {
+        get {
+            lastSgfDirectoryPath.isEmpty ? nil : URL(fileURLWithPath: lastSgfDirectoryPath)
         }
-        return nil
-    }() {
-        didSet {
-            UserDefaults.standard.set(lastSgfDirectory?.path, forKey: "lastSgfDirectory")
+        set {
+            lastSgfDirectoryPath = newValue?.path ?? ""
         }
     }
 
@@ -261,23 +259,12 @@ class BoardViewModel: ObservableObject {
     var langManager = LanguageManager.shared
 
     init() {
-        // Load persisted settings
+        // Use UserDefaults directly in init to avoid 'self' access before full initialization
         let savedSize = UserDefaults.standard.integer(forKey: "boardSize")
         let initialSize = savedSize > 0 ? savedSize : 19
 
         self.gameManager = GameManager(initialSize: initialSize)
         self.aiManager = AIManager()
-
-        if let rawValue = UserDefaults.standard.object(forKey: "moveNumberDisplay") as? Int,
-           let display = MoveNumberDisplay(rawValue: rawValue) {
-            self.moveNumberDisplay = display
-        } else {
-            // Migration from old showMoveNumbers
-            let oldShow = UserDefaults.standard.object(forKey: "showMoveNumbers") as? Bool ?? true
-            self.moveNumberDisplay = oldShow ? .all : .none
-        }
-        self.showCoordinates = UserDefaults.standard.object(forKey: "showCoordinates") as? Bool ?? true
-        self.playSound = UserDefaults.standard.object(forKey: "playSound") as? Bool ?? true
 
         let themeId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "wood"
         self.theme = (themeId == "bw") ? .bwPrint : .defaultWood
@@ -507,8 +494,8 @@ class BoardViewModel: ObservableObject {
     }
 
     func toggleTheme() {
-        theme = (theme.id == "wood") ? .bwPrint : .defaultWood
-        UserDefaults.standard.set(theme.id, forKey: "selectedThemeId")
+        selectedThemeId = (selectedThemeId == "wood") ? "bw" : "wood"
+        theme = (selectedThemeId == "bw") ? .bwPrint : .defaultWood
     }
 
     func decodeKataGoMove(_ move: String) -> (x: Int, y: Int)? {

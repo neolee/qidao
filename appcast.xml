@@ -3,6 +3,15 @@
     <channel>
         <title>QiDao</title>
         <item>
+            <title>1.1.1</title>
+            <pubDate>Sun, 04 Jan 2026 14:15:04 +0000</pubDate>
+            <link>https://github.com/neolee/qidao</link>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>1.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/neolee/qidao/releases/download/v1.1.1/QiDao.dmg" length="2578782" type="application/octet-stream" sparkle:edSignature="BUI4KmLUwGaLgQnfTHyDWyb2Da1zVPGrqki+eZw5IXqjYnLzK8X9IZJvzEcsFTwuH0azqM6qkZ5MeNQHmleGAg=="/>
+        </item>
+        <item>
             <title>1.1.0</title>
             <pubDate>Thu, 01 Jan 2026 06:59:58 +0000</pubDate>
             <link>https://github.com/neolee/qidao</link>
@@ -19,15 +28,6 @@
             <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/neolee/qidao/releases/download/v1.0.1/QiDao.dmg" length="2437757" type="application/octet-stream" sparkle:edSignature="4U3FnK7NV6w7ddEu6fq51QuU9UvT9F3lHJ/3OQFgCy+3JLeJ966r4htf7FPMMBe3o8AnMWgqrltT2XCSzzZBCg=="/>
-        </item>
-        <item>
-            <title>1.0.0</title>
-            <pubDate>Sun, 28 Dec 2025 11:06:12 +0000</pubDate>
-            <link>https://github.com/neolee/qidao</link>
-            <sparkle:version>1</sparkle:version>
-            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/neolee/qidao/releases/download/v1.0.0/QiDao.dmg" length="2408125" type="application/octet-stream" sparkle:edSignature="ujpNzgEjDgvSu1nsfcY4TnjMauEJwU28Y4Inx1eGvzSqy8dt9HiaqinWRkRs4Vp5VvyGd3uiONACHXnMh3jfAg=="/>
         </item>
     </channel>
 </rss>

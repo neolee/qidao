@@ -100,13 +100,13 @@ struct GameBoardView: View {
                 // 8. AI Analysis Overlay
                 // Only show if the result matches the current board state and in analysis mode
                 if viewModel.appMode == .analysis, viewModel.isAnalyzing, let result = viewModel.analysisResult, result.id.hasSuffix("-\(viewModel.currentNodeId)") {
-                    let sortedMoves = result.moveInfos.sorted { $0.visits > $1.visits }
-                    let displayCount = min(sortedMoves.count, viewModel.config.display.maxCandidates)
                     let isWhiteTurn = viewModel.nextColor == .white
+                    let sortedMoves = result.sortedMoves(isWhiteTurn: isWhiteTurn)
+                    let displayCount = min(sortedMoves.count, viewModel.config.display.maxCandidates)
                     let perspective = viewModel.config.display.overlayWinRatePerspective
 
-                    // Best win rate from current player's perspective
-                    let bestMoveWinRate = sortedMoves.first?.winrate ?? 0.5
+                    // The top move after sorting is the "best winrate move"
+                    let bestActualWinRate = sortedMoves.first?.winrate ?? 0.5
 
                     ForEach(Array(sortedMoves.prefix(displayCount).enumerated()), id: \.element.moveStr) { index, info in
                         if let pos = viewModel.decodeKataGoMove(info.moveStr) {
@@ -124,9 +124,11 @@ struct GameBoardView: View {
                             )
 
                             let markerColor: Color = {
+                                // The move with the most visits is always highlighted as the "best" (current choice)
                                 if index == 0 { return viewModel.theme.aiBestMoveColor }
-                                // Compare win rates in Black's perspective (both are normalized to Black)
-                                if abs(info.winrate - bestMoveWinRate) <= 0.01 {
+
+                                // Compare other moves against the truly best winrate found so far
+                                if abs(info.winrate - bestActualWinRate) <= 0.01 {
                                     return viewModel.theme.aiGoodMoveColor
                                 }
                                 return viewModel.theme.aiCandidateMoveColor

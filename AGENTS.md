@@ -3,7 +3,7 @@
 This AGENTS.md provides context and instructions for AI agents (e.g., Copilot, Aider, Codex, Claude Code, etc.) working on this project. It supplements the README.md by offering project-specific setup, guidelines, and technical details to enable efficient code generation, debugging, and contributions without cluttering human-facing docs.
 
 ## Project Overview
-QiDao (Tao of Go) is a modern Go (Weiqi) tool targeted primarily for macOS, inspired by Lizzieyzy. It provides three main modes (Analysis, Edit and Play) for different scenario. Key features include SGF file handling, real-time AI analysis via KataGo APIs and GTP, graphical variation trees, and high-performance board rendering. The project uses a hybrid Swift-Rust architecture for native UI and optimized core logic.
+QiDao (Tao of Go 棋道) is a modern Go (Weiqi) tool targeted primarily for macOS, inspired by Lizzieyzy. It provides three main modes (Analysis, Edit and Play) for different scenario. Key features include SGF file handling, real-time AI analysis via KataGo APIs and GTP, graphical variation trees, and high-performance board rendering. The project uses a hybrid Swift-Rust architecture for native UI and optimized core logic.
 
 ## Directory Structure
 - `QiDao/`: Xcode project for the SwiftUI application.
@@ -31,6 +31,7 @@ QiDao (Tao of Go) is a modern Go (Weiqi) tool targeted primarily for macOS, insp
   - Follow SwiftUI best practices: Use `@State`, `@ObservedObject`, and `@FocusState` for reactive UI.
   - Prefer declarative views; avoid imperative loops in rendering.
   - Prefer SwiftUI native solutions over AppKit/Foundation (e.g., `@AppStorage` over `UserDefaults`, `fileImporter` over `NSOpenPanel`).
+  - **Ranking Logic**: Always use `AnalysisResult.sortedMoves(isWhiteTurn:)` for displaying AI candidate moves to ensure UI consistency.
   - Concurrency: Use `nonisolated` actors minimally; prefer `MainActor` for UI updates.
   - Localization: Use customized language manager (`Localization.swift`).
   - Performance: Optimize for 60/120fps rendering; use `Canvas` over heavy View hierarchies.

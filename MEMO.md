@@ -138,6 +138,12 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
     - **Smart Undo**: Context-aware undo that backtracks 1 or 2 steps to maintain human-to-move state.
 - **UI Stability**: Fixed layout glitches (height jumps) by using fixed-height frames for status indicators.
 
+### Phase 16: Analysis Logic Refinement & Code Quality (Completed)
+- **Win Rate Ranking**: Refactored AI candidate move ranking to prioritize **Win Rate** over **Visits**. This ensures the interface (both board markers and sidebar table) more intuitively reflects the current best move during analysis.
+- **Logic Unification**: Moved sorting for `AnalysisMoveInfo` into a dedicated Swift extension (`AnalysisResult+Extensions.swift`). Guaranteed consistent ranking across `GameBoardView`, `MoveEvaluationView`, and `RightSidebarView`.
+- **Tie-breaker & Stability**: Implemented a two-tier sorting system (Win Rate as primary, Visits as tie-breaker) with a `0.001` epsilon threshold, aligning with the UI's display precision and preventing ranking flicker when win rates are nearly identical.
+- **Project Branding**: Corrected project's Chinese name to **“棋道” (Tao of Go)** throughout internal documentation and communications.
+
 ## 10. Progress Log
 - [x] **Phase 1: Board Logic & Rules**: Implemented `Board` struct in Rust with capture logic, suicide prevention, and simple Ko rule. Exported to Swift via UniFFI.
 - [x] **Phase 2: UI/UX Foundation**: Refined 3D stone visuals, sound effects system, and multi-language support. Fixed sandbox-related permission issues.
@@ -156,3 +162,4 @@ To avoid concurrency warnings and architecture mismatches (e.g., "symbol(s) not 
 - [x] **Phase 13: Multi-Mode Support**: Implemented `AppMode` with dynamic sidebars for Analysis, Edit, and Play modes. Added stone placement and mark tools in Edit mode. Implemented basic Human-vs-AI gameplay flow in Play mode with game controls.
 - [x] **Phase 14: AI Status & Logging Implementation**: Implemented `AIStatus` state machine and event-based logging system. Modularized `AIManager` into functional extensions. Added color-coded logs for different AI tasks (Play, Analysis, Full Scan). Implemented background analysis progress tracking and configurable visit limits.
 - [x] **Phase 15: Advanced Edit & Play Features**: Implemented SGF export, "New Game" setup, and a robust clock system. Refined Play mode logic with unique PlayIDs and smart undo to prevent ghost moves and state desync. Fixed UI layout glitches during AI transitions.
+- [x] **Phase 16: Analysis Logic Refinement**: Unified AI move sorting logic to prioritize win rate over visits. Implemented `AnalysisResult+Extensions` for consistent ranking across all UI components. Fixed project name references to "棋道".

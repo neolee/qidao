@@ -28,7 +28,8 @@ struct MoveEvaluationView: View {
 
                         ScrollView {
                             VStack(spacing: 0) {
-                                ForEach(result.moveInfos.sorted(by: { $0.visits > $1.visits }), id: \.moveStr) { info in
+                                let sortedMoves = result.sortedMoves(isWhiteTurn: isWhiteTurn)
+                                ForEach(sortedMoves, id: \.moveStr) { info in
                                     let displayWinRate = WinRateConverter.convertWinRate(
                                         info.winrate,
                                         reportedAs: .black,

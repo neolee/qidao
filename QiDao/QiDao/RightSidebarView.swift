@@ -22,7 +22,7 @@ struct RightSidebarView: View {
                     EvaluationBoardView(
                         viewModel: viewModel,
                         ownership: viewModel.isAnalyzing ? viewModel.analysisResult?.ownership : nil,
-                        pv: viewModel.isAnalyzing ? viewModel.analysisResult?.moveInfos.sorted(by: { $0.visits > $1.visits }).first?.pv : nil
+                        pv: viewModel.isAnalyzing ? viewModel.analysisResult?.sortedMoves(isWhiteTurn: viewModel.nextColor == .white).first?.pv : nil
                     )
                 }
             case .edit:

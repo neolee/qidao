@@ -114,7 +114,9 @@ class AIManager: ObservableObject {
     func updateAnalysis(
         currentNodeId: String,
         initialStones: [[String]],
+        moves: [[String]],
         nextPlayer: String,
+        initialPlayer: String,
         turnNumber: Int,
         metadata: GameMetadata,
         config: AIConfig
@@ -145,16 +147,18 @@ class AIManager: ObservableObject {
                 let newId = "qidao-\(self.analysisSessionId)-\(currentNodeId)"
                 self.currentAnalysisId = newId
 
+                let analyzeTurn = max(0, moves.count)
+
                 var query: [String: Any] = [
                     "id": newId,
-                    "moves": [] as [Any],
+                    "moves": moves,
                     "initialStones": initialStones,
-                    "initialPlayer": nextPlayer,
+                    "initialPlayer": initialPlayer,
                     "rules": "chinese",
                     "komi": metadata.komi,
                     "boardXSize": metadata.size,
                     "boardYSize": metadata.size,
-                    "analyzeTurns": [0],
+                    "analyzeTurns": [analyzeTurn],
                     "priority": 10,
                     "includeOwnership": displaySettings.showOwnership,
                     "includePolicy": analysisSettings.includePolicy

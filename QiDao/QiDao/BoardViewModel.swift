@@ -454,8 +454,10 @@ class BoardViewModel: ObservableObject {
         let game = gameManager.getGame()
         aiManager.updateAnalysis(
             currentNodeId: game.getCurrentNode().getId(),
-            initialStones: game.getCurrentBoardStones(),
+            initialStones: game.getInitialStones(),
+            moves: game.getAnalysisMoves(),
             nextPlayer: nextColor == .black ? "B" : "W",
+            initialPlayer: gameState.initialColor == .black ? "B" : "W",
             turnNumber: moveCount,
             metadata: game.getMetadata(),
             config: config

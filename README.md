@@ -8,21 +8,21 @@
 
 强大的 AI 实时分析功能，集成 KataGo 引擎，提供胜率走势图、AI 选点提示、后续着法预览和形势评估等功能，帮助棋友深入理解对局。
 
-![QiDao](resource/screens/qidao-analysis-mode-1.png)
+![QiDao](resources/screens/qidao-analysis-mode-1.png)
 
-![QiDao](resource/screens/qidao-analysis-mode-2.png)
+![QiDao](resources/screens/qidao-analysis-mode-2.png)
 
 > 编辑模式 Edit
 
 自由摆子与标记功能，支持添加三角、圆圈、字母等多种标记，支持局面 SGF 实时预览和导出、保存功能，方便进行棋谱注释、研究和[内容创作](https://github.com/neolee/sbs-ext)。
 
-![QiDao](resource/screens/qidao-edit-mode.png)
+![QiDao](resources/screens/qidao-edit-mode.png)
 
 > 练习模式 Play
 
 与 AI 对战功能，支持自定义让子与贴目，帮助棋友提升实战水平。
 
-![QiDao](resource/screens/qidao-play-mode.png)
+![QiDao](resources/screens/qidao-play-mode.png)
 
 ## 前置要求
 

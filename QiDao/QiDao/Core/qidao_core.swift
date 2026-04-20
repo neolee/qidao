@@ -586,6 +586,11 @@ public convenience init() {
 }
 
     deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
         try! rustCall { uniffi_qidao_core_fn_free_analysisengine(handle, $0) }
     }
 
@@ -865,6 +870,11 @@ public convenience init(size: UInt32) {
 }
 
     deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
         try! rustCall { uniffi_qidao_core_fn_free_board(handle, $0) }
     }
 
@@ -1094,6 +1104,11 @@ public convenience init(size: UInt32) {
 }
 
     deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
         try! rustCall { uniffi_qidao_core_fn_free_game(handle, $0) }
     }
 
@@ -1524,6 +1539,11 @@ public convenience init() {
 }
 
     deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
         try! rustCall { uniffi_qidao_core_fn_free_gtpengine(handle, $0) }
     }
 
@@ -1682,6 +1702,11 @@ open class SgfNode: SgfNodeProtocol, @unchecked Sendable {
     // No primary constructor declared for this class.
 
     deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
         try! rustCall { uniffi_qidao_core_fn_free_sgfnode(handle, $0) }
     }
 
@@ -1809,6 +1834,11 @@ open class SgfTree: SgfTreeProtocol, @unchecked Sendable {
     // No primary constructor declared for this class.
 
     deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
         try! rustCall { uniffi_qidao_core_fn_free_sgftree(handle, $0) }
     }
 
@@ -1889,6 +1919,8 @@ public struct AnalysisMoveInfo: Equatable, Hashable {
     }
 
     
+
+    
 }
 
 #if compiler(>=6)
@@ -1957,6 +1989,8 @@ public struct AnalysisResult: Equatable, Hashable {
     }
 
     
+
+    
 }
 
 #if compiler(>=6)
@@ -2019,6 +2053,8 @@ public struct AnalysisRootInfo: Equatable, Hashable {
         self.scoreLead = scoreLead
         self.visits = visits
     }
+
+    
 
     
 }
@@ -2095,6 +2131,8 @@ public struct GameMetadata: Equatable, Hashable {
     }
 
     
+
+    
 }
 
 #if compiler(>=6)
@@ -2167,6 +2205,8 @@ public struct GtpResponse: Equatable, Hashable {
     }
 
     
+
+    
 }
 
 #if compiler(>=6)
@@ -2219,6 +2259,8 @@ public struct SgfProperty: Equatable, Hashable {
     }
 
     
+
+    
 }
 
 #if compiler(>=6)
@@ -2267,6 +2309,8 @@ public enum SgfError: Swift.Error, Equatable, Hashable, Foundation.LocalizedErro
     )
     case InvalidMove(message: String
     )
+
+    
 
     
 
@@ -2347,6 +2391,8 @@ public enum StoneColor: Equatable, Hashable {
     
     case black
     case white
+
+
 
 
 
